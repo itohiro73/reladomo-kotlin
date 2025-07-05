@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.github.kotlinreladomo.generator.model.AttributeDefinition
 import io.github.kotlinreladomo.generator.model.MithraObjectDefinition
 import java.io.File
+import java.time.Instant
 
 /**
  * Generates Kotlin repository classes for Mithra objects.
@@ -23,11 +24,15 @@ class KotlinRepositoryGenerator {
             .addType(generateRepositoryClass(definition, entityName, repositoryName))
             .addImport("org.springframework.stereotype", "Repository")
             .addImport(definition.packageName, definition.className)
-            .addImport("${definition.packageName}.finder", "${definition.className}Finder")
-            .addImport("com.gs.fw.finder", "Operation")
+            .addImport(definition.packageName, "${definition.className}Finder")
+            .addImport("com.gs.fw.common.mithra.finder", "Operation")
+            .addImport("com.gs.fw.common.mithra.attribute", "TimestampAttribute")
             .addImport("java.time", "Instant")
             .addImport("java.sql", "Timestamp")
             .addImport("io.github.kotlinreladomo.core", "AbstractBiTemporalRepository")
+            .addImport("io.github.kotlinreladomo.core", "ReladomoObject")
+            .addImport("io.github.kotlinreladomo.core", "ReladomoFinder")
+            .addImport("io.github.kotlinreladomo.core.exceptions", "EntityNotFoundException")
             .addImport("${definition.packageName}.kotlin", entityName)
             .build()
     }
@@ -51,28 +56,20 @@ class KotlinRepositoryGenerator {
         val primaryKeyType = findPrimaryKeyType(definition)
         val reladomoType = ClassName(definition.packageName, definition.className)
         val entityType = ClassName("${definition.packageName}.kotlin", entityName)
-        val finderType = ClassName("${definition.packageName}.finder", "${definition.className}Finder")
+        val finderType = ClassName(definition.packageName, "${definition.className}Finder")
         
         val superclass = ClassName("io.github.kotlinreladomo.core", "AbstractBiTemporalRepository")
-            .parameterizedBy(entityType, primaryKeyType, reladomoType)
+            .parameterizedBy(entityType, primaryKeyType, ClassName("io.github.kotlinreladomo.core", "ReladomoObject"))
         
         return TypeSpec.classBuilder(repositoryName)
             .addAnnotation(ClassName("org.springframework.stereotype", "Repository"))
-            .superclass(superclass)
-            .addFunction(generateGetFinderMethod(finderType))
-            .addFunction(generateToEntityMethod(definition, entityType))
-            .addFunction(generateFromEntityMethod(definition, entityType))
-            .addFunction(generateGetPrimaryKeyMethod(definition, primaryKeyType))
-            .addFunction(generateCreatePrimaryKeyOperationMethod(definition, primaryKeyType, finderType))
-            .apply {
-                if (definition.isBitemporal) {
-                    addFunction(generateGetBusinessDateAttributeMethod(finderType))
-                    addFunction(generateGetProcessingDateAttributeMethod(finderType))
-                }
-                
-                // Add custom finder methods
-                addFunction(generateFindByCustomerIdMethod(definition, entityType, finderType))
-            }
+            .addFunction(generateSaveMethod(definition, entityType, reladomoType))
+            .addFunction(generateFindByIdMethod(definition, entityType, finderType, primaryKeyType))
+            .addFunction(generateFindByIdAsOfMethod(definition, entityType, finderType, primaryKeyType))
+            .addFunction(generateUpdateMethod(definition, entityType, finderType, primaryKeyType))
+            .addFunction(generateDeleteByIdMethod(definition, finderType, primaryKeyType))
+            .addFunction(generateFindAllMethod(definition, entityType, finderType))
+            .addFunction(generateFindByCustomerIdMethod(definition, entityType, finderType))
             .build()
     }
     
@@ -90,85 +87,106 @@ class KotlinRepositoryGenerator {
         }
     }
     
-    private fun generateGetFinderMethod(finderType: ClassName): FunSpec {
-        return FunSpec.builder("getFinder")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .returns(finderType)
-            .addStatement("return %T", finderType)
-            .build()
-    }
-    
-    private fun generateToEntityMethod(definition: MithraObjectDefinition, entityType: ClassName): FunSpec {
-        val reladomoType = ClassName(definition.packageName, definition.className)
-        return FunSpec.builder("toEntity")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .addParameter("reladomoObject", reladomoType)
+    private fun generateSaveMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        reladomoType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("save")
+            .addParameter("entity", entityType)
             .returns(entityType)
+            .addStatement("val reladomoObject = entity.toReladomo()")
+            .addStatement("reladomoObject.insert()")
             .addStatement("return %T.fromReladomo(reladomoObject)", entityType)
             .build()
     }
     
-    private fun generateFromEntityMethod(definition: MithraObjectDefinition, entityType: ClassName): FunSpec {
-        val reladomoType = ClassName(definition.packageName, definition.className)
-        return FunSpec.builder("fromEntity")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .addParameter("entity", entityType)
-            .returns(reladomoType)
-            .addStatement("return entity.toReladomo()")
-            .build()
-    }
-    
-    private fun generateGetPrimaryKeyMethod(
+    private fun generateFindByIdMethod(
         definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName,
         primaryKeyType: TypeName
     ): FunSpec {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
-        
-        return FunSpec.builder("getPrimaryKey")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .addParameter("entity", ClassName("", "${definition.className}Kt"))
-            .returns(primaryKeyType)
-            .addStatement("return entity.${primaryKey.name}")
+            
+        return FunSpec.builder("findById")
+            .addParameter("id", primaryKeyType)
+            .returns(entityType.copy(nullable = true))
+            .addStatement("val now = Instant.now()")
+            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(now), Timestamp.from(now))", finderType)
+            .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
             .build()
     }
     
-    private fun generateCreatePrimaryKeyOperationMethod(
+    private fun generateFindByIdAsOfMethod(
         definition: MithraObjectDefinition,
-        primaryKeyType: TypeName,
-        finderType: ClassName
+        entityType: ClassName,
+        finderType: ClassName,
+        primaryKeyType: TypeName
+    ): FunSpec {
+        return FunSpec.builder("findByIdAsOf")
+            .addParameter("id", primaryKeyType)
+            .addParameter("businessDate", Instant::class)
+            .addParameter("processingDate", Instant::class)
+            .returns(entityType.copy(nullable = true))
+            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(businessDate), Timestamp.from(processingDate))", finderType)
+            .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+    
+    private fun generateUpdateMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName,
+        primaryKeyType: TypeName
     ): FunSpec {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
-        
-        return FunSpec.builder("createPrimaryKeyOperation")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
+            
+        return FunSpec.builder("update")
+            .addParameter("entity", entityType)
+            .returns(entityType)
+            .addStatement("val now = Instant.now()")
+            .addStatement("val existingOrder = %T.findByPrimaryKey(entity.${primaryKey.name}!!, Timestamp.from(now), Timestamp.from(now))", finderType)
+            .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \${entity.${primaryKey.name}}\")")
+            .addStatement("")
+            .addComment("For bitemporal update, terminate the old and insert new")
+            .addStatement("existingOrder.terminate()")
+            .addStatement("val newOrder = entity.toReladomo()")
+            .addStatement("newOrder.insert()")
+            .addStatement("return %T.fromReladomo(newOrder)", entityType)
+            .build()
+    }
+    
+    private fun generateDeleteByIdMethod(
+        definition: MithraObjectDefinition,
+        finderType: ClassName,
+        primaryKeyType: TypeName
+    ): FunSpec {
+        return FunSpec.builder("deleteById")
             .addParameter("id", primaryKeyType)
-            .returns(ClassName("com.gs.fw.finder", "Operation"))
-            .addStatement("return %T.${primaryKey.name}().eq(id)", finderType)
+            .addStatement("val now = Instant.now()")
+            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(now), Timestamp.from(now))", finderType)
+            .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \$id\")")
+            .addStatement("order.terminate()")
             .build()
     }
     
-    private fun generateGetBusinessDateAttributeMethod(finderType: ClassName): FunSpec {
-        return FunSpec.builder("getBusinessDateAttribute")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .returns(ClassName("com.gs.fw.finder", "TimestampAttribute").parameterizedBy(STAR))
-            .addStatement("return %T.businessDate()", finderType)
-            .build()
-    }
-    
-    private fun generateGetProcessingDateAttributeMethod(finderType: ClassName): FunSpec {
-        return FunSpec.builder("getProcessingDateAttribute")
-            .addModifiers(KModifier.OVERRIDE)
-            .addModifiers(KModifier.PROTECTED)
-            .returns(ClassName("com.gs.fw.finder", "TimestampAttribute").parameterizedBy(STAR))
-            .addStatement("return %T.processingDate()", finderType)
+    private fun generateFindAllMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("findAll")
+            .returns(LIST.parameterizedBy(entityType))
+            .addComment("For bitemporal queries, use the current time to get active records")
+            .addStatement("val currentTime = Timestamp.from(Instant.now())")
+            .addStatement("val operation = %T.businessDate().equalsEdgePoint()", finderType)
+            .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
+            .addStatement("")
+            .addStatement("val orders = %T.findMany(operation)", finderType)
+            .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
             .build()
     }
     
@@ -205,7 +223,11 @@ class KotlinRepositoryGenerator {
             .addParameter("customerId", LONG)
             .returns(LIST.parameterizedBy(entityType))
             .addStatement("val operation = %T.customerId().eq(customerId)", finderType)
-            .addStatement("return findMany(operation)")
+            .addStatement("    .and(%T.businessDate().equalsEdgePoint())", finderType)
+            .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
+            .addStatement("")
+            .addStatement("val orders = %T.findMany(operation)", finderType)
+            .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
             .build()
     }
 }

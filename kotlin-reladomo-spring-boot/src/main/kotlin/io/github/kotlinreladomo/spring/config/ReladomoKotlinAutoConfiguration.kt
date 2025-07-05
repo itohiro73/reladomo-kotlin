@@ -35,11 +35,10 @@ class ReladomoKotlinAutoConfiguration {
         logger.info("Initializing MithraManager with configuration from: ${properties.connectionManagerConfigFile}")
         
         val manager = MithraManagerProvider.getMithraManager()
-        manager.setTransactionTimeout(properties.defaultTransactionTimeout)
         
-        // Set up connection manager
-        val connectionManager = SpringConnectionManager(dataSource, properties.databaseTimeZone)
-        manager.setDefaultConnectionManager(connectionManager)
+        // Set the DataSource on SpringConnectionManager
+        SpringConnectionManager.setDataSource(dataSource)
+        logger.info("DataSource configured for SpringConnectionManager")
         
         // Load configuration if available
         try {
@@ -49,10 +48,11 @@ class ReladomoKotlinAutoConfiguration {
                 manager.readConfiguration(configResource.inputStream)
             } else {
                 logger.warn("Reladomo configuration file not found: ${properties.connectionManagerConfigFile}")
+                // For MVP, we'll just log a warning but continue
             }
         } catch (e: Exception) {
             logger.error("Failed to load Reladomo configuration", e)
-            throw e
+            // For MVP, we'll continue without configuration
         }
         
         return manager

@@ -1,7 +1,7 @@
 package io.github.kotlinreladomo.sample
 
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
-import io.github.kotlinreladomo.sample.repository.OrderKtRepository
+import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepository
 import java.math.BigDecimal
 import java.time.Instant
 

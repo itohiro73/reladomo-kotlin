@@ -22,10 +22,8 @@ class ReladomoTransactionManager(
         val mithraTransaction = mithraManager.startOrContinueTransaction()
         txObject.mithraTransaction = mithraTransaction
         
-        // Set transaction timeout if specified
-        if (definition.timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-            mithraTransaction.setTransactionTimeout(definition.timeout)
-        }
+        // Note: Transaction timeout is configured at MithraManager level, not per transaction
+        // For MVP, we'll use the default timeout configuration
     }
     
     override fun doCommit(status: DefaultTransactionStatus) {

@@ -4,7 +4,7 @@ import io.github.kotlinreladomo.core.exceptions.EntityNotFoundException
 import io.github.kotlinreladomo.sample.dto.CreateOrderRequest
 import io.github.kotlinreladomo.sample.dto.OrderDto
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
-import io.github.kotlinreladomo.sample.repository.OrderKtRepository
+import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -79,7 +79,7 @@ class OrderService(
     
     private fun OrderKt.toDto(): OrderDto {
         return OrderDto(
-            orderId = this.orderId,
+            orderId = this.orderId ?: throw IllegalStateException("Order ID cannot be null"),
             customerId = this.customerId,
             orderDate = this.orderDate,
             amount = this.amount,

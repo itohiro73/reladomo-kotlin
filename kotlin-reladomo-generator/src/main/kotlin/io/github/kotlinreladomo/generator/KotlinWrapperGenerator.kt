@@ -118,26 +118,30 @@ class KotlinWrapperGenerator {
         
         return FunSpec.builder("toReladomo")
             .returns(reladomoClassName)
-            .addStatement("val obj = %T()", reladomoClassName)
             .apply {
+                // For bitemporal objects, use constructor with dates
+                if (definition.isBitemporal) {
+                    addStatement("val obj = %T(Timestamp.from(this.businessDate), Timestamp.from(this.processingDate))", reladomoClassName)
+                } else {
+                    addStatement("val obj = %T()", reladomoClassName)
+                }
+                
                 // Set regular attributes
                 definition.attributes.forEach { attr ->
-                    when (attr.javaType) {
-                        "Timestamp" -> {
+                    when {
+                        attr.javaType == "Timestamp" -> {
                             if (attr.nullable) {
                                 addStatement("obj.${attr.name} = this.${attr.name}?.let { Timestamp.from(it) }")
                             } else {
                                 addStatement("obj.${attr.name} = Timestamp.from(this.${attr.name})")
                             }
                         }
+                        attr.nullable || (attr.isPrimaryKey && attr.javaType == "long") -> {
+                            // Handle nullable attributes and potentially nullable primary keys
+                            addStatement("this.${attr.name}?.let { obj.${attr.name} = it }")
+                        }
                         else -> addStatement("obj.${attr.name} = this.${attr.name}")
                     }
-                }
-                
-                // Set bitemporal attributes
-                if (definition.isBitemporal) {
-                    addStatement("obj.businessDate = Timestamp.from(this.businessDate)")
-                    addStatement("obj.processingDate = Timestamp.from(this.processingDate)")
                 }
             }
             .addStatement("return obj")
@@ -154,10 +158,12 @@ class KotlinWrapperGenerator {
         return FunSpec.builder("fromReladomo")
             .addParameter("obj", reladomoClassName)
             .returns(wrapperClassName)
-            .addStatement("return %T(", wrapperClassName)
-            .apply {
+            .addCode(buildCodeBlock {
+                add("return %T(\n", wrapperClassName)
+                indent()
+                
                 // Map regular attributes
-                definition.attributes.forEach { attr ->
+                definition.attributes.forEachIndexed { index, attr ->
                     val conversion = when (attr.javaType) {
                         "Timestamp" -> {
                             if (attr.nullable) {
@@ -168,20 +174,25 @@ class KotlinWrapperGenerator {
                         }
                         else -> "obj.${attr.name}"
                     }
-                    addStatement("    ${attr.name} = $conversion,")
+                    
+                    add("${attr.name} = $conversion")
+                    
+                    // Add comma if not last attribute or if bitemporal
+                    if (index < definition.attributes.size - 1 || definition.isBitemporal) {
+                        add(",")
+                    }
+                    add("\n")
                 }
                 
                 // Map bitemporal attributes
                 if (definition.isBitemporal) {
-                    addStatement("    businessDate = obj.businessDate.toInstant(),")
-                    addStatement("    processingDate = obj.processingDate.toInstant()")
-                } else {
-                    // Remove trailing comma from last attribute
-                    val lastStatement = statements.last()
-                    statements[statements.lastIndex] = lastStatement.toString().trimEnd(',')
+                    add("businessDate = obj.businessDate.toInstant(),\n")
+                    add("processingDate = obj.processingDate.toInstant()\n")
                 }
-            }
-            .addStatement(")")
+                
+                unindent()
+                add(")")
+            })
             .build()
     }
     

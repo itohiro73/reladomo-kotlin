@@ -27,7 +27,18 @@ kotlin-reladomo/
 ## Development Commands
 
 ### Build Commands (Once Implemented)
+
+**IMPORTANT**: Always check your current directory with `pwd` before running gradle commands. Gradle commands should be run from the project root directory `/data/data/com.termux/files/home/development/kotlin-reladomo/`.
+
+**IMPORTANT**: When checking for running processes, always use `ps -ef` instead of `ps aux` for better compatibility.
+
 ```bash
+# Always check current directory first
+pwd
+
+# If not in project root, navigate to it
+cd /data/data/com.termux/files/home/development/kotlin-reladomo/
+
 # Full project build
 ./gradlew build
 
@@ -55,6 +66,19 @@ kotlinReladomo {
 ```
 
 ## Important Implementation Details
+
+### MVP Implementation Guidelines
+- **DO NOT comment out real functionality** - Even in MVP, maintain the actual implementation
+- **DO NOT bypass any production logic until MVP functionality is completely implemented**
+- **Code generation must work** - It's a core part of the MVP and must function end-to-end
+- **DO NOT manually create files that should be generated** - Fix the code generation instead
+- **DO NOT create workarounds or shortcuts** - Fix the actual problem in the generator
+- **ALWAYS identify the root cause before making changes** - Understand the issue fully before attempting fixes
+- If a dependency is missing, fix it properly rather than working around it
+- Keep all method signatures and contracts intact
+- Use proper interfaces and abstractions instead of removing functionality
+- Test each component individually before integration to ensure everything works
+- When encountering compilation errors with generated code, fix the generator, not the generated files
 
 ### Bitemporal Entity Pattern
 All generated entities implement `BiTemporalEntity` interface:

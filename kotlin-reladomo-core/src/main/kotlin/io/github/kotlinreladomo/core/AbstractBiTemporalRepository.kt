@@ -1,8 +1,6 @@
 package io.github.kotlinreladomo.core
 
-import com.gs.fw.common.mithra.MithraObject
 import com.gs.fw.common.mithra.finder.Operation
-import com.gs.fw.common.mithra.finder.RelatedFinder
 import com.gs.fw.common.mithra.attribute.TimestampAttribute
 import io.github.kotlinreladomo.core.exceptions.EntityNotFoundException
 import java.sql.Timestamp
@@ -16,13 +14,13 @@ import java.time.Instant
  * @param ID The primary key type
  * @param R The Reladomo object type
  */
-abstract class AbstractBiTemporalRepository<E : BiTemporalEntity, ID : Any, R : MithraObject> 
+abstract class AbstractBiTemporalRepository<E : BiTemporalEntity, ID : Any, R : ReladomoObject> 
     : BiTemporalRepository<E, ID> {
     
     /**
      * Get the Reladomo finder for this entity type.
      */
-    protected abstract fun getFinder(): RelatedFinder<R>
+    protected abstract fun getFinder(): ReladomoFinder<R>
     
     /**
      * Convert a Reladomo object to a Kotlin entity.
@@ -47,12 +45,12 @@ abstract class AbstractBiTemporalRepository<E : BiTemporalEntity, ID : Any, R : 
     /**
      * Get the business date attribute for temporal queries.
      */
-    protected abstract fun getBusinessDateAttribute(): TimestampAttribute<R>
+    protected abstract fun getBusinessDateAttribute(): TimestampAttribute<*>
     
     /**
      * Get the processing date attribute for temporal queries.
      */
-    protected abstract fun getProcessingDateAttribute(): TimestampAttribute<R>
+    protected abstract fun getProcessingDateAttribute(): TimestampAttribute<*>
     
     override fun save(entity: E): E {
         val reladomoObject = fromEntity(entity)

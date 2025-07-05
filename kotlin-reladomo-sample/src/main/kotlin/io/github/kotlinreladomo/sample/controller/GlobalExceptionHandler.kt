@@ -33,10 +33,12 @@ class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception::class)
     fun handleGenericException(ex: Exception): ResponseEntity<ErrorResponse> {
+        // Log the actual error for debugging
+        ex.printStackTrace()
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse(
                 error = "INTERNAL_SERVER_ERROR",
-                message = "An unexpected error occurred",
+                message = "An unexpected error occurred: ${ex.message}",
                 timestamp = Instant.now()
             ))
     }
