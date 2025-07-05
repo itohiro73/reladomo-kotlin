@@ -1,0 +1,117 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a Kotlin wrapper library for Reladomo ORM that enables transparent use of Reladomo's bitemporal data model features from Kotlin/Spring Boot applications. The project is starting fresh with a focus on MVP implementation.
+
+## Key Architecture Decisions
+
+### Module Structure (Planned)
+```
+kotlin-reladomo/
+├── kotlin-reladomo-core/          # Core wrapper functionality
+├── kotlin-reladomo-generator/     # XML to Kotlin code generation
+├── kotlin-reladomo-spring-boot/   # Spring Boot integration
+├── kotlin-reladomo-gradle-plugin/ # Gradle plugin for build integration
+└── kotlin-reladomo-sample/        # Sample application
+```
+
+### Core Design Principles
+1. **Type Safety**: Generate Kotlin data classes with null safety from Reladomo XML
+2. **Spring Integration**: Seamless Spring Boot transaction and DataSource management
+3. **Bitemporal Support**: First-class support for Reladomo's bitemporal features
+4. **Code Generation**: Automatic generation of wrapper classes and repositories
+
+## Development Commands
+
+### Build Commands (Once Implemented)
+```bash
+# Full project build
+./gradlew build
+
+# Generate Kotlin wrappers from Reladomo XML
+./gradlew generateKotlinWrappers
+
+# Run tests
+./gradlew test
+
+# Run specific module tests
+./gradlew :kotlin-reladomo-core:test
+
+# Clean build
+./gradlew clean build
+```
+
+### Code Generation Configuration
+The project will use a Gradle plugin to generate Kotlin code from Reladomo XML files:
+```kotlin
+kotlinReladomo {
+    xmlDirectory = file("src/main/resources/reladomo")
+    outputDirectory = file("build/generated/kotlin")
+    packageName = "com.example.domain.kotlin"
+}
+```
+
+## Important Implementation Details
+
+### Bitemporal Entity Pattern
+All generated entities implement `BiTemporalEntity` interface:
+```kotlin
+interface BiTemporalEntity {
+    val businessDate: Instant
+    val processingDate: Instant
+}
+```
+
+### Repository Pattern
+Repositories extend `AbstractBiTemporalRepository` which provides:
+- Basic CRUD operations
+- AsOf queries for temporal data
+- Type-safe primary key operations
+
+### XML to Kotlin Type Mapping
+- `long` → `Long`
+- `Timestamp` → `Instant` 
+- `BigDecimal` → `BigDecimal`
+- Nullable attributes → Kotlin nullable types
+
+## Current Status
+
+The project is in initial planning phase with:
+- Comprehensive PRD (`Reladomo_Kotlin_Wrapper_PRD_v1.0.md`)
+- MVP Implementation Plan (`Reladomo_Kotlin_MVP_Implementation_Plan_v1.0.md`)
+- Focus on basic CRUD + bitemporal operations first
+
+## Technology Stack
+
+- **Kotlin**: 1.9+
+- **Spring Boot**: 3.2+
+- **Reladomo**: 18.0+
+- **Gradle**: 8.0+
+- **Java**: 17+
+- **KotlinPoet**: For code generation
+
+## Key Challenges Being Addressed
+
+1. **Java-centric Reladomo** → Kotlin-idiomatic wrapper
+2. **Complex XML configuration** → Automated code generation
+3. **Manual Spring integration** → Auto-configuration
+4. **Verbose temporal queries** → Simplified Kotlin DSL
+
+## Implementation Phases
+
+1. **Phase 1**: Code generation (XML parser, Kotlin generator, Gradle plugin)
+2. **Phase 2**: Core functionality (entity wrappers, repositories, type conversion)
+3. **Phase 3**: Spring Boot integration (auto-config, transaction management)
+4. **Phase 4**: Sample implementation
+5. **Phase 5**: Testing and documentation
+
+## Database Schema Requirements
+
+Bitemporal tables require these columns:
+- Primary key columns
+- Business time columns: `BUSINESS_FROM`, `BUSINESS_THRU`
+- Processing time columns: `PROCESSING_FROM`, `PROCESSING_THRU`
+- Composite primary key including temporal columns
