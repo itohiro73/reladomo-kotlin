@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.kotlinreladomo.sample.domain</PackageName>
+    <ClassName>Order</ClassName>
+    <DefaultTable>ORDERS</DefaultTable>
+    
+    <!-- Regular attributes -->
+    <Attribute name="orderId" javaType="long" columnName="ORDER_ID" primaryKey="true"/>
+    <Attribute name="customerId" javaType="long" columnName="CUSTOMER_ID" nullable="false"/>
+    <Attribute name="orderDate" javaType="Timestamp" columnName="ORDER_DATE" nullable="false"/>
+    <Attribute name="amount" javaType="BigDecimal" columnName="AMOUNT" nullable="false"/>
+    <Attribute name="status" javaType="String" columnName="STATUS" maxLength="20" nullable="false"/>
+    <Attribute name="description" javaType="String" columnName="DESCRIPTION" maxLength="500" nullable="true"/>
+    
+    <!-- Bitemporal attributes -->
+    <AsOfAttribute name="businessDate" 
+                   fromColumnName="BUSINESS_FROM" 
+                   toColumnName="BUSINESS_THRU"
+                   infinityDate="9999-12-01 23:59:00.0"
+                   defaultIfNotSpecified="9999-12-01 23:59:00.0"/>
+    
+    <AsOfAttribute name="processingDate" 
+                   fromColumnName="PROCESSING_FROM" 
+                   toColumnName="PROCESSING_THRU" 
+                   toIsInclusive="false"
+                   infinityDate="9999-12-01 23:59:00.0"
+                   defaultIfNotSpecified="9999-12-01 23:59:00.0"/>
+</MithraObject>
