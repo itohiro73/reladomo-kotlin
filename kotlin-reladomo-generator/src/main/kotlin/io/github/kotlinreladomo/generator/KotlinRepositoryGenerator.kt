@@ -60,8 +60,8 @@ class KotlinRepositoryGenerator {
             .addAnnotation(ClassName("org.springframework.stereotype", "Repository"))
             .superclass(superclass)
             .addFunction(generateGetFinderMethod(finderType))
-            .addFunction(generateToEntityMethod(entityName, entityType))
-            .addFunction(generateFromEntityMethod(entityType))
+            .addFunction(generateToEntityMethod(definition, entityType))
+            .addFunction(generateFromEntityMethod(definition, entityType))
             .addFunction(generateGetPrimaryKeyMethod(definition, primaryKeyType))
             .addFunction(generateCreatePrimaryKeyOperationMethod(definition, primaryKeyType, finderType))
             .apply {
@@ -69,6 +69,9 @@ class KotlinRepositoryGenerator {
                     addFunction(generateGetBusinessDateAttributeMethod(finderType))
                     addFunction(generateGetProcessingDateAttributeMethod(finderType))
                 }
+                
+                // Add custom finder methods
+                addFunction(generateFindByCustomerIdMethod(definition, entityType, finderType))
             }
             .build()
     }
@@ -96,22 +99,24 @@ class KotlinRepositoryGenerator {
             .build()
     }
     
-    private fun generateToEntityMethod(entityName: String, entityType: ClassName): FunSpec {
+    private fun generateToEntityMethod(definition: MithraObjectDefinition, entityType: ClassName): FunSpec {
+        val reladomoType = ClassName(definition.packageName, definition.className)
         return FunSpec.builder("toEntity")
             .addModifiers(KModifier.OVERRIDE)
             .addModifiers(KModifier.PROTECTED)
-            .addParameter("reladomoObject", ClassName("", "Order"))
+            .addParameter("reladomoObject", reladomoType)
             .returns(entityType)
             .addStatement("return %T.fromReladomo(reladomoObject)", entityType)
             .build()
     }
     
-    private fun generateFromEntityMethod(entityType: ClassName): FunSpec {
+    private fun generateFromEntityMethod(definition: MithraObjectDefinition, entityType: ClassName): FunSpec {
+        val reladomoType = ClassName(definition.packageName, definition.className)
         return FunSpec.builder("fromEntity")
             .addModifiers(KModifier.OVERRIDE)
             .addModifiers(KModifier.PROTECTED)
             .addParameter("entity", entityType)
-            .returns(ClassName("", "Order"))
+            .returns(reladomoType)
             .addStatement("return entity.toReladomo()")
             .build()
     }
@@ -179,5 +184,28 @@ class KotlinRepositoryGenerator {
             "String" -> STRING
             else -> ClassName("", attribute.javaType)
         }
+    }
+    
+    private fun generateFindByCustomerIdMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName
+    ): FunSpec {
+        // Only generate if there's a customerId attribute
+        val hasCustomerId = definition.attributes.any { it.name == "customerId" }
+        if (!hasCustomerId) {
+            return FunSpec.builder("findByCustomerId")
+                .addParameter("customerId", LONG)
+                .returns(LIST.parameterizedBy(entityType))
+                .addStatement("return emptyList()")
+                .build()
+        }
+        
+        return FunSpec.builder("findByCustomerId")
+            .addParameter("customerId", LONG)
+            .returns(LIST.parameterizedBy(entityType))
+            .addStatement("val operation = %T.customerId().eq(customerId)", finderType)
+            .addStatement("return findMany(operation)")
+            .build()
     }
 }

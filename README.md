@@ -89,6 +89,26 @@ class OrderService(
 ./gradlew build
 ```
 
+## Running the Sample Application
+
+The project includes a sample Spring Boot application demonstrating the functionality:
+
+```bash
+./gradlew :kotlin-reladomo-sample:bootRun
+```
+
+Once running, you can test the REST API:
+
+```bash
+# Get all orders
+curl http://localhost:8080/api/orders
+
+# Create a new order
+curl -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": 100, "amount": 999.99, "status": "PENDING"}'
+```
+
 ## Requirements
 
 - Kotlin 1.9+

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.kotlinreladomo.spring.connection.SpringConnectionManager">
+        <Property name="connectionManagerName" value="default"/>
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Order" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>
