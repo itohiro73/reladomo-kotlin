@@ -111,10 +111,10 @@ curl -X POST http://localhost:8080/api/orders \
 
 ## Documentation
 
-- [Product Requirements Document](docs/Reladomo_Kotlin_Wrapper_PRD_v1.0.md)
-- [MVP Implementation Plan](docs/Reladomo_Kotlin_MVP_Implementation_Plan_v1.0.md)
-- [Test Verification Guide](docs/TEST_VERIFICATION.md)
-- [Code Review Guidelines](docs/CODE_REVIEW.md)
+- [Product Requirements Document](docs/planning/PRD.md)
+- [MVP Implementation Plan](docs/planning/MVP_Implementation_Plan.md)
+- [Test Verification Guide](docs/development/TEST_VERIFICATION.md)
+- [Code Review Guidelines](docs/development/CODE_REVIEW.md)
 - [Understanding Bitemporal Data](docs/BITEMPORAL_GUIDE.md) - Comprehensive guide to bitemporal concepts
 - [Bitemporal Kotlin Examples](docs/BITEMPORAL_KOTLIN_EXAMPLES.md) - Practical code examples
 
