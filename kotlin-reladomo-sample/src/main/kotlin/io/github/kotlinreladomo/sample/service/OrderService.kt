@@ -4,7 +4,7 @@ import io.github.kotlinreladomo.core.exceptions.EntityNotFoundException
 import io.github.kotlinreladomo.sample.dto.CreateOrderRequest
 import io.github.kotlinreladomo.sample.dto.OrderDto
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
-import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepository
+import io.github.kotlinreladomo.sample.repository.OrderSpringDataRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Service
 @Transactional
 class OrderService(
-    private val orderRepository: OrderKtRepository
+    private val orderRepository: OrderSpringDataRepository
 ) {
     
     // Simple ID generator for demo purposes
@@ -77,11 +77,27 @@ class OrderService(
         val existingOrder = orderRepository.findById(id)
             ?: throw EntityNotFoundException("Order not found with id: $id")
         // Delete with the existing business date
-        orderRepository.deleteById(id, existingOrder.businessDate)
+        orderRepository.deleteByIdAsOf(id, existingOrder.businessDate)
     }
     
     fun findOrdersByCustomer(customerId: Long): List<OrderDto> {
         return orderRepository.findByCustomerId(customerId).map { it.toDto() }
+    }
+    
+    fun findOrdersByStatus(status: String): List<OrderDto> {
+        return orderRepository.findByStatus(status).map { it.toDto() }
+    }
+    
+    fun findHighValueOrders(minAmount: java.math.BigDecimal): List<OrderDto> {
+        return orderRepository.findByAmountGreaterThan(minAmount).map { it.toDto() }
+    }
+    
+    fun orderExistsForCustomer(customerId: Long): Boolean {
+        return orderRepository.existsByCustomerId(customerId)
+    }
+    
+    fun countOrdersByStatus(status: String): Long {
+        return orderRepository.countByStatus(status)
     }
     
     private fun OrderKt.toDto(): OrderDto {

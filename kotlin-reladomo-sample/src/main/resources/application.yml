@@ -20,6 +20,25 @@ spring:
 
 reladomo:
   kotlin:
+    # Repository scanning configuration
+    repository:
+      base-packages:
+        - io.github.kotlinreladomo.sample.repository
+      enable-query-methods: true
+    
+    # Cache configuration
+    cache:
+      type: PARTIAL
+      partial-cache-size: 10000
+      cache-timeout-minutes: 30
+    
+    # Transaction management
+    transaction-management-enabled: true
+    
+    # Timezone configuration
+    database-timezone: UTC
+    
+    # Connection manager configuration
     connection-manager-config-file: reladomo-runtime-config.xml
     default-transaction-timeout: 120
     default-business-date-provider: CURRENT_TIMESTAMP

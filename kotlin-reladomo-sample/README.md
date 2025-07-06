@@ -6,10 +6,13 @@ This sample demonstrates how to use the Kotlin Reladomo wrapper library with Spr
 
 - Basic CRUD operations with bitemporal entities
 - REST API endpoints
-- Spring Boot integration
+- Spring Boot integration with auto-configuration
+- Spring Data-style repositories with query methods
 - Exception handling
-- PostgreSQL database integration
+- Multi-database support (H2, PostgreSQL, MySQL, Oracle)
 - Automatic code generation from Reladomo XML
+- Repository scanning with `@EnableReladomoRepositories`
+- Bitemporal query support
 
 ## Prerequisites
 

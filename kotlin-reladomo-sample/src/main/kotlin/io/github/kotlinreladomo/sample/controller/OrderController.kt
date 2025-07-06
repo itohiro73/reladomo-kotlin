@@ -5,6 +5,7 @@ import io.github.kotlinreladomo.sample.dto.OrderDto
 import io.github.kotlinreladomo.sample.dto.CreateOrderRequest
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
+import java.math.BigDecimal
 
 @RestController
 @RequestMapping("/api/orders")
@@ -55,5 +56,25 @@ class OrderController(
     @GetMapping("/customer/{customerId}")
     fun getOrdersByCustomer(@PathVariable customerId: Long): List<OrderDto> {
         return orderService.findOrdersByCustomer(customerId)
+    }
+    
+    @GetMapping("/status/{status}")
+    fun getOrdersByStatus(@PathVariable status: String): List<OrderDto> {
+        return orderService.findOrdersByStatus(status)
+    }
+    
+    @GetMapping("/high-value")
+    fun getHighValueOrders(@RequestParam minAmount: BigDecimal): List<OrderDto> {
+        return orderService.findHighValueOrders(minAmount)
+    }
+    
+    @GetMapping("/customer/{customerId}/exists")
+    fun checkCustomerHasOrders(@PathVariable customerId: Long): Map<String, Boolean> {
+        return mapOf("exists" to orderService.orderExistsForCustomer(customerId))
+    }
+    
+    @GetMapping("/status/{status}/count")
+    fun countOrdersByStatus(@PathVariable status: String): Map<String, Long> {
+        return mapOf("count" to orderService.countOrdersByStatus(status))
     }
 }

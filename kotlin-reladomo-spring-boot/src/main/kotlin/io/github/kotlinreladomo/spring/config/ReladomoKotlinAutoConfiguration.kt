@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.core.io.ClassPathResource
@@ -37,31 +38,13 @@ class ReladomoKotlinAutoConfiguration {
     @ConditionalOnMissingBean
     fun mithraManager(
         properties: ReladomoKotlinProperties,
-        dataSource: DataSource
+        applicationContext: ApplicationContext
     ): MithraManager {
         logger.info("Initializing MithraManager with configuration from: ${properties.connectionManagerConfigFile}")
         
-        val manager = MithraManagerProvider.getMithraManager()
-        
-        // H2ConnectionManager uses its own connection pool
-        logger.info("H2ConnectionManager will use its own XAConnectionManager")
-        
-        // Load configuration if available
-        try {
-            val configResource = ClassPathResource(properties.connectionManagerConfigFile)
-            if (configResource.exists()) {
-                logger.info("Loading Reladomo configuration from: ${configResource.url}")
-                manager.readConfiguration(configResource.inputStream)
-            } else {
-                logger.warn("Reladomo configuration file not found: ${properties.connectionManagerConfigFile}")
-                // For MVP, we'll just log a warning but continue
-            }
-        } catch (e: Exception) {
-            logger.error("Failed to load Reladomo configuration", e)
-            // For MVP, we'll continue without configuration
-        }
-        
-        return manager
+        // Use our custom configuration reader that handles Spring integration
+        val configReader = MithraConfigurationReader(applicationContext)
+        return configReader.configureMithraManager(properties.connectionManagerConfigFile)
     }
     
     @Bean

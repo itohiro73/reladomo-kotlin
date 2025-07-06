@@ -63,11 +63,19 @@ class ReladomoRepositoryFactory(
             beanFactory.getBean(baseRepositoryName, BaseRepository::class.java)
         } catch (e: Exception) {
             // For testing, create a mock repository if none exists
-            logger.debug("Base repository not found for ${entityClass.simpleName}, creating mock")
+            logger.warn("Base repository not found for ${entityClass.simpleName}, creating mock. " +
+                    "This is expected during testing but not in production. " +
+                    "Ensure Reladomo XML configuration includes ${entityClass.simpleName} class.")
             createMockBaseRepository(entityMetadata)
         }
         
-        val transactionTemplate = beanFactory.getBean(TransactionTemplate::class.java)
+        val transactionTemplate = try {
+            beanFactory.getBean(TransactionTemplate::class.java)
+        } catch (e: Exception) {
+            logger.debug("TransactionTemplate not found, creating default")
+            val txManager = beanFactory.getBean(org.springframework.transaction.PlatformTransactionManager::class.java)
+            TransactionTemplate(txManager)
+        }
         
         // Check if it's a bitemporal entity
         return if (entityMetadata.isBitemporal) {

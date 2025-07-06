@@ -3,6 +3,7 @@ package io.github.kotlinreladomo.spring.config
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -18,9 +19,19 @@ class ReladomoDataSourceConfiguration {
     private val logger = LoggerFactory.getLogger(ReladomoDataSourceConfiguration::class.java)
     
     @Bean
-    fun reladomoDataSources(properties: ReladomoKotlinProperties): ReladomoDataSourceRegistry {
+    fun reladomoDataSources(
+        properties: ReladomoKotlinProperties,
+        defaultDataSource: DataSource?
+    ): ReladomoDataSourceRegistry {
         val registry = ReladomoDataSourceRegistry()
         
+        // Register default Spring datasource if available
+        defaultDataSource?.let {
+            logger.info("Registering default Spring datasource")
+            registry.register("default", it)
+        }
+        
+        // Register configured datasources
         properties.datasources.forEach { (name, config) ->
             logger.info("Configuring datasource: $name")
             val dataSource = createDataSource(name, config)
