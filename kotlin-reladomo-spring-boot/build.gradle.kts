@@ -12,6 +12,7 @@ dependencies {
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter:${property("springBootVersion")}")
     implementation("org.springframework.boot:spring-boot-starter-jdbc:${property("springBootVersion")}")
+    implementation("org.springframework.data:spring-data-commons:3.2.0")
     compileOnly("org.springframework.boot:spring-boot-configuration-processor:${property("springBootVersion")}")
     
     // Project dependencies
@@ -23,6 +24,8 @@ dependencies {
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test:${property("springBootVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit5"))
     testImplementation("org.assertj:assertj-core:3.24.2")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.h2database:h2:2.2.224")

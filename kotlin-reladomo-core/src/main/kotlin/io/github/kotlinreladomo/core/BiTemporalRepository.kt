@@ -9,23 +9,8 @@ import java.time.Instant
  * @param E The entity type, must implement BiTemporalEntity
  * @param ID The primary key type
  */
-interface BiTemporalRepository<E : BiTemporalEntity, ID : Any> {
+interface BiTemporalRepository<E : BiTemporalEntity, ID : Any> : BaseRepository<E, ID> {
     
-    /**
-     * Save a new entity to the database.
-     * 
-     * @param entity The entity to save
-     * @return The saved entity
-     */
-    fun save(entity: E): E
-    
-    /**
-     * Find an entity by its primary key at the current time.
-     * 
-     * @param id The primary key
-     * @return The entity if found, null otherwise
-     */
-    fun findById(id: ID): E?
     
     /**
      * Find an entity by its primary key as of specific business and processing dates.
@@ -38,35 +23,24 @@ interface BiTemporalRepository<E : BiTemporalEntity, ID : Any> {
     fun findByIdAsOf(id: ID, businessDate: Instant, processingDate: Instant): E?
     
     /**
-     * Update an existing entity.
+     * Update an existing entity as of a specific business date.
      * 
      * @param entity The entity with updated values
+     * @param businessDate The business date for the update
      * @return The updated entity
      * @throws EntityNotFoundException if the entity doesn't exist
      */
-    fun update(entity: E): E
+    fun update(entity: E, businessDate: Instant): E
     
     /**
-     * Delete an entity.
-     * 
-     * @param entity The entity to delete
-     */
-    fun delete(entity: E)
-    
-    /**
-     * Delete an entity by its primary key.
+     * Delete an entity by its primary key as of a specific business date.
      * 
      * @param id The primary key of the entity to delete
+     * @param businessDate The business date for the deletion
      * @throws EntityNotFoundException if the entity doesn't exist
      */
-    fun deleteById(id: ID)
+    fun deleteByIdAsOf(id: ID, businessDate: Instant)
     
-    /**
-     * Find all entities at the current time.
-     * 
-     * @return List of all entities
-     */
-    fun findAll(): List<E>
     
     /**
      * Find all entities as of specific business and processing dates.
@@ -76,4 +50,12 @@ interface BiTemporalRepository<E : BiTemporalEntity, ID : Any> {
      * @return List of entities at the specified time
      */
     fun findAllAsOf(businessDate: Instant, processingDate: Instant): List<E>
+    
+    /**
+     * Get the history of an entity.
+     * 
+     * @param id The primary key
+     * @return List of all versions of the entity
+     */
+    fun getHistory(id: ID): List<E>
 }

@@ -3,8 +3,10 @@ package io.github.kotlinreladomo.spring.config
 import com.gs.fw.common.mithra.MithraManager
 import com.gs.fw.common.mithra.MithraManagerProvider
 import io.github.kotlinreladomo.spring.connection.H2ConnectionManager
+import io.github.kotlinreladomo.spring.repository.ReladomoRepositoryFactory
 import io.github.kotlinreladomo.spring.transaction.ReladomoTransactionManager
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.BeanFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -12,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.core.io.ClassPathResource
 import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
@@ -22,6 +25,10 @@ import javax.sql.DataSource
 @AutoConfiguration(after = [DataSourceAutoConfiguration::class])
 @ConditionalOnClass(MithraManager::class)
 @EnableConfigurationProperties(ReladomoKotlinProperties::class)
+@Import(
+    ReladomoCacheConfiguration::class,
+    ReladomoDataSourceConfiguration::class
+)
 class ReladomoKotlinAutoConfiguration {
     
     private val logger = LoggerFactory.getLogger(ReladomoKotlinAutoConfiguration::class.java)
@@ -76,5 +83,18 @@ class ReladomoKotlinAutoConfiguration {
         properties: ReladomoKotlinProperties
     ): ReladomoInitializer {
         return ReladomoInitializer(mithraManager, properties)
+    }
+    
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(
+        prefix = "reladomo.kotlin.repository",
+        name = ["enable-query-methods"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun reladomoRepositoryFactory(beanFactory: BeanFactory): ReladomoRepositoryFactory {
+        logger.info("Creating ReladomoRepositoryFactory")
+        return ReladomoRepositoryFactory(beanFactory)
     }
 }
