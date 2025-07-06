@@ -56,10 +56,10 @@ public class OrderKtRepository {
         ?: throw EntityNotFoundException("Order not found with id: ${entity.orderId}")
 
     // Update fields - Reladomo handles bitemporal chaining
-    existingOrder.setCustomerId(entity.customerId!!)
-    existingOrder.setOrderDate(Timestamp.from(entity.orderDate!!))
-    existingOrder.setAmount(entity.amount!!)
-    existingOrder.setStatus(entity.status!!)
+    existingOrder.setCustomerId(entity.customerId)
+    existingOrder.setOrderDate(Timestamp.from(entity.orderDate))
+    existingOrder.setAmount(entity.amount)
+    existingOrder.setStatus(entity.status)
     entity.description?.let { existingOrder.setDescription(it) }
 
     return OrderKt.fromReladomo(existingOrder)
@@ -77,8 +77,7 @@ public class OrderKtRepository {
   }
 
   public fun findAll(): List<OrderKt> {
-    // For bitemporal queries, use the current time to get active records
-    val currentTime = Timestamp.from(Instant.now())
+    // For bitemporal queries, use equalsEdgePoint to get active records
     val operation = OrderFinder.businessDate().equalsEdgePoint()
         .and(OrderFinder.processingDate().equalsEdgePoint())
 

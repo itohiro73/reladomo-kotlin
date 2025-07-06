@@ -5,7 +5,10 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.github.kotlinreladomo.generator.model.AttributeDefinition
 import io.github.kotlinreladomo.generator.model.MithraObjectDefinition
 import java.io.File
+import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * Generates Kotlin repository classes for Mithra objects.
@@ -36,6 +39,17 @@ class KotlinRepositoryGenerator {
             .addImport("io.github.kotlinreladomo.core", "ReladomoFinder")
             .addImport("io.github.kotlinreladomo.core.exceptions", "EntityNotFoundException")
             .addImport("${definition.packageName}.kotlin", entityName)
+            .apply {
+                // Add imports for Date/Time types if needed
+                if (definition.attributes.any { it.javaType == "Date" }) {
+                    addImport("java.util", "Date")
+                    addImport("java.time", "LocalDate")
+                }
+                if (definition.attributes.any { it.javaType == "Time" }) {
+                    addImport("java.sql", "Time")
+                    addImport("java.time", "LocalTime")
+                }
+            }
             .build()
     }
     
@@ -198,13 +212,24 @@ class KotlinRepositoryGenerator {
                         val setterName = "set${attr.name.capitalize()}"
                         when {
                             attr.nullable -> {
-                                addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                                when (attr.javaType) {
+                                    "Timestamp" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(Timestamp.from(it)) }")
+                                    "Date" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.util.Date.from(it.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())) }")
+                                    "Time" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.sql.Time.valueOf(it)) }")
+                                    else -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                                }
                             }
                             attr.javaType == "Timestamp" -> {
-                                addStatement("existingOrder.$setterName(Timestamp.from(entity.${attr.name}!!))") 
+                                addStatement("existingOrder.$setterName(Timestamp.from(entity.${attr.name}))") 
+                            }
+                            attr.javaType == "Date" -> {
+                                addStatement("existingOrder.$setterName(java.util.Date.from(entity.${attr.name}.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()))")
+                            }
+                            attr.javaType == "Time" -> {
+                                addStatement("existingOrder.$setterName(java.sql.Time.valueOf(entity.${attr.name}))")
                             }
                             else -> {
-                                addStatement("existingOrder.$setterName(entity.${attr.name}!!)")
+                                addStatement("existingOrder.$setterName(entity.${attr.name})")
                             }
                         }
                     }
@@ -226,10 +251,24 @@ class KotlinRepositoryGenerator {
                         val setterName = "set${attr.name.capitalize()}"
                         when {
                             attr.nullable -> {
-                                addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                                when (attr.javaType) {
+                                    "Timestamp" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(Timestamp.from(it)) }")
+                                    "Date" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.util.Date.from(it.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())) }")
+                                    "Time" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.sql.Time.valueOf(it)) }")
+                                    else -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                                }
+                            }
+                            attr.javaType == "Timestamp" -> {
+                                addStatement("existingOrder.$setterName(Timestamp.from(entity.${attr.name}))")
+                            }
+                            attr.javaType == "Date" -> {
+                                addStatement("existingOrder.$setterName(java.util.Date.from(entity.${attr.name}.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()))")
+                            }
+                            attr.javaType == "Time" -> {
+                                addStatement("existingOrder.$setterName(java.sql.Time.valueOf(entity.${attr.name}))")
                             }
                             else -> {
-                                addStatement("existingOrder.$setterName(entity.${attr.name}!!)")
+                                addStatement("existingOrder.$setterName(entity.${attr.name})")
                             }
                         }
                     }
@@ -279,8 +318,7 @@ class KotlinRepositoryGenerator {
     ): FunSpec {
         return FunSpec.builder("findAll")
             .returns(LIST.parameterizedBy(entityType))
-            .addComment("For bitemporal queries, use the current time to get active records")
-            .addStatement("val currentTime = Timestamp.from(Instant.now())")
+            .addComment("For bitemporal queries, use equalsEdgePoint to get active records")
             .addStatement("val operation = %T.businessDate().equalsEdgePoint()", finderType)
             .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
             .addStatement("")
@@ -299,6 +337,11 @@ class KotlinRepositoryGenerator {
             "float" -> FLOAT
             "double" -> DOUBLE
             "String" -> STRING
+            "Date" -> LocalDate::class.asTypeName()
+            "Time" -> LocalTime::class.asTypeName()
+            "Timestamp" -> Instant::class.asTypeName()
+            "BigDecimal" -> BigDecimal::class.asTypeName()
+            "byte[]" -> ByteArray::class.asTypeName()
             else -> ClassName("", attribute.javaType)
         }
     }

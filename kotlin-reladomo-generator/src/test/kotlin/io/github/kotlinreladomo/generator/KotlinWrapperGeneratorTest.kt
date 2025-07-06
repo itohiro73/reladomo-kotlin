@@ -158,7 +158,7 @@ class KotlinWrapperGeneratorTest {
         assertTrue(content.contains("public val floatField: Float"))
         assertTrue(content.contains("public val doubleField: Double"))
         assertTrue(content.contains("public val stringField: String"))
-        assertTrue(content.contains("public val dateField: Date"))
+        assertTrue(content.contains("public val dateField: LocalDate"))
         assertTrue(content.contains("public val timestampField: Instant"))
         assertTrue(content.contains("public val bigDecimalField: BigDecimal"))
         assertTrue(content.contains("public val byteArrayField: ByteArray"))
@@ -166,6 +166,100 @@ class KotlinWrapperGeneratorTest {
         // Verify timestamp conversion
         assertTrue(content.contains("timestampField = obj.timestampField.toInstant()"))
         assertTrue(content.contains("obj.timestampField = Timestamp.from(this.timestampField)"))
+    }
+    
+    @Test
+    fun `test date and time type mappings`(@TempDir tempDir: File) {
+        // Given
+        val definition = MithraObjectDefinition(
+            className = "DateTimeEntity",
+            packageName = "com.example.domain",
+            tableName = "DATE_TIME_ENTITY",
+            attributes = listOf(
+                AttributeDefinition("id", "long", "ID", true, false),
+                AttributeDefinition("dateField", "Date", "DATE_FIELD", false, false),
+                AttributeDefinition("timeField", "Time", "TIME_FIELD", false, false),
+                AttributeDefinition("nullableDateField", "Date", "NULLABLE_DATE_FIELD", false, true),
+                AttributeDefinition("nullableTimeField", "Time", "NULLABLE_TIME_FIELD", false, true),
+                AttributeDefinition("timestampField", "Timestamp", "TIMESTAMP_FIELD", false, false)
+            ),
+            asOfAttributes = emptyList()
+        )
+        
+        // When
+        val generatedFile = generator.generateToFile(definition, tempDir)
+        val content = generatedFile.readText()
+        println("Generated Date/Time entity content:\n$content")
+        
+        // Then - Verify Kotlin type mappings
+        assertTrue(content.contains("public val dateField: LocalDate"), "Should map Date to LocalDate")
+        assertTrue(content.contains("public val timeField: LocalTime"), "Should map Time to LocalTime")
+        assertTrue(content.contains("public val nullableDateField: LocalDate?"), "Should map nullable Date to LocalDate?")
+        assertTrue(content.contains("public val nullableTimeField: LocalTime?"), "Should map nullable Time to LocalTime?")
+        
+        // Verify imports
+        assertTrue(content.contains("import java.time.LocalDate"), "Should import LocalDate")
+        assertTrue(content.contains("import java.time.LocalTime"), "Should import LocalTime")
+        assertTrue(content.contains("import java.util.Date"), "Should import java.util.Date")
+        
+        // Verify fromReladomo conversion - check for essential parts
+        assertTrue(content.contains("dateField = obj.dateField.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()"), 
+            "Should convert Date to LocalDate in fromReladomo")
+        assertTrue(content.contains("timeField = obj.timeField.toLocalTime()"), 
+            "Should convert Time to LocalTime in fromReladomo")
+        assertTrue(content.contains("nullableDateField =") && content.contains("obj.nullableDateField?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toLocalDate()"), 
+            "Should convert nullable Date to LocalDate? in fromReladomo")
+        assertTrue(content.contains("nullableTimeField = obj.nullableTimeField?.toLocalTime()"), 
+            "Should convert nullable Time to LocalTime? in fromReladomo")
+        
+        // Verify toReladomo conversion - check for essential parts while allowing for formatting differences
+        assertTrue(content.contains("obj.dateField =") && content.contains("Date.from(this.dateField.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())"), 
+            "Should convert LocalDate to Date in toReladomo")
+        assertTrue(content.contains("obj.timeField = java.sql.Time.valueOf(this.timeField)"), 
+            "Should convert LocalTime to Time in toReladomo")
+        assertTrue(content.contains("obj.nullableDateField = this.nullableDateField?.let") && content.contains("Date.from(it.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())"), 
+            "Should convert LocalDate? to Date in toReladomo")
+        assertTrue(content.contains("obj.nullableTimeField = this.nullableTimeField?.let { java.sql.Time.valueOf(it) }"), 
+            "Should convert LocalTime? to Time in toReladomo")
+    }
+    
+    @Test
+    fun `test date and time fields in bitemporal entity`(@TempDir tempDir: File) {
+        // Given
+        val definition = MithraObjectDefinition(
+            className = "BiTemporalDateTimeEntity",
+            packageName = "com.example.domain",
+            tableName = "BITEMPORAL_DATE_TIME_ENTITY",
+            attributes = listOf(
+                AttributeDefinition("id", "long", "ID", true, false),
+                AttributeDefinition("effectiveDate", "Date", "EFFECTIVE_DATE", false, false),
+                AttributeDefinition("startTime", "Time", "START_TIME", false, false),
+                AttributeDefinition("endTime", "Time", "END_TIME", false, true),
+                AttributeDefinition("createdAt", "Timestamp", "CREATED_AT", false, false)
+            ),
+            asOfAttributes = listOf(
+                AsOfAttributeDefinition("businessDate", "BUSINESS_FROM", "BUSINESS_THRU"),
+                AsOfAttributeDefinition("processingDate", "PROCESSING_FROM", "PROCESSING_THRU")
+            )
+        )
+        
+        // When
+        val generatedFile = generator.generateToFile(definition, tempDir)
+        val content = generatedFile.readText()
+        println("Generated BiTemporal Date/Time entity content:\n$content")
+        
+        // Then - Verify bitemporal entity with Date/Time fields
+        assertTrue(content.contains(": BiTemporalEntity"), "Should implement BiTemporalEntity")
+        assertTrue(content.contains("public val effectiveDate: LocalDate"), "Should have LocalDate field")
+        assertTrue(content.contains("public val startTime: LocalTime"), "Should have LocalTime field")
+        assertTrue(content.contains("public val endTime: LocalTime?"), "Should have nullable LocalTime field")
+        assertTrue(content.contains("override val businessDate: Instant"), "Should have businessDate")
+        assertTrue(content.contains("override val processingDate: Instant"), "Should have processingDate")
+        
+        // Verify conversion in bitemporal context - check for essential parts
+        assertTrue(content.contains("effectiveDate =") && content.contains("obj.effectiveDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()"))
+        assertTrue(content.contains("startTime = obj.startTime.toLocalTime()"))
+        assertTrue(content.contains("endTime = obj.endTime?.toLocalTime()"))
     }
     
     @Test

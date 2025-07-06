@@ -9,6 +9,8 @@ import java.io.File
 import java.math.BigDecimal
 import java.sql.Timestamp
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 import java.util.Date
 
 /**
@@ -33,6 +35,11 @@ class KotlinWrapperGenerator {
                 }
                 if (definition.attributes.any { it.javaType == "Date" }) {
                     addImport("java.util", "Date")
+                    addImport("java.time", "LocalDate")
+                }
+                if (definition.attributes.any { it.javaType == "Time" }) {
+                    addImport("java.sql", "Time")
+                    addImport("java.time", "LocalTime")
                 }
                 if (definition.isBitemporal) {
                     addImport("io.github.kotlinreladomo.core", "BiTemporalEntity")
@@ -142,6 +149,20 @@ class KotlinWrapperGenerator {
                                 addStatement("obj.${attr.name} = Timestamp.from(this.${fieldName})")
                             }
                         }
+                        attr.javaType == "Date" -> {
+                            if (attr.nullable) {
+                                addStatement("obj.${attr.name} = this.${fieldName}?.let { Date.from(it.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()) }")
+                            } else {
+                                addStatement("obj.${attr.name} = Date.from(this.${fieldName}.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())")
+                            }
+                        }
+                        attr.javaType == "Time" -> {
+                            if (attr.nullable) {
+                                addStatement("obj.${attr.name} = this.${fieldName}?.let { java.sql.Time.valueOf(it) }")
+                            } else {
+                                addStatement("obj.${attr.name} = java.sql.Time.valueOf(this.${fieldName})")
+                            }
+                        }
                         attr.nullable || (attr.isPrimaryKey && attr.javaType == "long") -> {
                             // Handle nullable attributes and potentially nullable primary keys
                             addStatement("this.${fieldName}?.let { obj.${attr.name} = it }")
@@ -176,6 +197,20 @@ class KotlinWrapperGenerator {
                                 "obj.${attr.name}?.toInstant()"
                             } else {
                                 "obj.${attr.name}.toInstant()"
+                            }
+                        }
+                        "Date" -> {
+                            if (attr.nullable) {
+                                "obj.${attr.name}?.toInstant()?.atZone(java.time.ZoneId.systemDefault())?.toLocalDate()"
+                            } else {
+                                "obj.${attr.name}.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()"
+                            }
+                        }
+                        "Time" -> {
+                            if (attr.nullable) {
+                                "obj.${attr.name}?.toLocalTime()"
+                            } else {
+                                "obj.${attr.name}.toLocalTime()"
                             }
                         }
                         else -> "obj.${attr.name}"
@@ -225,7 +260,8 @@ class KotlinWrapperGenerator {
             "float" -> FLOAT
             "double" -> DOUBLE
             "String" -> STRING
-            "Date" -> Date::class.asTypeName()
+            "Date" -> LocalDate::class.asTypeName()
+            "Time" -> LocalTime::class.asTypeName()
             "Timestamp" -> Instant::class.asTypeName()
             "BigDecimal" -> BigDecimal::class.asTypeName()
             "byte[]" -> ByteArray::class.asTypeName()

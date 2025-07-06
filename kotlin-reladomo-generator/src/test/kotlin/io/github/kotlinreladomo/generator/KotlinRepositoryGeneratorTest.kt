@@ -329,6 +329,82 @@ class KotlinRepositoryGeneratorTest {
     }
     
     @Test
+    fun `test repository with date and time fields`(@TempDir tempDir: File) {
+        // Given
+        val definition = MithraObjectDefinition(
+            className = "Schedule",
+            packageName = "com.example.domain",
+            tableName = "SCHEDULE",
+            attributes = listOf(
+                AttributeDefinition("scheduleId", "long", "SCHEDULE_ID", true, false),
+                AttributeDefinition("eventDate", "Date", "EVENT_DATE", false, false),
+                AttributeDefinition("startTime", "Time", "START_TIME", false, false),
+                AttributeDefinition("endTime", "Time", "END_TIME", false, true),
+                AttributeDefinition("createdAt", "Timestamp", "CREATED_AT", false, false)
+            ),
+            asOfAttributes = emptyList()
+        )
+        
+        // When
+        val generatedFile = generator.generateToFile(definition, tempDir)
+        val content = generatedFile.readText()
+        
+        // Then
+        println("Generated Schedule repository content:\n$content")
+        
+        // Verify update method handles Date and Time conversions
+        assertTrue(content.contains("setEventDate(java.util.Date.from(entity.eventDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()))"), 
+            "Should convert LocalDate to Date in update method")
+        assertTrue(content.contains("setStartTime(java.sql.Time.valueOf(entity.startTime))"), 
+            "Should convert LocalTime to Time in update method")
+        assertTrue(content.contains("entity.endTime?.let { existingOrder.setEndTime(java.sql.Time.valueOf(it)) }"), 
+            "Should handle nullable Time conversion in update method")
+        
+        // Verify imports
+        assertTrue(content.contains("import java.time.LocalDate") || content.contains("java.time.LocalDate"), 
+            "Should have access to LocalDate")
+        assertTrue(content.contains("import java.time.LocalTime") || content.contains("java.time.LocalTime"), 
+            "Should have access to LocalTime")
+    }
+    
+    @Test
+    fun `test bitemporal repository with date and time fields`(@TempDir tempDir: File) {
+        // Given
+        val definition = MithraObjectDefinition(
+            className = "Meeting",
+            packageName = "com.example.domain",
+            tableName = "MEETING",
+            attributes = listOf(
+                AttributeDefinition("meetingId", "long", "MEETING_ID", true, false),
+                AttributeDefinition("meetingDate", "Date", "MEETING_DATE", false, false),
+                AttributeDefinition("startTime", "Time", "START_TIME", false, false),
+                AttributeDefinition("duration", "int", "DURATION", false, false)
+            ),
+            asOfAttributes = listOf(
+                AsOfAttributeDefinition("businessDate", "BUSINESS_FROM", "BUSINESS_THRU"),
+                AsOfAttributeDefinition("processingDate", "PROCESSING_FROM", "PROCESSING_THRU")
+            )
+        )
+        
+        // When
+        val generatedFile = generator.generateToFile(definition, tempDir)
+        val content = generatedFile.readText()
+        
+        // Then
+        println("Generated Meeting repository content:\n$content")
+        
+        // Verify update method for bitemporal entity handles Date and Time conversions
+        assertTrue(content.contains("setMeetingDate(java.util.Date.from(entity.meetingDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()))"), 
+            "Should convert LocalDate to Date in bitemporal update method")
+        assertTrue(content.contains("setStartTime(java.sql.Time.valueOf(entity.startTime))"), 
+            "Should convert LocalTime to Time in bitemporal update method")
+        
+        // Verify it's a bitemporal repository
+        assertTrue(content.contains("public fun findByIdAsOf("))
+        assertTrue(content.contains("public fun update(entity: MeetingKt, businessDate: Instant = Instant.now()): MeetingKt"))
+    }
+    
+    @Test
     fun `test imports for bitemporal repository`(@TempDir tempDir: File) {
         // Given
         val definition = MithraObjectDefinition(

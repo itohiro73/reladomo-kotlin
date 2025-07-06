@@ -26,7 +26,7 @@ kotlin-reladomo/
 
 ## Development Commands
 
-### Build Commands (Once Implemented)
+### Build Commands
 
 **IMPORTANT**: Always check your current directory with `pwd` before running gradle commands. Gradle commands should be run from the project root directory `/data/data/com.termux/files/home/development/kotlin-reladomo/`.
 
@@ -49,10 +49,38 @@ cd /data/data/com.termux/files/home/development/kotlin-reladomo/
 ./gradlew test
 
 # Run specific module tests
-./gradlew :kotlin-reladomo-core:test
+./gradlew :kotlin-reladomo-generator:test
+./gradlew :kotlin-reladomo-sample:test
 
 # Clean build
 ./gradlew clean build
+```
+
+### Testing the Sample Application
+
+```bash
+# Run the sample application
+./gradlew :kotlin-reladomo-sample:bootRun
+
+# Test CRUD operations
+# GET all orders
+curl -s http://localhost:8080/api/orders | python3 -m json.tool
+
+# CREATE a new order
+curl -s -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": 300, "amount": 2500.00, "status": "PENDING", "description": "New test order"}' | python3 -m json.tool
+
+# UPDATE an order (replace {id} with actual order ID)
+curl -s -X PUT http://localhost:8080/api/orders/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": 300, "amount": 3000.00, "status": "COMPLETED", "description": "Updated test order"}' | python3 -m json.tool
+
+# DELETE an order (replace {id} with actual order ID)
+curl -s -X DELETE http://localhost:8080/api/orders/{id}
+
+# GET specific order
+curl -s http://localhost:8080/api/orders/{id} | python3 -m json.tool
 ```
 
 ### Code Generation Configuration
