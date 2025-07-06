@@ -9,6 +9,7 @@ import java.io.File
 import java.math.BigDecimal
 import java.sql.Timestamp
 import java.time.Instant
+import java.util.Date
 
 /**
  * Generates Kotlin wrapper classes from Mithra object definitions.
@@ -29,6 +30,9 @@ class KotlinWrapperGenerator {
             .apply {
                 if (definition.attributes.any { it.javaType == "BigDecimal" }) {
                     addImport("java.math", "BigDecimal")
+                }
+                if (definition.attributes.any { it.javaType == "Date" }) {
+                    addImport("java.util", "Date")
                 }
                 if (definition.isBitemporal) {
                     addImport("io.github.kotlinreladomo.core", "BiTemporalEntity")
@@ -66,12 +70,13 @@ class KotlinWrapperGenerator {
         // Add regular attributes
         definition.attributes.forEach { attr ->
             val propertyType = mapToKotlinType(attr)
-            val property = PropertySpec.builder(attr.name, propertyType)
-                .initializer(attr.name)
+            val fieldName = toCamelCase(attr.name)
+            val property = PropertySpec.builder(fieldName, propertyType)
+                .initializer(fieldName)
                 .build()
             
             builder.addProperty(property)
-            constructorBuilder.addParameter(attr.name, propertyType)
+            constructorBuilder.addParameter(fieldName, propertyType)
         }
         
         // Add bitemporal properties if needed
@@ -128,19 +133,20 @@ class KotlinWrapperGenerator {
                 
                 // Set regular attributes
                 definition.attributes.forEach { attr ->
+                    val fieldName = toCamelCase(attr.name)
                     when {
                         attr.javaType == "Timestamp" -> {
                             if (attr.nullable) {
-                                addStatement("obj.${attr.name} = this.${attr.name}?.let { Timestamp.from(it) }")
+                                addStatement("obj.${attr.name} = this.${fieldName}?.let { Timestamp.from(it) }")
                             } else {
-                                addStatement("obj.${attr.name} = Timestamp.from(this.${attr.name})")
+                                addStatement("obj.${attr.name} = Timestamp.from(this.${fieldName})")
                             }
                         }
                         attr.nullable || (attr.isPrimaryKey && attr.javaType == "long") -> {
                             // Handle nullable attributes and potentially nullable primary keys
-                            addStatement("this.${attr.name}?.let { obj.${attr.name} = it }")
+                            addStatement("this.${fieldName}?.let { obj.${attr.name} = it }")
                         }
-                        else -> addStatement("obj.${attr.name} = this.${attr.name}")
+                        else -> addStatement("obj.${attr.name} = this.${fieldName}")
                     }
                 }
             }
@@ -175,7 +181,8 @@ class KotlinWrapperGenerator {
                         else -> "obj.${attr.name}"
                     }
                     
-                    add("${attr.name} = $conversion")
+                    val fieldName = toCamelCase(attr.name)
+                    add("${fieldName} = $conversion")
                     
                     // Add comma if not last attribute or if bitemporal
                     if (index < definition.attributes.size - 1 || definition.isBitemporal) {
@@ -196,6 +203,18 @@ class KotlinWrapperGenerator {
             .build()
     }
     
+    private fun toCamelCase(name: String): String {
+        // If the name contains underscores, convert from snake_case
+        if (name.contains('_')) {
+            return name.split('_').mapIndexed { index, part ->
+                if (index == 0) part.lowercase()
+                else part.lowercase().replaceFirstChar { it.uppercase() }
+            }.joinToString("")
+        }
+        // Otherwise, assume it's already in camelCase and return as-is
+        return name
+    }
+    
     private fun mapToKotlinType(attribute: AttributeDefinition): TypeName {
         val baseType = when (attribute.javaType) {
             "boolean" -> BOOLEAN
@@ -206,11 +225,13 @@ class KotlinWrapperGenerator {
             "float" -> FLOAT
             "double" -> DOUBLE
             "String" -> STRING
-            "Date", "Timestamp" -> Instant::class.asTypeName()
+            "Date" -> Date::class.asTypeName()
+            "Timestamp" -> Instant::class.asTypeName()
             "BigDecimal" -> BigDecimal::class.asTypeName()
+            "byte[]" -> ByteArray::class.asTypeName()
             else -> ClassName("", attribute.javaType)
         }
         
-        return if (attribute.nullable) baseType.copy(nullable = true) else baseType
+        return if (attribute.nullable || attribute.isPrimaryKey) baseType.copy(nullable = true) else baseType
     }
 }

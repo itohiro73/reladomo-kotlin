@@ -18,7 +18,7 @@ class KotlinRepositoryGenerator {
     fun generate(definition: MithraObjectDefinition): FileSpec {
         val entityName = "${definition.className}Kt"
         val repositoryName = "${entityName}Repository"
-        val packageName = "${definition.packageName}.kotlin.repository"
+        val packageName = "${definition.packageName}.kotlin"
         
         return FileSpec.builder(packageName, repositoryName)
             .addType(generateRepositoryClass(definition, entityName, repositoryName))
