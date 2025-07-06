@@ -2,6 +2,7 @@ package io.github.kotlinreladomo.generator.cli
 
 import io.github.kotlinreladomo.generator.KotlinWrapperGenerator
 import io.github.kotlinreladomo.generator.KotlinRepositoryGenerator
+import io.github.kotlinreladomo.generator.QueryDslGenerator
 import io.github.kotlinreladomo.generator.parser.ReladomoXmlParser
 import com.gs.fw.common.mithra.generator.MithraGenerator
 import java.io.File
@@ -59,6 +60,7 @@ object GeneratorCli {
         val parser = ReladomoXmlParser()
         val generator = KotlinWrapperGenerator()
         val repoGenerator = KotlinRepositoryGenerator()
+        val dslGenerator = QueryDslGenerator()
         
         // Generate code for each XML file (except MithraClassList.xml)
         xmlDir.listFiles { file -> 
@@ -78,6 +80,10 @@ object GeneratorCli {
                 // Generate repository
                 val repoFile = repoGenerator.generateToFile(definition, kotlinOutputDir)
                 println("  Generated repository: ${repoFile.absolutePath}")
+                
+                // Generate Query DSL extensions
+                val dslFile = dslGenerator.generateToFile(definition, kotlinOutputDir)
+                println("  Generated Query DSL: ${dslFile.absolutePath}")
                 
             } catch (e: Exception) {
                 println("  Error processing ${xmlFile.name}: ${e.message}")

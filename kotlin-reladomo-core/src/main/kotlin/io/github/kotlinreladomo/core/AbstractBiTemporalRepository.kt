@@ -3,6 +3,7 @@ package io.github.kotlinreladomo.core
 import com.gs.fw.common.mithra.finder.Operation
 import com.gs.fw.common.mithra.attribute.TimestampAttribute
 import io.github.kotlinreladomo.core.exceptions.EntityNotFoundException
+import io.github.kotlinreladomo.query.QueryContext
 import java.sql.Timestamp
 import java.time.Instant
 
@@ -126,5 +127,86 @@ abstract class AbstractBiTemporalRepository<E : BiTemporalEntity, ID : Any, R : 
     protected fun findOne(operation: Operation): E? {
         val result = getFinder().findOne(operation)
         return result?.let { toEntity(it) }
+    }
+    
+    /**
+     * Find entities using DSL query builder.
+     * 
+     * Example:
+     * ```
+     * repository.find {
+     *     customerId eq 100
+     *     status `in` listOf("PENDING", "PROCESSING")
+     *     amount greaterThan 100.00
+     * }
+     * ```
+     */
+    open fun find(query: QueryContext.() -> Unit): List<E> {
+        val context = QueryContext()
+        context.query()
+        val operation = context.build()
+        return findMany(operation)
+    }
+    
+    /**
+     * Find a single entity using DSL query builder.
+     * Returns null if no entity is found.
+     * 
+     * Example:
+     * ```
+     * repository.findOne {
+     *     orderId eq 123
+     * }
+     * ```
+     */
+    open fun findOne(query: QueryContext.() -> Unit): E? {
+        val context = QueryContext()
+        context.query()
+        val operation = context.build()
+        return findOne(operation)
+    }
+    
+    /**
+     * Find entities as of specific dates using DSL query builder.
+     * 
+     * Example:
+     * ```
+     * repository.findAsOf(businessDate, processingDate) {
+     *     customerId eq 100
+     *     status eq "COMPLETED"
+     * }
+     * ```
+     */
+    open fun findAsOf(
+        businessDate: Instant,
+        processingDate: Instant,
+        query: QueryContext.() -> Unit
+    ): List<E> {
+        val context = QueryContext()
+        context.query()
+        
+        val baseOperation = context.build()
+        val temporalOperation = baseOperation
+            .and(getBusinessDateAttribute().eq(Timestamp.from(businessDate)))
+            .and(getProcessingDateAttribute().eq(Timestamp.from(processingDate)))
+        
+        return findMany(temporalOperation)
+    }
+    
+    /**
+     * Count entities matching the query.
+     */
+    open fun count(query: QueryContext.() -> Unit): Int {
+        val context = QueryContext()
+        context.query()
+        val operation = context.build()
+        return getFinder().findMany(operation).size
+    }
+    
+    /**
+     * Check if any entity exists matching the query.
+     */
+    open fun exists(query: QueryContext.() -> Unit): Boolean {
+        return findOne(query) != null
     }
 }

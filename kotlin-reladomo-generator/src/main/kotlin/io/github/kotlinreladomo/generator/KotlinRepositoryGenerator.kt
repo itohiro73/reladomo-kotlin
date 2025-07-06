@@ -39,6 +39,9 @@ class KotlinRepositoryGenerator {
             .addImport("io.github.kotlinreladomo.core", "ReladomoFinder")
             .addImport("io.github.kotlinreladomo.core.exceptions", "EntityNotFoundException")
             .addImport("${definition.packageName}.kotlin", entityName)
+            .addImport("io.github.kotlinreladomo.query", "QueryContext")
+            .addImport("io.github.kotlinreladomo.query", "query")
+            .addImport("${definition.packageName}.kotlin.query", "${definition.className}QueryDsl")
             .apply {
                 // Add imports for Date/Time types if needed
                 if (definition.attributes.any { it.javaType == "Date" }) {
@@ -87,6 +90,10 @@ class KotlinRepositoryGenerator {
             .addFunction(generateDeleteByIdMethod(definition, finderType, primaryKeyType))
             .addFunction(generateFindAllMethod(definition, entityType, finderType))
             .addFunction(generateFindByCustomerIdMethod(definition, entityType, finderType))
+            .addFunction(generateFindWithDslMethod(definition, entityType, finderType))
+            .addFunction(generateFindOneWithDslMethod(definition, entityType, finderType))
+            .addFunction(generateCountWithDslMethod(definition, finderType))
+            .addFunction(generateExistsWithDslMethod(definition, finderType))
             .build()
     }
     
@@ -370,6 +377,83 @@ class KotlinRepositoryGenerator {
             .addStatement("")
             .addStatement("val orders = %T.findMany(operation)", finderType)
             .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+    
+    private fun generateFindWithDslMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("find")
+            .addParameter(
+                ParameterSpec.builder("query", LambdaTypeName.get(
+                    receiver = ClassName("io.github.kotlinreladomo.query", "QueryContext"),
+                    returnType = UNIT
+                )).build()
+            )
+            .returns(LIST.parameterizedBy(entityType))
+            .addComment("Find entities using Query DSL")
+            .addComment("Use ${definition.className}QueryDsl extensions to access attribute properties")
+            .addStatement("val operation = io.github.kotlinreladomo.query.query(query)")
+            .addStatement("val results = %T.findMany(operation)", finderType)
+            .addStatement("return results.map { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+    
+    private fun generateFindOneWithDslMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("findOne")
+            .addParameter(
+                ParameterSpec.builder("query", LambdaTypeName.get(
+                    receiver = ClassName("io.github.kotlinreladomo.query", "QueryContext"),
+                    returnType = UNIT
+                )).build()
+            )
+            .returns(entityType.copy(nullable = true))
+            .addComment("Find a single entity using Query DSL")
+            .addStatement("val operation = io.github.kotlinreladomo.query.query(query)")
+            .addStatement("val result = %T.findOne(operation)", finderType)
+            .addStatement("return result?.let { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+    
+    private fun generateCountWithDslMethod(
+        definition: MithraObjectDefinition,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("count")
+            .addParameter(
+                ParameterSpec.builder("query", LambdaTypeName.get(
+                    receiver = ClassName("io.github.kotlinreladomo.query", "QueryContext"),
+                    returnType = UNIT
+                )).build()
+            )
+            .returns(INT)
+            .addComment("Count entities matching Query DSL criteria")
+            .addStatement("val operation = io.github.kotlinreladomo.query.query(query)")
+            .addStatement("return %T.findMany(operation).size", finderType)
+            .build()
+    }
+    
+    private fun generateExistsWithDslMethod(
+        definition: MithraObjectDefinition,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("exists")
+            .addParameter(
+                ParameterSpec.builder("query", LambdaTypeName.get(
+                    receiver = ClassName("io.github.kotlinreladomo.query", "QueryContext"),
+                    returnType = UNIT
+                )).build()
+            )
+            .returns(BOOLEAN)
+            .addComment("Check if any entity exists matching Query DSL criteria")
+            .addStatement("val operation = io.github.kotlinreladomo.query.query(query)")
+            .addStatement("return %T.findOne(operation) != null", finderType)
             .build()
     }
 }

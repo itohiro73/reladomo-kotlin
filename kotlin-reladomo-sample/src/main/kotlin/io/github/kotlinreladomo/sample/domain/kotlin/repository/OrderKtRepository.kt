@@ -7,12 +7,18 @@ import io.github.kotlinreladomo.core.AbstractBiTemporalRepository
 import io.github.kotlinreladomo.core.ReladomoFinder
 import io.github.kotlinreladomo.core.ReladomoObject
 import io.github.kotlinreladomo.core.exceptions.EntityNotFoundException
+import io.github.kotlinreladomo.query.QueryContext
+import io.github.kotlinreladomo.query.query
 import io.github.kotlinreladomo.sample.domain.Order
 import io.github.kotlinreladomo.sample.domain.OrderFinder
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
+import io.github.kotlinreladomo.sample.domain.kotlin.query.OrderQueryDsl
 import java.sql.Timestamp
 import java.time.Instant
+import kotlin.Boolean
+import kotlin.Int
 import kotlin.Long
+import kotlin.Unit
 import kotlin.collections.List
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.`annotation`.Transactional
@@ -92,5 +98,32 @@ public class OrderKtRepository {
 
     val orders = OrderFinder.findMany(operation)
     return orders.map { OrderKt.fromReladomo(it) }
+  }
+
+  public fun find(query: QueryContext.() -> Unit): List<OrderKt> {
+    // Find entities using Query DSL
+    // Use OrderQueryDsl extensions to access attribute properties
+    val operation = io.github.kotlinreladomo.query.query(query)
+    val results = OrderFinder.findMany(operation)
+    return results.map { OrderKt.fromReladomo(it) }
+  }
+
+  public fun findOne(query: QueryContext.() -> Unit): OrderKt? {
+    // Find a single entity using Query DSL
+    val operation = io.github.kotlinreladomo.query.query(query)
+    val result = OrderFinder.findOne(operation)
+    return result?.let { OrderKt.fromReladomo(it) }
+  }
+
+  public fun count(query: QueryContext.() -> Unit): Int {
+    // Count entities matching Query DSL criteria
+    val operation = io.github.kotlinreladomo.query.query(query)
+    return OrderFinder.findMany(operation).size
+  }
+
+  public fun exists(query: QueryContext.() -> Unit): Boolean {
+    // Check if any entity exists matching Query DSL criteria
+    val operation = io.github.kotlinreladomo.query.query(query)
+    return OrderFinder.findOne(operation) != null
   }
 }
