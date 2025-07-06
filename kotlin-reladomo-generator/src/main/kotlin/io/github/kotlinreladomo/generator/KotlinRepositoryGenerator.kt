@@ -29,6 +29,8 @@ class KotlinRepositoryGenerator {
             .addImport("com.gs.fw.common.mithra.attribute", "TimestampAttribute")
             .addImport("java.time", "Instant")
             .addImport("java.sql", "Timestamp")
+            .addImport("com.gs.fw.common.mithra", "MithraManagerProvider")
+            .addImport("org.springframework.transaction.annotation", "Transactional")
             .addImport("io.github.kotlinreladomo.core", "AbstractBiTemporalRepository")
             .addImport("io.github.kotlinreladomo.core", "ReladomoObject")
             .addImport("io.github.kotlinreladomo.core", "ReladomoFinder")
@@ -63,6 +65,7 @@ class KotlinRepositoryGenerator {
         
         return TypeSpec.classBuilder(repositoryName)
             .addAnnotation(ClassName("org.springframework.stereotype", "Repository"))
+            .addAnnotation(ClassName("org.springframework.transaction.annotation", "Transactional"))
             .addFunction(generateSaveMethod(definition, entityType, reladomoType))
             .addFunction(generateFindByIdMethod(definition, entityType, finderType, primaryKeyType))
             .addFunction(generateFindByIdAsOfMethod(definition, entityType, finderType, primaryKeyType))
@@ -110,13 +113,27 @@ class KotlinRepositoryGenerator {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
             
-        return FunSpec.builder("findById")
-            .addParameter("id", primaryKeyType)
-            .returns(entityType.copy(nullable = true))
-            .addStatement("val now = Instant.now()")
-            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(now), Timestamp.from(now))", finderType)
-            .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
-            .build()
+        return if (definition.isBitemporal) {
+            // For bitemporal objects, use edge point operations
+            FunSpec.builder("findById")
+                .addParameter("id", primaryKeyType)
+                .returns(entityType.copy(nullable = true))
+                .addComment("For bitemporal objects, find the current active record")
+                .addComment("Use infinity processing date to get the latest version")
+                .addStatement("val now = Timestamp.from(Instant.now())")
+                .addStatement("val infinityTs = Timestamp.valueOf(\"9999-12-01 23:59:00.0\")")
+                .addStatement("val order = %T.findByPrimaryKey(id, now, infinityTs)", finderType)
+                .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+                .build()
+        } else {
+            // For non-temporal objects, use simple find
+            FunSpec.builder("findById")
+                .addParameter("id", primaryKeyType)
+                .returns(entityType.copy(nullable = true))
+                .addStatement("val order = %T.findByPrimaryKey(id)", finderType)
+                .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+                .build()
+        }
     }
     
     private fun generateFindByIdAsOfMethod(
@@ -125,14 +142,28 @@ class KotlinRepositoryGenerator {
         finderType: ClassName,
         primaryKeyType: TypeName
     ): FunSpec {
-        return FunSpec.builder("findByIdAsOf")
-            .addParameter("id", primaryKeyType)
-            .addParameter("businessDate", Instant::class)
-            .addParameter("processingDate", Instant::class)
-            .returns(entityType.copy(nullable = true))
-            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(businessDate), Timestamp.from(processingDate))", finderType)
-            .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
-            .build()
+        return if (definition.isBitemporal) {
+            FunSpec.builder("findByIdAsOf")
+                .addParameter("id", primaryKeyType)
+                .addParameter("businessDate", Instant::class)
+                .addParameter("processingDate", Instant::class)
+                .returns(entityType.copy(nullable = true))
+                .addComment("Find by primary key as of specific business and processing dates")
+                .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(businessDate), Timestamp.from(processingDate))", finderType)
+                .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+                .build()
+        } else {
+            // For non-temporal objects, ignore the dates
+            FunSpec.builder("findByIdAsOf")
+                .addParameter("id", primaryKeyType)
+                .addParameter("businessDate", Instant::class)
+                .addParameter("processingDate", Instant::class)
+                .returns(entityType.copy(nullable = true))
+                .addComment("For non-temporal objects, dates are ignored")
+                .addStatement("val order = %T.findByPrimaryKey(id)", finderType)
+                .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+                .build()
+        }
     }
     
     private fun generateUpdateMethod(
@@ -144,19 +175,69 @@ class KotlinRepositoryGenerator {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
             
-        return FunSpec.builder("update")
-            .addParameter("entity", entityType)
-            .returns(entityType)
-            .addStatement("val now = Instant.now()")
-            .addStatement("val existingOrder = %T.findByPrimaryKey(entity.${primaryKey.name}!!, Timestamp.from(now), Timestamp.from(now))", finderType)
-            .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \${entity.${primaryKey.name}}\")")
-            .addStatement("")
-            .addComment("For bitemporal update, terminate the old and insert new")
-            .addStatement("existingOrder.terminate()")
-            .addStatement("val newOrder = entity.toReladomo()")
-            .addStatement("newOrder.insert()")
-            .addStatement("return %T.fromReladomo(newOrder)", entityType)
-            .build()
+        return if (definition.isBitemporal) {
+            // For bitemporal objects, fetch as of specific business date and update
+            FunSpec.builder("update")
+                .addParameter("entity", entityType)
+                .addParameter(ParameterSpec.builder("businessDate", Instant::class)
+                    .defaultValue("Instant.now()")
+                    .build())
+                .returns(entityType)
+                .addComment("For bitemporal objects, fetch as of the business date and update")
+                .addComment("Processing date should be infinity to get the current active record")
+                .addStatement("val businessDateTs = Timestamp.from(businessDate)")
+                .addStatement("val infinityTs = Timestamp.valueOf(\"9999-12-01 23:59:00.0\")")
+                .addStatement("")
+                .addStatement("val existingOrder = %T.findByPrimaryKey(entity.${primaryKey.name}!!, businessDateTs, infinityTs)", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \${entity.${primaryKey.name}}\")")
+                .addStatement("")
+                .addComment("Update fields - Reladomo handles bitemporal chaining")
+                .apply {
+                    // Generate setters for all non-temporal attributes
+                    definition.attributes.filter { !it.isPrimaryKey && it.name !in listOf("businessDate", "processingDate") }.forEach { attr ->
+                        val setterName = "set${attr.name.capitalize()}"
+                        when {
+                            attr.nullable -> {
+                                addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                            }
+                            attr.javaType == "Timestamp" -> {
+                                addStatement("existingOrder.$setterName(Timestamp.from(entity.${attr.name}!!))") 
+                            }
+                            else -> {
+                                addStatement("existingOrder.$setterName(entity.${attr.name}!!)")
+                            }
+                        }
+                    }
+                }
+                .addStatement("")
+                .addStatement("return %T.fromReladomo(existingOrder)", entityType)
+                .build()
+        } else {
+            // For non-temporal objects, simple update
+            FunSpec.builder("update")
+                .addParameter("entity", entityType)
+                .returns(entityType)
+                .addStatement("val existingOrder = %T.findByPrimaryKey(entity.${primaryKey.name}!!)", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \${entity.${primaryKey.name}}\")")
+                .addStatement("")
+                .addComment("Update attributes")
+                .apply {
+                    definition.attributes.filter { !it.isPrimaryKey }.forEach { attr ->
+                        val setterName = "set${attr.name.capitalize()}"
+                        when {
+                            attr.nullable -> {
+                                addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                            }
+                            else -> {
+                                addStatement("existingOrder.$setterName(entity.${attr.name}!!)")
+                            }
+                        }
+                    }
+                }
+                .addStatement("")
+                .addStatement("return %T.fromReladomo(existingOrder)", entityType)
+                .build()
+        }
     }
     
     private fun generateDeleteByIdMethod(
@@ -164,13 +245,31 @@ class KotlinRepositoryGenerator {
         finderType: ClassName,
         primaryKeyType: TypeName
     ): FunSpec {
-        return FunSpec.builder("deleteById")
-            .addParameter("id", primaryKeyType)
-            .addStatement("val now = Instant.now()")
-            .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(now), Timestamp.from(now))", finderType)
-            .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \$id\")")
-            .addStatement("order.terminate()")
-            .build()
+        return if (definition.isBitemporal) {
+            // For bitemporal objects, fetch as of specific business date and terminate
+            FunSpec.builder("deleteById")
+                .addParameter("id", primaryKeyType)
+                .addParameter(ParameterSpec.builder("businessDate", Instant::class)
+                    .defaultValue("Instant.now()")
+                    .build())
+                .addComment("For bitemporal objects, use findByPrimaryKey with specific business date")
+                .addComment("Processing date should be infinity to get the current active record")
+                .addStatement("val businessDateTs = Timestamp.from(businessDate)")
+                .addStatement("val infinityTs = Timestamp.valueOf(\"9999-12-01 23:59:00.0\")")
+                .addStatement("")
+                .addStatement("val order = %T.findByPrimaryKey(id, businessDateTs, infinityTs)", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \$id\")")
+                .addStatement("order.terminate()")
+                .build()
+        } else {
+            // For non-temporal objects, simple delete
+            FunSpec.builder("deleteById")
+                .addParameter("id", primaryKeyType)
+                .addStatement("val order = %T.findByPrimaryKey(id)", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \$id\")")
+                .addStatement("order.delete()")
+                .build()
+        }
     }
     
     private fun generateFindAllMethod(

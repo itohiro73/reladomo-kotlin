@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.kotlinreladomo.core.TestConnectionManager">
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.test.domain.Order" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>
