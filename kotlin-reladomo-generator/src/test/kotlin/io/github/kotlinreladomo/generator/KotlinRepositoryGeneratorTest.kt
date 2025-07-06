@@ -320,7 +320,7 @@ class KotlinRepositoryGeneratorTest {
         
         // Then
         // Verify file path
-        assertEquals("com/example/domain/kotlin/CustomerOrderKtRepository.kt", 
+        assertEquals("com/example/domain/kotlin/repository/CustomerOrderKtRepository.kt", 
             generatedFile.relativeTo(tempDir).path.replace(File.separatorChar, '/'))
         
         // Verify class name
