@@ -2,7 +2,7 @@ package io.github.kotlinreladomo.spring.config
 
 import com.gs.fw.common.mithra.MithraManager
 import com.gs.fw.common.mithra.MithraManagerProvider
-import io.github.kotlinreladomo.spring.connection.SpringConnectionManager
+import io.github.kotlinreladomo.spring.connection.H2ConnectionManager
 import io.github.kotlinreladomo.spring.transaction.ReladomoTransactionManager
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -36,9 +36,8 @@ class ReladomoKotlinAutoConfiguration {
         
         val manager = MithraManagerProvider.getMithraManager()
         
-        // Set the DataSource on SpringConnectionManager
-        SpringConnectionManager.setDataSource(dataSource)
-        logger.info("DataSource configured for SpringConnectionManager")
+        // H2ConnectionManager uses its own connection pool
+        logger.info("H2ConnectionManager will use its own XAConnectionManager")
         
         // Load configuration if available
         try {

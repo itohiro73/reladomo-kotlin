@@ -37,6 +37,8 @@ class OrderService(
     
     fun createOrder(request: CreateOrderRequest): OrderDto {
         val now = Instant.now()
+        // For bitemporal objects, processing date should be set to infinity for new records
+        val infinityDate = Instant.parse("9999-12-01T23:59:00Z")
         val order = OrderKt(
             orderId = idGenerator.incrementAndGet(),
             customerId = request.customerId,
@@ -45,7 +47,7 @@ class OrderService(
             status = request.status,
             description = request.description,
             businessDate = now,
-            processingDate = now
+            processingDate = infinityDate
         )
         
         val savedOrder = orderRepository.save(order)
@@ -56,13 +58,14 @@ class OrderService(
         val existingOrder = orderRepository.findById(id)
             ?: throw EntityNotFoundException("Order not found with id: $id")
         
+        val infinityDate = Instant.parse("9999-12-01T23:59:00Z")
         val updatedOrder = existingOrder.copy(
             customerId = request.customerId,
             amount = request.amount,
             status = request.status,
             description = request.description,
             businessDate = Instant.now(),
-            processingDate = Instant.now()
+            processingDate = infinityDate
         )
         
         val savedOrder = orderRepository.update(updatedOrder)
