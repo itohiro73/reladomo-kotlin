@@ -14,16 +14,16 @@ import java.time.LocalTime
  * Algebraic Data Type representing all possible Reladomo types
  */
 sealed class ReladomoType {
-    abstract fun toKotlinType(nullable: Boolean = false): TypeName
+    abstract fun toKotlinType(nullable: kotlin.Boolean = false): TypeName
     abstract val xmlName: String
     
     data class Primitive(val type: PrimitiveType) : ReladomoType() {
-        override fun toKotlinType(nullable: Boolean): TypeName = type.toKotlinType(nullable)
+        override fun toKotlinType(nullable: kotlin.Boolean): TypeName = type.toKotlinType(nullable)
         override val xmlName: String = type.xmlName
     }
     
     data class Object(val className: String, val packageName: String) : ReladomoType() {
-        override fun toKotlinType(nullable: Boolean): TypeName {
+        override fun toKotlinType(nullable: kotlin.Boolean): TypeName {
             val baseType = ClassName(packageName, className)
             return if (nullable) baseType.copy(nullable = true) else baseType
         }
@@ -31,7 +31,7 @@ sealed class ReladomoType {
     }
     
     data class List(val elementType: ReladomoType) : ReladomoType() {
-        override fun toKotlinType(nullable: Boolean): TypeName {
+        override fun toKotlinType(nullable: kotlin.Boolean): TypeName {
             val listType = kotlin.collections.List::class.asClassName()
                 .parameterizedBy(elementType.toKotlinType(false))
             return if (nullable) listType.copy(nullable = true) else listType
@@ -44,12 +44,12 @@ sealed class ReladomoType {
  * Sealed class representing all primitive types supported by Reladomo
  */
 sealed class PrimitiveType {
-    abstract fun toKotlinType(nullable: Boolean = false): TypeName
+    abstract fun toKotlinType(nullable: kotlin.Boolean = false): TypeName
     abstract val xmlName: kotlin.String
     abstract val defaultValue: kotlin.String
     
     object Long : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Long::class.asTypeName().copy(nullable = true) 
             else kotlin.Long::class.asTypeName()
         override val xmlName = "long"
@@ -57,7 +57,7 @@ sealed class PrimitiveType {
     }
     
     object Int : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Int::class.asTypeName().copy(nullable = true)
             else kotlin.Int::class.asTypeName()
         override val xmlName = "int"
@@ -65,7 +65,7 @@ sealed class PrimitiveType {
     }
     
     object Double : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Double::class.asTypeName().copy(nullable = true)
             else kotlin.Double::class.asTypeName()
         override val xmlName = "double"
@@ -73,7 +73,7 @@ sealed class PrimitiveType {
     }
     
     object Float : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Float::class.asTypeName().copy(nullable = true)
             else kotlin.Float::class.asTypeName()
         override val xmlName = "float"
@@ -81,7 +81,7 @@ sealed class PrimitiveType {
     }
     
     object BigDecimal : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) java.math.BigDecimal::class.asTypeName().copy(nullable = true)
             else java.math.BigDecimal::class.asTypeName()
         override val xmlName = "BigDecimal"
@@ -89,7 +89,7 @@ sealed class PrimitiveType {
     }
     
     object String : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.String::class.asTypeName().copy(nullable = true)
             else kotlin.String::class.asTypeName()
         override val xmlName = "String"
@@ -97,7 +97,7 @@ sealed class PrimitiveType {
     }
     
     object Timestamp : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) Instant::class.asTypeName().copy(nullable = true)
             else Instant::class.asTypeName()
         override val xmlName = "Timestamp"
@@ -105,7 +105,7 @@ sealed class PrimitiveType {
     }
     
     object Date : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) LocalDate::class.asTypeName().copy(nullable = true)
             else LocalDate::class.asTypeName()
         override val xmlName = "Date"
@@ -113,7 +113,7 @@ sealed class PrimitiveType {
     }
     
     object Time : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) LocalTime::class.asTypeName().copy(nullable = true)
             else LocalTime::class.asTypeName()
         override val xmlName = "Time"
@@ -121,7 +121,7 @@ sealed class PrimitiveType {
     }
     
     object Boolean : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Boolean::class.asTypeName().copy(nullable = true)
             else kotlin.Boolean::class.asTypeName()
         override val xmlName = "boolean"
@@ -129,7 +129,7 @@ sealed class PrimitiveType {
     }
     
     object ByteArray : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.ByteArray::class.asTypeName().copy(nullable = true)
             else kotlin.ByteArray::class.asTypeName()
         override val xmlName = "byte[]"
@@ -137,7 +137,7 @@ sealed class PrimitiveType {
     }
     
     object Char : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Char::class.asTypeName().copy(nullable = true)
             else kotlin.Char::class.asTypeName()
         override val xmlName = "char"
@@ -145,7 +145,7 @@ sealed class PrimitiveType {
     }
     
     object Short : PrimitiveType() {
-        override fun toKotlinType(nullable: Boolean) = 
+        override fun toKotlinType(nullable: kotlin.Boolean) = 
             if (nullable) kotlin.Short::class.asTypeName().copy(nullable = true)
             else kotlin.Short::class.asTypeName()
         override val xmlName = "short"

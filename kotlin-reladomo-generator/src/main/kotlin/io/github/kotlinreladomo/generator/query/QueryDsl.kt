@@ -43,7 +43,7 @@ class QueryDslGenerator {
         }
         
         // Add temporal predicates if applicable
-        if (parsedObject.objectType.isTemporal()) {
+        if (parsedObject.objectType.isTemporal) {
             functions.addAll(generateTemporalPredicates(parsedObject))
         }
         
@@ -345,7 +345,7 @@ class QueryDslGenerator {
         }
         
         // Generate temporal query builder if applicable
-        if (parsedObject.objectType.isTemporal()) {
+        if (parsedObject.objectType.isTemporal) {
             builders.add(generateTemporalQueryBuilder())
         }
         

@@ -74,6 +74,7 @@ kotlinReladomo {
 - **DO NOT manually create files that should be generated** - Fix the code generation instead
 - **DO NOT create workarounds or shortcuts** - Fix the actual problem in the generator
 - **ALWAYS identify the root cause before making changes** - Understand the issue fully before attempting fixes
+- **When implementing new versions, disable old implementations** - Don't keep conflicting implementations active simultaneously
 - If a dependency is missing, fix it properly rather than working around it
 - Keep all method signatures and contracts intact
 - Use proper interfaces and abstractions instead of removing functionality

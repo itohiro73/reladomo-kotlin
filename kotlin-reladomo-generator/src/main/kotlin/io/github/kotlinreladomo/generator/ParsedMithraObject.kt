@@ -1,6 +1,8 @@
 package io.github.kotlinreladomo.generator.model
 
-import io.github.kotlinreladomo.generator.types.*
+import io.github.kotlinreladomo.generator.types.AttributeType
+import io.github.kotlinreladomo.generator.types.ObjectType
+import io.github.kotlinreladomo.generator.types.TemporalType
 
 /**
  * Validated representation of a parsed Mithra object with comprehensive type safety
@@ -62,7 +64,7 @@ data class ParsedMithraObject(
         
         // Ensure primary key attributes are not nullable (unless temporal)
         primaryKeyAttributes.forEach { attr ->
-            if (!objectType.isTemporal()) {
+            if (!objectType.isTemporal) {
                 require(!attr.nullable) {
                     "Primary key attribute '${attr.name}' in $className cannot be nullable"
                 }
@@ -104,7 +106,7 @@ data class ParsedMithraObject(
     
     private fun validateIdentityAttribute() {
         if (identityAttribute != null) {
-            require(objectType.isTransactional()) {
+            require(objectType.isTransactional) {
                 "Identity attributes are only supported for transactional objects"
             }
             require(primaryKeyAttributes.size == 1) {
@@ -159,14 +161,14 @@ data class ParsedMithraObject(
      * Get the effective table name considering temporal aspects
      */
     fun getEffectiveTableName(): String = when {
-        objectType.isTemporal() && defaultTableName != null -> defaultTableName
+        objectType.isTemporal && defaultTableName != null -> defaultTableName
         else -> tableName
     }
     
     /**
      * Check if this object requires special handling for infinity dates
      */
-    fun requiresInfinityHandling(): Boolean = objectType.isTemporal()
+    fun requiresInfinityHandling(): Boolean = objectType.isTemporal
     
     /**
      * Get all columns including temporal columns

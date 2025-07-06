@@ -1,7 +1,11 @@
 package io.github.kotlinreladomo.generator.model
 
+// Import the enhanced types
+import io.github.kotlinreladomo.generator.types.ObjectType as EnhancedObjectType
+
 /**
- * Represents a parsed Mithra object definition from XML.
+ * Legacy models for backward compatibility.
+ * These will be phased out as we migrate to the enhanced type system.
  */
 data class MithraObjectDefinition(
     val packageName: String,
@@ -20,13 +24,20 @@ data class MithraObjectDefinition(
 }
 
 /**
- * Represents the type of Mithra object.
+ * Legacy ObjectType enum - maps to enhanced ObjectType
  */
 enum class ObjectType {
     TRANSACTIONAL,
     READ_ONLY,
     DATED_TRANSACTIONAL,
-    DATED_READ_ONLY
+    DATED_READ_ONLY;
+    
+    fun toEnhanced(): EnhancedObjectType = when (this) {
+        TRANSACTIONAL -> EnhancedObjectType.TRANSACTIONAL
+        READ_ONLY -> EnhancedObjectType.READ_ONLY
+        DATED_TRANSACTIONAL -> EnhancedObjectType.DATED_TRANSACTIONAL
+        DATED_READ_ONLY -> EnhancedObjectType.READ_ONLY // Map to READ_ONLY as enhanced doesn't have DATED_READ_ONLY
+    }
 }
 
 /**

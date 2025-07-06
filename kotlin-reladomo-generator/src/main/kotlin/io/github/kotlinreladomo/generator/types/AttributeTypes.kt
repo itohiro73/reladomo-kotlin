@@ -129,9 +129,12 @@ enum class ObjectType {
     DATED_TRANSACTIONAL,
     BITEMPORAL;
     
-    fun isTransactional(): Boolean = this != READ_ONLY
-    fun isTemporal(): Boolean = this == DATED_TRANSACTIONAL || this == BITEMPORAL
-    fun isBitemporal(): Boolean = this == BITEMPORAL
+    val isTransactional: Boolean
+        get() = this != READ_ONLY
+    val isTemporal: Boolean
+        get() = this == DATED_TRANSACTIONAL || this == BITEMPORAL
+    val isBitemporal: Boolean
+        get() = this == BITEMPORAL
     
     companion object {
         fun fromAsOfAttributes(asOfAttributes: List<AttributeType.AsOfAttribute>, isReadOnly: Boolean): ObjectType {

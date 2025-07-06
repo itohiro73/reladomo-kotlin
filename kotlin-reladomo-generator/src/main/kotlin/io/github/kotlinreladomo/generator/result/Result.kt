@@ -3,18 +3,18 @@ package io.github.kotlinreladomo.generator.result
 /**
  * Result type for safe error handling in code generation
  */
-sealed class Result<out T> {
+sealed class Result<T> {
     data class Success<T>(val value: T) : Result<T>()
-    data class Failure(val error: GeneratorError) : Result<Nothing>()
+    data class Failure<T>(val error: GeneratorError) : Result<T>()
     
     inline fun <R> map(transform: (T) -> R): Result<R> = when (this) {
         is Success -> Success(transform(value))
-        is Failure -> this
+        is Failure -> Failure(error)
     }
     
     inline fun <R> flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
         is Success -> transform(value)
-        is Failure -> this
+        is Failure -> Failure(error)
     }
     
     inline fun onSuccess(action: (T) -> Unit): Result<T> {
@@ -64,47 +64,48 @@ sealed class Result<out T> {
 /**
  * Sealed class representing different types of generator errors
  */
-sealed class GeneratorError(val message: String) {
+sealed class GeneratorError {
+    abstract val message: String
     
     data class ParseError(
         override val message: String,
         val file: String? = null,
         val line: Int? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class ValidationError(
         override val message: String,
         val objectName: String? = null,
         val attributeName: String? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class TypeMappingError(
         override val message: String,
         val xmlType: String,
         val context: String? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class CodeGenerationError(
         override val message: String,
         val className: String? = null,
         val cause: Throwable? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class FileSystemError(
         override val message: String,
         val path: String? = null,
         val cause: Throwable? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class ConfigurationError(
         override val message: String,
         val property: String? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     data class UnexpectedError(
         override val message: String,
         val cause: Throwable? = null
-    ) : GeneratorError(message)
+    ) : GeneratorError()
     
     fun toException(): GeneratorException = GeneratorException(this)
     
@@ -140,7 +141,7 @@ fun <T> List<Result<T>>.sequence(): Result<List<T>> {
     for (result in this) {
         when (result) {
             is Result.Success -> successes.add(result.value)
-            is Result.Failure -> return result
+            is Result.Failure -> return Result.Failure(result.error)
         }
     }
     

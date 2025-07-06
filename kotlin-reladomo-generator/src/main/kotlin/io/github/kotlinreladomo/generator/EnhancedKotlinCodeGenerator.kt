@@ -4,7 +4,10 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.github.kotlinreladomo.generator.model.ParsedMithraObject
 import io.github.kotlinreladomo.generator.result.*
-import io.github.kotlinreladomo.generator.types.*
+import io.github.kotlinreladomo.generator.types.ObjectType
+import io.github.kotlinreladomo.generator.types.AttributeType
+import io.github.kotlinreladomo.generator.types.ReladomoType
+import io.github.kotlinreladomo.generator.types.PrimitiveType
 import java.io.File
 import java.time.Instant
 
@@ -20,7 +23,7 @@ class EnhancedKotlinCodeGenerator {
         return Result.runCatching {
             val wrapperFile = generateWrapperClass(parsedObject, outputDir)
             val repositoryFile = generateRepository(parsedObject, outputDir)
-            val builderFile = if (parsedObject.objectType.isTransactional()) {
+            val builderFile = if (parsedObject.objectType.isTransactional) {
                 generateBuilder(parsedObject, outputDir)
             } else null
             
@@ -73,7 +76,7 @@ class EnhancedKotlinCodeGenerator {
         }
         
         // Add temporal properties if needed
-        if (parsedObject.objectType.isTemporal()) {
+        if (parsedObject.objectType.isTemporal) {
             val instantType = Instant::class.asTypeName()
             
             parsedObject.businessDateAttribute?.let {
@@ -276,7 +279,7 @@ class EnhancedKotlinCodeGenerator {
         )
         
         // Temporal operations if applicable
-        if (parsedObject.objectType.isTemporal()) {
+        if (parsedObject.objectType.isTemporal) {
             builder.addFunction(
                 FunSpec.builder("findByIdAsOf")
                     .addModifiers(KModifier.ABSTRACT)

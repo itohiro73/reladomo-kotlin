@@ -32,7 +32,11 @@ class GeneratorAdapter {
         }.flatten()
         
         return when (enhancedResult) {
-            is Result.Success -> enhancedResult
+            is Result.Success -> Result.success(GeneratedFiles(
+                wrapper = enhancedResult.value.wrapper,
+                repository = enhancedResult.value.repository,
+                builder = enhancedResult.value.builder
+            ))
             is Result.Failure -> {
                 // Fallback to legacy parser and generator
                 println("  ! Falling back to legacy generator due to: ${enhancedResult.error.message}")
@@ -133,5 +137,5 @@ class GeneratorAdapter {
 // Extension function to flatten nested Results
 private fun <T> Result<Result<T>>.flatten(): Result<T> = when (this) {
     is Result.Success -> value
-    is Result.Failure -> this
+    is Result.Failure -> Result.Failure(error)
 }
