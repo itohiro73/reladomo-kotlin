@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MithraRuntime>
+    <ConnectionManager className="com.gs.fw.common.mithra.connectionmanager.SourcelessConnectionManager">
+        <Property name="driverClassName" value="org.h2.Driver"/>
+        <Property name="url" value="jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"/>
+        <Property name="username" value="sa"/>
+        <Property name="password" value=""/>
+        
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Order" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Customer" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Product" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.OrderItem" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>

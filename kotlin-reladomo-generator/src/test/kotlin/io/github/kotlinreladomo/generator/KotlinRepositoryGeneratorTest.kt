@@ -46,11 +46,11 @@ class KotlinRepositoryGeneratorTest {
         assertTrue(content.contains("@Transactional"))
         
         // Verify CRUD methods are present
-        assertTrue(content.contains("public fun save(entity: CustomerKt): CustomerKt"))
-        assertTrue(content.contains("public fun findById(id: Long): CustomerKt?"))
-        assertTrue(content.contains("public fun update(entity: CustomerKt): CustomerKt"))
-        assertTrue(content.contains("public fun deleteById(id: Long)"))
-        assertTrue(content.contains("public fun findAll(): List<CustomerKt>"))
+        assertTrue(content.contains("override fun save(entity: CustomerKt): CustomerKt"))
+        assertTrue(content.contains("override fun findById(id: Long): CustomerKt?"))
+        assertTrue(content.contains("override fun update(entity: CustomerKt): CustomerKt"))
+        assertTrue(content.contains("override fun deleteById(id: Long)"))
+        assertTrue(content.contains("override fun findAll(): List<CustomerKt>"))
         
         // Verify finder usage
         assertTrue(content.contains("CustomerFinder.findByPrimaryKey"))
@@ -85,16 +85,17 @@ class KotlinRepositoryGeneratorTest {
         assertTrue(content.contains("public class OrderKtRepository"))
         
         // Verify bitemporal-specific methods
-        assertTrue(content.contains("public fun findByIdAsOf("))
+        assertTrue(content.contains("override fun findByIdAsOf("))
         assertTrue(content.contains("id: Long,"))
         assertTrue(content.contains("businessDate: Instant,"))
         assertTrue(content.contains("processingDate: Instant"))
         
         // Verify update method exists - bitemporal has businessDate parameter
-        assertTrue(content.contains("public fun update(entity: OrderKt, businessDate: Instant = Instant.now()): OrderKt"))
+        assertTrue(content.contains("override fun update(entity: OrderKt, businessDate: Instant): OrderKt"))
         
         // Verify delete method exists - bitemporal has businessDate parameter
-        assertTrue(content.contains("public fun deleteById(id: Long, businessDate: Instant = Instant.now())"))
+        assertTrue(content.contains("override fun deleteById(id: Long)"))
+        assertTrue(content.contains("override fun deleteByIdAsOf(id: Long, businessDate: Instant)"))
         
         // Verify finder usage
         assertTrue(content.contains("OrderFinder.findByPrimaryKey"))
@@ -131,7 +132,7 @@ class KotlinRepositoryGeneratorTest {
         println("Generated Trade repository content:\n$content")
         
         // Verify findById exists
-        assertTrue(content.contains("public fun findById(id: Long): TradeKt?"))
+        assertTrue(content.contains("override fun findById(id: Long): TradeKt?"))
         
         // Verify it uses findByPrimaryKey
         assertTrue(content.contains("TradeFinder.findByPrimaryKey"))
@@ -165,7 +166,7 @@ class KotlinRepositoryGeneratorTest {
         println("Generated Position repository content:\n$content")
         
         // Verify update method has businessDate parameter for bitemporal
-        assertTrue(content.contains("public fun update(entity: PositionKt, businessDate: Instant = Instant.now()): PositionKt"))
+        assertTrue(content.contains("override fun update(entity: PositionKt, businessDate: Instant): PositionKt"))
         
         // Verify it finds existing entity
         assertTrue(content.contains("PositionFinder.findByPrimaryKey"))
@@ -199,11 +200,11 @@ class KotlinRepositoryGeneratorTest {
         println("Generated OrderItem repository content:\n$content")
         
         // For composite keys, the generator seems to be using String for primary key type
-        assertTrue(content.contains("public fun findById(id: String): OrderItemKt?"))
+        assertTrue(content.contains("override fun findById(id: String): OrderItemKt?"))
         
         // Verify it has standard CRUD methods
-        assertTrue(content.contains("public fun save(entity: OrderItemKt): OrderItemKt"))
-        assertTrue(content.contains("public fun update(entity: OrderItemKt): OrderItemKt"))
+        assertTrue(content.contains("override fun save(entity: OrderItemKt): OrderItemKt"))
+        assertTrue(content.contains("override fun update(entity: OrderItemKt): OrderItemKt"))
         
         // Verify finder usage
         assertTrue(content.contains("OrderItemFinder.findByPrimaryKey"))
@@ -262,7 +263,7 @@ class KotlinRepositoryGeneratorTest {
         println("Generated Category repository content:\n$content")
         
         // Should have deleteById method
-        assertTrue(content.contains("public fun deleteById(id: Long)"))
+        assertTrue(content.contains("override fun deleteById(id: Long)"))
         
         // Verify delete implementation
         assertTrue(content.contains("CategoryFinder.findByPrimaryKey"))
@@ -294,7 +295,8 @@ class KotlinRepositoryGeneratorTest {
         println("Generated Account repository content:\n$content")
         
         // Should have deleteById with businessDate for bitemporal
-        assertTrue(content.contains("public fun deleteById(id: Long, businessDate: Instant = Instant.now())"))
+        assertTrue(content.contains("override fun deleteById(id: Long)"))
+        assertTrue(content.contains("override fun deleteByIdAsOf(id: Long, businessDate: Instant)"))
         
         // Verify delete implementation
         assertTrue(content.contains("AccountFinder.findByPrimaryKey"))
@@ -400,8 +402,8 @@ class KotlinRepositoryGeneratorTest {
             "Should convert LocalTime to Time in bitemporal update method")
         
         // Verify it's a bitemporal repository
-        assertTrue(content.contains("public fun findByIdAsOf("))
-        assertTrue(content.contains("public fun update(entity: MeetingKt, businessDate: Instant = Instant.now()): MeetingKt"))
+        assertTrue(content.contains("override fun findByIdAsOf("))
+        assertTrue(content.contains("override fun update(entity: MeetingKt, businessDate: Instant): MeetingKt"))
     }
     
     @Test

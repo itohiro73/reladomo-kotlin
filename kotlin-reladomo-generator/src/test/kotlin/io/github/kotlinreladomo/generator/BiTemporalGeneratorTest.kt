@@ -60,14 +60,15 @@ class BiTemporalGeneratorTest {
         val content = repoFile.readText()
         
         // Then - Critical fix validation
+        val findByIdMethod = content.substringAfter("override fun findById(id: Long): OrderKt?")
+            .substringBefore("override fun")
+        
         assertFalse(
-            content.contains("equalsEdgePoint()") && content.contains("override fun findById"),
+            findByIdMethod.contains("equalsEdgePoint()"),
             "findById should NOT use equalsEdgePoint() - this was a critical fix!"
         )
         
         // Verify it uses findByPrimaryKey instead
-        val findByIdMethod = content.substringAfter("fun findById(id: Long): OrderKt?")
-            .substringBefore("fun findByIdAsOf")
         
         assertTrue(
             findByIdMethod.contains("OrderFinder.findByPrimaryKey(id, now, infinityTs)"),
@@ -86,8 +87,8 @@ class BiTemporalGeneratorTest {
         
         // Then
         assertTrue(
-            content.contains("fun update(entity: OrderKt, businessDate: Instant = Instant.now()): OrderKt"),
-            "Update method should accept businessDate parameter with default value"
+            content.contains("fun update(entity: OrderKt, businessDate: Instant): OrderKt"),
+            "Update method should accept businessDate parameter"
         )
         
         // Verify implementation fetches as of business date
@@ -115,20 +116,20 @@ class BiTemporalGeneratorTest {
         
         // Then
         assertTrue(
-            content.contains("fun deleteById(id: Long, businessDate: Instant = Instant.now())"),
-            "Delete method should accept businessDate parameter with default value"
+            content.contains("fun deleteByIdAsOf(id: Long, businessDate: Instant)"),
+            "Delete method should have deleteByIdAsOf with businessDate parameter"
         )
         
-        // Verify implementation
-        val deleteMethod = content.substringAfter("fun deleteById(id: Long, businessDate: Instant")
-            .substringBefore("fun findAll")
+        // Verify implementation - check deleteByIdAsOf method
+        val deleteByIdAsOfMethod = content.substringAfter("fun deleteByIdAsOf(id: Long, businessDate: Instant)")
+            .substringBefore("fun find")
         
         assertTrue(
-            deleteMethod.contains("OrderFinder.findByPrimaryKey(id, businessDateTs, infinityTs)"),
+            deleteByIdAsOfMethod.contains("OrderFinder.findByPrimaryKey(id, businessDateTs, infinityTs)"),
             "Should fetch record using findByPrimaryKey"
         )
         assertTrue(
-            deleteMethod.contains(".terminate()"),
+            deleteByIdAsOfMethod.contains(".terminate()"),
             "Should use terminate() for bitemporal deletion"
         )
     }
@@ -268,15 +269,16 @@ class BiTemporalGeneratorTest {
         
         // 3. Find current version
         assertTrue(repoContent.contains("fun findById(id: Long): OrderKt?"))
-        assertFalse(repoContent.substringAfter("findById").substringBefore("fun findByIdAsOf").contains("equalsEdgePoint()"))
+        val findByIdSection = repoContent.substringAfter("override fun findById(id: Long): OrderKt?").substringBefore("override fun")
+        assertFalse(findByIdSection.contains("equalsEdgePoint()"))
         
         // 4. Find historical version
         assertTrue(repoContent.contains("fun findByIdAsOf(") && repoContent.contains("id: Long,") && repoContent.contains("businessDate: Instant,"))
         
         // 5. Update as of business date
-        assertTrue(repoContent.contains("fun update(entity: OrderKt, businessDate: Instant = Instant.now()): OrderKt"))
+        assertTrue(repoContent.contains("fun update(entity: OrderKt, businessDate: Instant): OrderKt"))
         
-        // 6. Delete (terminate) as of business date
-        assertTrue(repoContent.contains("fun deleteById(id: Long, businessDate: Instant = Instant.now())"))
+        // 6. Delete (terminate) as of business date  
+        assertTrue(repoContent.contains("fun deleteByIdAsOf(id: Long, businessDate: Instant)"))
     }
 }

@@ -1,0 +1,4 @@
+# Auto Configuration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+io.github.kotlinreladomo.springboot.autoconfigure.ReladomoAutoConfiguration,\
+io.github.kotlinreladomo.springboot.sequence.SequenceAutoConfiguration

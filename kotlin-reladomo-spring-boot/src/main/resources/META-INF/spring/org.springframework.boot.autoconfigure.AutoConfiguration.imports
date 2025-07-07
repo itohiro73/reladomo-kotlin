@@ -1,1 +1,2 @@
 io.github.kotlinreladomo.spring.config.ReladomoKotlinAutoConfiguration
+io.github.kotlinreladomo.springboot.sequence.SequenceAutoConfiguration

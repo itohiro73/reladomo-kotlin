@@ -10,13 +10,16 @@ import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Profile
 import java.math.BigDecimal
 import java.time.Instant
 
 /**
  * Example application demonstrating the Query DSL functionality
+ * This is excluded from tests via @Profile annotation
  */
 @SpringBootApplication
+@Profile("demo") // Only run when demo profile is active
 class QueryDslExampleApp {
     
     @Bean
@@ -28,7 +31,7 @@ class QueryDslExampleApp {
         val now = Instant.now()
         
         val order1 = OrderKt(
-            orderId = null,
+            orderId = 1001L,
             customerId = 100,
             orderDate = now,
             amount = BigDecimal("250.00"),
@@ -39,7 +42,7 @@ class QueryDslExampleApp {
         )
         
         val order2 = OrderKt(
-            orderId = null,
+            orderId = 1001L,
             customerId = 100,
             orderDate = now.plusSeconds(3600),
             amount = BigDecimal("150.00"),
@@ -50,7 +53,7 @@ class QueryDslExampleApp {
         )
         
         val order3 = OrderKt(
-            orderId = null,
+            orderId = 1001L,
             customerId = 200,
             orderDate = now.plusSeconds(7200),
             amount = BigDecimal("500.00"),

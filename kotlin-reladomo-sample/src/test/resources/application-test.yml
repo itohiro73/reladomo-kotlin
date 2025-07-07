@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: false
+  # Disable SQL initialization for tests
+  sql:
+    init:
+      mode: never
+
+# Reladomo configuration
+reladomo:
+  runtime-config-path: classpath:reladomo-runtime-config.xml
+  # Enable sequence generation for tests
+  sequence:
+    enabled: true
+    type: IN_MEMORY
+    in-memory:
+      start-value: 1000
+      increment-by: 1
+
+# Connection pooling
+spring.datasource.hikari:
+  maximum-pool-size: 10
+  minimum-idle: 5
+  idle-timeout: 300000
+  connection-timeout: 20000
+  max-lifetime: 1200000

@@ -15,6 +15,7 @@ import io.github.kotlinreladomo.sample.domain.Product
 import io.github.kotlinreladomo.sample.domain.ProductFinder
 import io.github.kotlinreladomo.sample.domain.kotlin.ProductKt
 import io.github.kotlinreladomo.sample.domain.kotlin.query.ProductQueryDsl
+import io.github.kotlinreladomo.sequence.SequenceGenerator
 import java.sql.Timestamp
 import java.time.Instant
 import kotlin.Boolean
@@ -22,16 +23,28 @@ import kotlin.Int
 import kotlin.Long
 import kotlin.Unit
 import kotlin.collections.List
+import org.springframework.beans.factory.`annotation`.Autowired
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
 public class ProductKtRepository : BaseRepository<ProductKt, Long> {
+  @Autowired(required = false)
+  private var sequenceGenerator: SequenceGenerator? = null
+
   override fun save(entity: ProductKt): ProductKt {
-    val reladomoObject = entity.toReladomo()
-    reladomoObject.insert()
-    return ProductKt.fromReladomo(reladomoObject)
+    val obj = Product()
+    val productId = entity.productId?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Product")
+        ?: throw IllegalStateException("No ID provided and sequence generator not available")
+    obj.productId = productId
+    obj.name = entity.name
+    entity.description?.let { obj.description = it }
+    obj.price = entity.price
+    obj.stockQuantity = entity.stockQuantity
+    entity.category?.let { obj.category = it }
+    obj.insert()
+    return ProductKt.fromReladomo(obj)
   }
 
   override fun findById(id: Long): ProductKt? {

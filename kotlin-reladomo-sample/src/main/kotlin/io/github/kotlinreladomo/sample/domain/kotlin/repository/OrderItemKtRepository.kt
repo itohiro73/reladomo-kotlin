@@ -15,6 +15,7 @@ import io.github.kotlinreladomo.sample.domain.OrderItem
 import io.github.kotlinreladomo.sample.domain.OrderItemFinder
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderItemKt
 import io.github.kotlinreladomo.sample.domain.kotlin.query.OrderItemQueryDsl
+import io.github.kotlinreladomo.sequence.SequenceGenerator
 import java.sql.Timestamp
 import java.time.Instant
 import kotlin.Boolean
@@ -22,16 +23,29 @@ import kotlin.Int
 import kotlin.Long
 import kotlin.Unit
 import kotlin.collections.List
+import org.springframework.beans.factory.`annotation`.Autowired
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
 public class OrderItemKtRepository : BaseRepository<OrderItemKt, Long> {
+  @Autowired(required = false)
+  private var sequenceGenerator: SequenceGenerator? = null
+
   override fun save(entity: OrderItemKt): OrderItemKt {
-    val reladomoObject = entity.toReladomo()
-    reladomoObject.insert()
-    return OrderItemKt.fromReladomo(reladomoObject)
+    val obj = OrderItem()
+    val orderItemId = entity.orderItemId?.takeIf { it != 0L } ?:
+        sequenceGenerator?.getNextId("OrderItem") ?: throw
+        IllegalStateException("No ID provided and sequence generator not available")
+    obj.orderItemId = orderItemId
+    obj.orderId = entity.orderId
+    obj.productId = entity.productId
+    obj.quantity = entity.quantity
+    obj.unitPrice = entity.unitPrice
+    obj.totalPrice = entity.totalPrice
+    obj.insert()
+    return OrderItemKt.fromReladomo(obj)
   }
 
   override fun findById(id: Long): OrderItemKt? {

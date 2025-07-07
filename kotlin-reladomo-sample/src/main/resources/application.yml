@@ -11,7 +11,7 @@ reladomo:
     # Repository scanning configuration
     repository:
       base-packages:
-        - io.github.kotlinreladomo.sample.repository
+        - io.github.kotlinreladomo.sample.domain.kotlin.repository  # Generated repositories
         - io.github.kotlinreladomo.sample.model  # Scan for @ReladomoEntity annotated classes
       enable-query-methods: true
     
@@ -31,6 +31,13 @@ reladomo:
     default-transaction-timeout: 120
     default-business-date-provider: CURRENT_TIMESTAMP
     default-processing-date-provider: CURRENT_TIMESTAMP
+  
+  # Sequence generation configuration
+  sequence:
+    enabled: true
+    type: IN_MEMORY  # Use IN_MEMORY for testing, RELADOMO for production
+    default-start-value: 1000
+    increment-by: 1
 
 logging:
   level:

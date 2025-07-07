@@ -44,6 +44,8 @@ class KotlinRepositoryGenerator {
             .addImport("io.github.kotlinreladomo.query", "QueryContext")
             .addImport("io.github.kotlinreladomo.query", "query")
             .addImport("${definition.packageName}.kotlin.query", "${definition.className}QueryDsl")
+            .addImport("org.springframework.beans.factory.annotation", "Autowired")
+            .addImport("io.github.kotlinreladomo.sequence", "SequenceGenerator")
             .apply {
                 // Add imports for Date/Time types if needed
                 if (definition.attributes.any { it.javaType == "Date" }) {
@@ -91,6 +93,18 @@ class KotlinRepositoryGenerator {
             .addAnnotation(ClassName("org.springframework.stereotype", "Repository"))
             .addAnnotation(ClassName("org.springframework.transaction.annotation", "Transactional"))
             .addSuperinterface(repositoryInterface)
+            .addProperty(
+                PropertySpec.builder("sequenceGenerator", ClassName("io.github.kotlinreladomo.sequence", "SequenceGenerator").copy(nullable = true))
+                    .addModifiers(KModifier.PRIVATE)
+                    .mutable()
+                    .addAnnotation(
+                        AnnotationSpec.builder(ClassName("org.springframework.beans.factory.annotation", "Autowired"))
+                            .addMember("required = %L", false)
+                            .build()
+                    )
+                    .initializer("null")
+                    .build()
+            )
             .addFunction(generateSaveMethod(definition, entityType, reladomoType))
             .addFunction(generateFindByIdMethod(definition, entityType, finderType, primaryKeyType))
             .addFunction(generateUpdateMethod(definition, entityType, finderType, primaryKeyType))
@@ -146,9 +160,88 @@ class KotlinRepositoryGenerator {
             .addModifiers(KModifier.OVERRIDE)
             .addParameter("entity", entityType)
             .returns(entityType)
-            .addStatement("val reladomoObject = entity.toReladomo()")
-            .addStatement("reladomoObject.insert()")
-            .addStatement("return %T.fromReladomo(reladomoObject)", entityType)
+            .apply {
+                if (definition.isBitemporal) {
+                    // For bitemporal entities, create with business date only constructor
+                    // This allows Reladomo to set processing date to infinity automatically
+                    addStatement("val obj = %T(Timestamp.from(entity.businessDate))", reladomoType)
+                    // Set primary key if present and not null
+                    val primaryKeys = definition.primaryKeyAttributes
+                    if (primaryKeys.size == 1 && primaryKeys.first().javaType == "long") {
+                        // Only use sequence generator for single long primary key
+                        val primaryKey = primaryKeys.first()
+                        addStatement("val ${primaryKey.name} = entity.${primaryKey.name}?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId(%S) ?: throw IllegalStateException(%S)", 
+                            definition.className, 
+                            "No ID provided and sequence generator not available")
+                        addStatement("obj.${primaryKey.name} = ${primaryKey.name}")
+                    } else {
+                        // For composite keys or non-long keys, just set the values
+                        primaryKeys.forEach { pk ->
+                            addStatement("obj.${pk.name} = entity.${pk.name}")
+                        }
+                    }
+                    // Set other attributes
+                    definition.attributes.filter { !it.isPrimaryKey }.forEach { attr ->
+                        when (attr.javaType) {
+                            "Timestamp" -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = Timestamp.from(it) }")
+                                } else {
+                                    addStatement("obj.${attr.name} = Timestamp.from(entity.${attr.name})")
+                                }
+                            }
+                            else -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = it }")
+                                } else {
+                                    addStatement("obj.${attr.name} = entity.${attr.name}")
+                                }
+                            }
+                        }
+                    }
+                    addStatement("obj.insert()")
+                    addStatement("return %T.fromReladomo(obj)", entityType)
+                } else {
+                    // For non-bitemporal entities
+                    addStatement("val obj = %T()", reladomoType)
+                    // Handle primary key
+                    val primaryKeys = definition.primaryKeyAttributes
+                    if (primaryKeys.size == 1 && primaryKeys.first().javaType == "long") {
+                        // Only use sequence generator for single long primary key
+                        val primaryKey = primaryKeys.first()
+                        addStatement("val ${primaryKey.name} = entity.${primaryKey.name}?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId(%S) ?: throw IllegalStateException(%S)", 
+                            definition.className, 
+                            "No ID provided and sequence generator not available")
+                        addStatement("obj.${primaryKey.name} = ${primaryKey.name}")
+                    } else {
+                        // For composite keys or non-long keys, just set the values
+                        primaryKeys.forEach { pk ->
+                            addStatement("obj.${pk.name} = entity.${pk.name}")
+                        }
+                    }
+                    // Set other attributes
+                    definition.attributes.filter { !it.isPrimaryKey }.forEach { attr ->
+                        when (attr.javaType) {
+                            "Timestamp" -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = Timestamp.from(it) }")
+                                } else {
+                                    addStatement("obj.${attr.name} = Timestamp.from(entity.${attr.name})")
+                                }
+                            }
+                            else -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = it }")
+                                } else {
+                                    addStatement("obj.${attr.name} = entity.${attr.name}")
+                                }
+                            }
+                        }
+                    }
+                    addStatement("obj.insert()")
+                    addStatement("return %T.fromReladomo(obj)", entityType)
+                }
+            }
             .build()
     }
     

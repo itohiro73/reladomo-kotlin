@@ -15,6 +15,7 @@ import io.github.kotlinreladomo.sample.domain.Customer
 import io.github.kotlinreladomo.sample.domain.CustomerFinder
 import io.github.kotlinreladomo.sample.domain.kotlin.CustomerKt
 import io.github.kotlinreladomo.sample.domain.kotlin.query.CustomerQueryDsl
+import io.github.kotlinreladomo.sequence.SequenceGenerator
 import java.sql.Timestamp
 import java.time.Instant
 import kotlin.Boolean
@@ -22,16 +23,29 @@ import kotlin.Int
 import kotlin.Long
 import kotlin.Unit
 import kotlin.collections.List
+import org.springframework.beans.factory.`annotation`.Autowired
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
 public class CustomerKtRepository : BaseRepository<CustomerKt, Long> {
+  @Autowired(required = false)
+  private var sequenceGenerator: SequenceGenerator? = null
+
   override fun save(entity: CustomerKt): CustomerKt {
-    val reladomoObject = entity.toReladomo()
-    reladomoObject.insert()
-    return CustomerKt.fromReladomo(reladomoObject)
+    val obj = Customer()
+    val customerId = entity.customerId?.takeIf { it != 0L } ?:
+        sequenceGenerator?.getNextId("Customer") ?: throw
+        IllegalStateException("No ID provided and sequence generator not available")
+    obj.customerId = customerId
+    obj.name = entity.name
+    obj.email = entity.email
+    entity.phone?.let { obj.phone = it }
+    entity.address?.let { obj.address = it }
+    obj.createdDate = Timestamp.from(entity.createdDate)
+    obj.insert()
+    return CustomerKt.fromReladomo(obj)
   }
 
   override fun findById(id: Long): CustomerKt? {
