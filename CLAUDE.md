@@ -128,6 +128,13 @@ interface BiTemporalEntity {
 }
 ```
 
+### SimulatedSequence Support
+The framework provides `GenericSequenceObjectFactory` that works with Reladomo's SimulatedSequence:
+- No need to create individual factory classes per entity
+- Automatically manages sequences in MITHRA_SEQUENCE table
+- Thread-safe with proper transaction handling
+- Reference in XML: `sequenceObjectFactoryName="io.github.kotlinreladomo.springboot.sequence.GenericSequenceObjectFactory"`
+
 ### Repository Pattern
 Repositories extend `AbstractBiTemporalRepository` which provides:
 - Basic CRUD operations
@@ -142,10 +149,13 @@ Repositories extend `AbstractBiTemporalRepository` which provides:
 
 ## Current Status
 
-The project is in initial planning phase with:
+The project has made significant progress with:
 - Comprehensive PRD (`Reladomo_Kotlin_Wrapper_PRD_v1.0.md`)
 - MVP Implementation Plan (`Reladomo_Kotlin_MVP_Implementation_Plan_v1.0.md`)
-- Focus on basic CRUD + bitemporal operations first
+- Working code generation from Reladomo XML to Kotlin
+- Spring Boot integration with auto-configuration
+- Generic sequence factory for SimulatedSequence support
+- Sample application demonstrating CRUD operations
 
 ## Technology Stack
 
@@ -162,6 +172,7 @@ The project is in initial planning phase with:
 2. **Complex XML configuration** → Automated code generation
 3. **Manual Spring integration** → Auto-configuration
 4. **Verbose temporal queries** → Simplified Kotlin DSL
+5. **Manual sequence factory classes** → Generic framework-provided factory
 
 ## Implementation Phases
 

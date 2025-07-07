@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import jakarta.annotation.PostConstruct
+import javax.sql.DataSource
 
 /**
  * Spring Boot auto-configuration for sequence generation support.
@@ -18,9 +20,21 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnClass(SequenceGenerator::class)
 @ConditionalOnProperty(prefix = "reladomo.sequence", name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(SequenceProperties::class)
-class SequenceAutoConfiguration {
+class SequenceAutoConfiguration(
+    private val dataSource: DataSource?
+) {
     
     private val logger = LoggerFactory.getLogger(SequenceAutoConfiguration::class.java)
+    
+    @PostConstruct
+    fun initializeSequenceFactory() {
+        if (dataSource != null) {
+            logger.debug("Initializing GenericSequenceObjectFactory with DataSource")
+            GenericSequenceObjectFactory.setDataSource(dataSource)
+        } else {
+            logger.warn("No DataSource available for GenericSequenceObjectFactory initialization")
+        }
+    }
     
     @Bean
     @ConditionalOnMissingBean(SequenceGenerator::class)

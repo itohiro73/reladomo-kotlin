@@ -5,7 +5,7 @@
     <DefaultTable>CUSTOMERS</DefaultTable>
     
     <Attribute name="customerId" javaType="long" columnName="CUSTOMER_ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
-        <SimulatedSequence sequenceName="CUSTOMER_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.kotlinreladomo.sample.domain.CustomerDatabaseObjectFactory"/>
+        <SimulatedSequence sequenceName="CUSTOMER_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.kotlinreladomo.springboot.sequence.GenericSequenceObjectFactory"/>
     </Attribute>
     <Attribute name="name" javaType="String" columnName="NAME" maxLength="100" nullable="false"/>
     <Attribute name="email" javaType="String" columnName="EMAIL" maxLength="100" nullable="false"/>

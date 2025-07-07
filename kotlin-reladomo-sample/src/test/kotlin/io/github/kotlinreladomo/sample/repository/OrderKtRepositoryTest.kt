@@ -1,15 +1,21 @@
 package io.github.kotlinreladomo.sample.repository
 
+import io.github.kotlinreladomo.sample.config.TestReladomoConfiguration
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
+import io.github.kotlinreladomo.sample.domain.kotlin.CustomerKt
 import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepository
+import io.github.kotlinreladomo.sample.domain.kotlin.repository.CustomerKtRepository
+import io.github.kotlinreladomo.sample.domain.Customer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.sql.Timestamp
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 
@@ -18,16 +24,23 @@ import java.util.concurrent.atomic.AtomicLong
  * with generated code and bitemporal support
  */
 @SpringBootTest
+@Import(TestReladomoConfiguration::class)
 @TestPropertySource(properties = [
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
     "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.jpa.hibernate.ddl-auto=none"
+    "spring.jpa.hibernate.ddl-auto=none",
+    "reladomo.kotlin.connection-manager-config-file=test-reladomo-runtime-config.xml",
+    "spring.sql.init.mode=always",
+    "spring.sql.init.schema-locations=classpath:schema.sql"
 ])
 @Transactional
 class OrderKtRepositoryTest {
 
     @Autowired
     private lateinit var repository: OrderKtRepository
+    
+    @Autowired
+    private lateinit var customerRepository: CustomerKtRepository
 
     private val infinityDate = Instant.parse("9999-12-01T23:59:00Z")
     
@@ -37,8 +50,34 @@ class OrderKtRepositoryTest {
 
     @BeforeEach
     fun setUp() {
-        // Clean up any existing data - skip this as it may fail with pre-existing data
-        // The tests will use unique IDs to avoid conflicts
+        // Bypass repository and create customers directly using Reladomo objects
+        // This ensures they exist before tests run
+        
+        val customer100 = Customer()
+        customer100.customerId = 100L
+        customer100.name = "Test Customer 100"
+        customer100.email = "customer100@example.com"
+        customer100.phone = "555-0100"
+        customer100.address = "100 Test St"
+        customer100.createdDate = Timestamp.from(Instant.now())
+        try {
+            customer100.insert()
+        } catch (e: Exception) {
+            // Ignore if already exists
+        }
+        
+        val customer101 = Customer()
+        customer101.customerId = 101L
+        customer101.name = "Test Customer 101"
+        customer101.email = "customer101@example.com"
+        customer101.phone = "555-0101"
+        customer101.address = "101 Test St"
+        customer101.createdDate = Timestamp.from(Instant.now())
+        try {
+            customer101.insert()
+        } catch (e: Exception) {
+            // Ignore if already exists
+        }
     }
 
     @Test

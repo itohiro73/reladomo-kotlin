@@ -1,26 +1,39 @@
 package io.github.kotlinreladomo.sample.repository
 
+import io.github.kotlinreladomo.sample.config.BaseRepositoryTest
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
+import io.github.kotlinreladomo.sample.domain.kotlin.CustomerKt
 import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepository
+import io.github.kotlinreladomo.sample.domain.kotlin.repository.CustomerKtRepository
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
-import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.Instant
 
-@SpringBootTest
 @TestPropertySource(properties = [
     "reladomo.sequence.enabled=false" // Sequence generation disabled
 ])
-@Transactional
-class RepositoryWithoutSequenceTest {
+class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
     
     @Autowired
     private lateinit var orderRepository: OrderKtRepository
+    
+    @Autowired
+    private lateinit var customerRepository: CustomerKtRepository
+    
+    @BeforeEach
+    fun setupTestData() {
+        // Create test customer
+        try {
+            customerRepository.save(CustomerKt(100L, "Test Customer", "test@example.com", null, null, Instant.now()))
+        } catch (e: Exception) {
+            // Ignore if already exists
+        }
+    }
     
     @Test
     fun `should throw exception when no ID provided and sequence generator disabled`() {

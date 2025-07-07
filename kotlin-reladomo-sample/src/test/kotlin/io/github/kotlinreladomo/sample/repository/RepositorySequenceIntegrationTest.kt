@@ -1,5 +1,6 @@
 package io.github.kotlinreladomo.sample.repository
 
+import io.github.kotlinreladomo.sample.config.BaseRepositoryTest
 import io.github.kotlinreladomo.sample.domain.kotlin.CustomerKt
 import io.github.kotlinreladomo.sample.domain.kotlin.OrderKt
 import io.github.kotlinreladomo.sample.domain.kotlin.ProductKt
@@ -8,23 +9,20 @@ import io.github.kotlinreladomo.sample.domain.kotlin.repository.OrderKtRepositor
 import io.github.kotlinreladomo.sample.domain.kotlin.repository.ProductKtRepository
 import io.github.kotlinreladomo.sequence.SequenceGenerator
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
-import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.Instant
 
-@SpringBootTest
 @TestPropertySource(properties = [
     "reladomo.sequence.enabled=true",
     "reladomo.sequence.type=IN_MEMORY",
     "reladomo.sequence.default-start-value=2000",
     "reladomo.sequence.increment-by=1"
 ])
-@Transactional
-class RepositorySequenceIntegrationTest {
+class RepositorySequenceIntegrationTest : BaseRepositoryTest() {
     
     @Autowired
     private lateinit var orderRepository: OrderKtRepository
@@ -37,6 +35,16 @@ class RepositorySequenceIntegrationTest {
     
     @Autowired(required = false)
     private var sequenceGenerator: SequenceGenerator? = null
+    
+    @BeforeEach
+    fun setupTestData() {
+        // Create test customer for order tests
+        try {
+            customerRepository.save(CustomerKt(100L, "Test Customer", "test@example.com", null, null, Instant.now()))
+        } catch (e: Exception) {
+            // Ignore if already exists
+        }
+    }
     
     @Test
     fun `sequence generator should be available`() {

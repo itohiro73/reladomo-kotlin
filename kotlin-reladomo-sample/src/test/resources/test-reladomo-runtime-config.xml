@@ -1,10 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <MithraRuntime>
-    <ConnectionManager className="io.github.kotlinreladomo.spring.connection.H2ConnectionManager">
-        <Property name="connectionManagerName" value="default"/>
-        <Property name="databaseName" value="testdb"/>
-        <Property name="inMemory" value="true"/>
-        
+    <ConnectionManager className="io.github.kotlinreladomo.sample.config.TestConnectionManager">
         <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Order" cacheType="partial"/>
         <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Customer" cacheType="partial"/>
         <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Product" cacheType="partial"/>

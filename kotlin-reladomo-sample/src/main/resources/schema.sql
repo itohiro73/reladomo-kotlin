@@ -1,3 +1,9 @@
+-- Create sequence table for Reladomo's SimulatedSequence support
+CREATE TABLE IF NOT EXISTS MITHRA_SEQUENCE (
+    SEQUENCE_NAME VARCHAR(64) NOT NULL PRIMARY KEY,
+    NEXT_ID BIGINT NOT NULL
+);
+
 -- Drop tables if exist
 DROP TABLE IF EXISTS ORDER_ITEMS;
 DROP TABLE IF EXISTS ORDERS;
