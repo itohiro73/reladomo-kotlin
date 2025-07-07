@@ -1,17 +1,32 @@
 package io.github.kotlinreladomo.sample.controller
 
 import io.github.kotlinreladomo.sample.dto.CreateOrderRequest
+import io.github.kotlinreladomo.sample.config.TestReladomoConfiguration
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.*
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import com.fasterxml.jackson.databind.ObjectMapper
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestReladomoConfiguration::class)
+@TestPropertySource(properties = [
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.jpa.hibernate.ddl-auto=none",
+    "reladomo.kotlin.connection-manager-config-file=test-reladomo-runtime-config.xml",
+    "spring.sql.init.mode=always",
+    "spring.sql.init.schema-locations=classpath:schema.sql"
+])
+@ActiveProfiles("test")
 class OrderControllerTest {
     
     @Autowired

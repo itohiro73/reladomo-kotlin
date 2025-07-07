@@ -27,9 +27,9 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
     
     @BeforeEach
     fun setupTestData() {
-        // Create test customer
+        // Create test customer with unique ID to avoid conflicts with TestDataInitializer
         try {
-            customerRepository.save(CustomerKt(100L, "Test Customer", "test@example.com", null, null, Instant.now()))
+            customerRepository.save(CustomerKt(9999L, "Test Customer", "test@example.com", null, null, Instant.now()))
         } catch (e: Exception) {
             // Ignore if already exists
         }
@@ -39,7 +39,7 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
     fun `should throw exception when no ID provided and sequence generator disabled`() {
         val order = OrderKt(
             orderId = null, // No ID provided
-            customerId = 100,
+            customerId = 9999L,
             orderDate = Instant.now(),
             amount = BigDecimal("999.99"),
             status = "PENDING",
@@ -59,7 +59,7 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
     fun `should throw exception when ID is 0 and sequence generator disabled`() {
         val order = OrderKt(
             orderId = 0L, // ID is 0
-            customerId = 100,
+            customerId = 9999L,
             orderDate = Instant.now(),
             amount = BigDecimal("999.99"),
             status = "PENDING",
@@ -80,7 +80,7 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
         val providedId = 9999L
         val order = OrderKt(
             orderId = providedId,
-            customerId = 100,
+            customerId = 9999L,
             orderDate = Instant.now(),
             amount = BigDecimal("999.99"),
             status = "PENDING",
@@ -100,7 +100,7 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
         // First create an order with explicit ID
         val order = OrderKt(
             orderId = 8888L,
-            customerId = 100,
+            customerId = 9999L,
             orderDate = Instant.now(),
             amount = BigDecimal("100.00"),
             status = "PENDING",
@@ -131,7 +131,7 @@ class RepositoryWithoutSequenceTest : BaseRepositoryTest() {
         // Create with explicit ID
         val order = OrderKt(
             orderId = 7777L,
-            customerId = 100,
+            customerId = 9999L,
             orderDate = Instant.now(),
             amount = BigDecimal("500.00"),
             status = "PENDING",
