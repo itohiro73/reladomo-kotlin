@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reladomo_sample
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+  
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-postgres.sql
+
+# Override the default H2 connection manager
+reladomo:
+  kotlin:
+    connection-manager-config-file: reladomo-runtime-config-postgres.xml

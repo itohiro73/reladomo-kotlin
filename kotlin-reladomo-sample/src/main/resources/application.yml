@@ -2,21 +2,9 @@ spring:
   application:
     name: kotlin-reladomo-sample
   
-  datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
+  # Default profile - using H2 for development
+  profiles:
+    default: h2
 
 reladomo:
   kotlin:
@@ -39,8 +27,7 @@ reladomo:
     # Timezone configuration
     database-timezone: UTC
     
-    # Connection manager configuration (optional - will use entity scanning if not found)
-    connection-manager-config-file: reladomo-runtime-config.xml
+    # Connection manager configuration will be loaded based on active profile
     default-transaction-timeout: 120
     default-business-date-provider: CURRENT_TIMESTAMP
     default-processing-date-provider: CURRENT_TIMESTAMP

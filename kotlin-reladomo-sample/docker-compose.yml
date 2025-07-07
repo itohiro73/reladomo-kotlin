@@ -6,16 +6,15 @@ services:
     container_name: reladomo-postgres
     environment:
       POSTGRES_DB: reladomo_sample
-      POSTGRES_USER: reladomo
-      POSTGRES_PASSWORD: reladomo123
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reladomo"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
