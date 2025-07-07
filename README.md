@@ -9,6 +9,9 @@ A Kotlin wrapper library for [Reladomo ORM](https://github.com/goldmansachs/rela
 - **Spring Boot Integration**: Auto-configuration and transaction management
 - **Code Generation**: Gradle plugin for automatic wrapper generation
 - **Null Safety**: Leverage Kotlin's null safety features
+- **Annotation-Based Configuration**: Define entities using annotations instead of XML
+- **Automatic Entity Discovery**: Scan classpath for @ReladomoEntity annotated classes
+- **Spring Data-Style Repositories**: Familiar repository pattern with query methods
 
 ## Quick Start
 
@@ -32,6 +35,32 @@ kotlinReladomo {
 
 ### 3. Define Your Reladomo Objects
 
+#### Option A: Using Annotations (Recommended)
+
+Define entities with annotations for automatic discovery:
+
+```kotlin
+@ReladomoEntity(
+    tableName = "ORDERS",
+    bitemporal = true
+)
+data class Order(
+    @PrimaryKey(columnName = "ORDER_ID")
+    val orderId: Long? = null,
+    
+    @Column(name = "AMOUNT", nullable = false)
+    val amount: BigDecimal,
+    
+    @BusinessDate
+    val businessDate: Instant = Instant.now(),
+    
+    @ProcessingDate
+    val processingDate: Instant = Instant.now()
+)
+```
+
+#### Option B: Using XML
+
 Create XML definitions in `src/main/resources/reladomo/`:
 
 ```xml
@@ -49,18 +78,37 @@ Create XML definitions in `src/main/resources/reladomo/`:
 </MithraObject>
 ```
 
-### 4. Use Generated Classes
+### 4. Configure Spring Boot
 
-The plugin generates Kotlin wrappers and repositories:
+Add minimal configuration to enable entity scanning:
+
+```yaml
+reladomo:
+  kotlin:
+    repository:
+      base-packages:
+        - com.example.domain  # Package(s) to scan for @ReladomoEntity
+```
+
+### 5. Use Repository Pattern
+
+Define repositories with Spring Data-style query methods:
 
 ```kotlin
+@Repository
+interface OrderRepository : ReladomoRepository<Order, Long> {
+    fun findByStatus(status: String): List<Order>
+    fun findByCustomerId(customerId: Long): List<Order>
+    fun findByIdAsOf(id: Long, businessDate: Instant): Order?
+}
+
 @Service
 class OrderService(
-    private val orderRepository: OrderKtRepository
+    private val orderRepository: OrderRepository
 ) {
-    fun createOrder(customerId: Long, amount: BigDecimal): OrderKt {
-        val order = OrderKt(
-            orderId = generateId(),
+    @Transactional
+    fun createOrder(customerId: Long, amount: BigDecimal): Order {
+        val order = Order(
             customerId = customerId,
             amount = amount,
             businessDate = Instant.now(),
@@ -69,8 +117,8 @@ class OrderService(
         return orderRepository.save(order)
     }
     
-    fun findOrderAsOf(id: Long, businessDate: Instant): OrderKt? {
-        return orderRepository.findByIdAsOf(id, businessDate, Instant.now())
+    fun findOrderAsOf(id: Long, businessDate: Instant): Order? {
+        return orderRepository.findByIdAsOf(id, businessDate)
     }
 }
 ```
@@ -111,12 +159,20 @@ curl -X POST http://localhost:8080/api/orders \
 
 ## Documentation
 
+### Getting Started
+- [Spring Boot Integration Guide](docs/spring-boot-integration.md) - Complete guide to Spring Boot features
+- [Annotation Configuration Guide](docs/annotation-configuration-guide.md) - Using annotations instead of XML
+- [XML to Annotation Migration](docs/xml-to-annotation-migration.md) - Migrate from XML to annotations
+
+### Core Concepts
+- [Understanding Bitemporal Data](docs/BITEMPORAL_GUIDE.md) - Comprehensive guide to bitemporal concepts
+- [Bitemporal Kotlin Examples](docs/BITEMPORAL_KOTLIN_EXAMPLES.md) - Practical code examples
+
+### Development
 - [Product Requirements Document](docs/planning/PRD.md)
 - [MVP Implementation Plan](docs/planning/MVP_Implementation_Plan.md)
 - [Test Verification Guide](docs/development/TEST_VERIFICATION.md)
 - [Code Review Guidelines](docs/development/CODE_REVIEW.md)
-- [Understanding Bitemporal Data](docs/BITEMPORAL_GUIDE.md) - Comprehensive guide to bitemporal concepts
-- [Bitemporal Kotlin Examples](docs/BITEMPORAL_KOTLIN_EXAMPLES.md) - Practical code examples
 
 ## Requirements
 
