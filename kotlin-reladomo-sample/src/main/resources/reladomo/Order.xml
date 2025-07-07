@@ -23,4 +23,8 @@
     <Attribute name="amount" javaType="BigDecimal" columnName="AMOUNT" nullable="false" precision="19" scale="2"/>
     <Attribute name="status" javaType="String" columnName="STATUS" maxLength="20" nullable="false"/>
     <Attribute name="description" javaType="String" columnName="DESCRIPTION" maxLength="500" nullable="true"/>
+    
+    <!-- Relationships -->
+    <Relationship name="customer" relatedObject="Customer" relatedIsDependent="false" cardinality="many-to-one">this.customerId = Customer.customerId</Relationship>
+    <Relationship name="orderItems" relatedObject="OrderItem" relatedIsDependent="true" cardinality="one-to-many">OrderItem.orderId = this.orderId</Relationship>
 </MithraObject>

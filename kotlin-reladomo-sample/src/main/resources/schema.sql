@@ -1,5 +1,8 @@
--- Drop table if exists
+-- Drop tables if exist
+DROP TABLE IF EXISTS ORDER_ITEMS;
 DROP TABLE IF EXISTS ORDERS;
+DROP TABLE IF EXISTS PRODUCTS;
+DROP TABLE IF EXISTS CUSTOMERS;
 
 -- Create Orders table with bitemporal columns
 CREATE TABLE ORDERS (
@@ -25,7 +28,51 @@ CREATE INDEX IDX_ORDERS_BUSINESS_DATE ON ORDERS(BUSINESS_FROM, BUSINESS_THRU);
 CREATE INDEX IDX_ORDERS_PROCESSING_DATE ON ORDERS(PROCESSING_FROM, PROCESSING_THRU);
 CREATE INDEX IDX_ORDERS_STATUS ON ORDERS(STATUS);
 
--- Insert sample data
+-- Create Customers table
+CREATE TABLE CUSTOMERS (
+    CUSTOMER_ID BIGINT NOT NULL PRIMARY KEY,
+    NAME VARCHAR(100) NOT NULL,
+    EMAIL VARCHAR(100) NOT NULL,
+    PHONE VARCHAR(20),
+    ADDRESS VARCHAR(500),
+    CREATED_DATE TIMESTAMP NOT NULL
+);
+
+-- Create Products table
+CREATE TABLE PRODUCTS (
+    PRODUCT_ID BIGINT NOT NULL PRIMARY KEY,
+    NAME VARCHAR(100) NOT NULL,
+    DESCRIPTION VARCHAR(500),
+    PRICE DECIMAL(10, 2) NOT NULL,
+    STOCK_QUANTITY INT NOT NULL,
+    CATEGORY VARCHAR(50)
+);
+
+-- Create OrderItems table
+CREATE TABLE ORDER_ITEMS (
+    ORDER_ITEM_ID BIGINT NOT NULL PRIMARY KEY,
+    ORDER_ID BIGINT NOT NULL,
+    PRODUCT_ID BIGINT NOT NULL,
+    QUANTITY INT NOT NULL,
+    UNIT_PRICE DECIMAL(10, 2) NOT NULL,
+    TOTAL_PRICE DECIMAL(10, 2) NOT NULL
+);
+
+-- Insert sample data for Customers
+INSERT INTO CUSTOMERS (CUSTOMER_ID, NAME, EMAIL, PHONE, ADDRESS, CREATED_DATE) VALUES
+(100, 'John Doe', 'john.doe@example.com', '555-0100', '123 Main St, Cityville', '2024-01-01 00:00:00'),
+(200, 'Jane Smith', 'jane.smith@example.com', '555-0200', '456 Oak Ave, Townsburg', '2024-01-01 00:00:00'),
+(300, 'Bob Johnson', 'bob.johnson@example.com', '555-0300', '789 Pine Rd, Villageton', '2024-01-01 00:00:00');
+
+-- Insert sample data for Products
+INSERT INTO PRODUCTS (PRODUCT_ID, NAME, DESCRIPTION, PRICE, STOCK_QUANTITY, CATEGORY) VALUES
+(1, 'Laptop', 'High-performance laptop', 999.99, 50, 'Electronics'),
+(2, 'Mouse', 'Wireless mouse', 29.99, 200, 'Electronics'),
+(3, 'Keyboard', 'Mechanical keyboard', 79.99, 150, 'Electronics'),
+(4, 'Monitor', '27-inch 4K monitor', 399.99, 75, 'Electronics'),
+(5, 'Desk Chair', 'Ergonomic office chair', 299.99, 40, 'Furniture');
+
+-- Insert sample data for Orders
 INSERT INTO ORDERS (
     ORDER_ID, CUSTOMER_ID, ORDER_DATE, AMOUNT, STATUS, DESCRIPTION,
     BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU
@@ -42,3 +89,12 @@ INSERT INTO ORDERS (
     3, 200, '2024-01-03 09:15:00', 750.50, 'PENDING', 'Third order',
     '2024-01-03 00:00:00', '9999-12-01 23:59:00', '2024-01-03 09:15:00', '9999-12-01 23:59:00'
 );
+
+-- Insert sample data for OrderItems
+INSERT INTO ORDER_ITEMS (ORDER_ITEM_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, TOTAL_PRICE) VALUES
+(1, 1, 1, 1, 999.99, 999.99),
+(2, 2, 2, 2, 29.99, 59.98),
+(3, 2, 3, 1, 79.99, 79.99),
+(4, 2, 4, 1, 399.99, 399.99),
+(5, 3, 5, 2, 299.99, 599.98),
+(6, 3, 2, 5, 29.99, 149.95);

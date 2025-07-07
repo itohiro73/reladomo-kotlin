@@ -109,6 +109,16 @@ kotlinReladomo {
 - Test each component individually before integration to ensure everything works
 - When encountering compilation errors with generated code, fix the generator, not the generated files
 
+### Testing Requirements
+- **ALL new features MUST have automated tests** - No feature is complete without tests
+- **Write tests BEFORE or ALONGSIDE implementation** - Not as an afterthought
+- **Test coverage should include**:
+  - Unit tests for individual components
+  - Integration tests for feature interactions
+  - End-to-end tests for complete workflows
+- **Sample app must demonstrate REAL functionality** - Never use mocks in the sample app
+- **If tests fail, fix the implementation** - Don't disable or skip tests
+
 ### Bitemporal Entity Pattern
 All generated entities implement `BiTemporalEntity` interface:
 ```kotlin

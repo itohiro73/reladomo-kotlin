@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Mithra>
+    <MithraObjectResource name="Customer"/>
     <MithraObjectResource name="Order"/>
+    <MithraObjectResource name="Product"/>
+    <MithraObjectResource name="OrderItem"/>
 </Mithra>

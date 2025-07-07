@@ -58,15 +58,45 @@ class ReladomoRepositoryFactory(
         entityMetadata: ReladomoEntityMetadata<*, *>
     ): ReladomoRepository<*, *> {
         // Get base repository and transaction template from context
-        val baseRepositoryName = "${entityClass.simpleName?.decapitalize()}Repository"
-        val baseRepository = try {
-            beanFactory.getBean(baseRepositoryName, BaseRepository::class.java)
-        } catch (e: Exception) {
+        // Try multiple naming conventions to find the repository
+        val possibleNames = listOf(
+            "${entityClass.simpleName}Repository",  // OrderKtRepository
+            "${entityClass.simpleName?.decapitalize()}Repository",  // orderKtRepository
+            "${entityClass.simpleName?.removeSuffix("Kt")}Repository",  // OrderRepository
+            "${entityClass.simpleName?.removeSuffix("Kt")?.decapitalize()}Repository"  // orderRepository
+        )
+        
+        // First try to get the repository as BaseRepository or BiTemporalRepository
+        val baseRepository = possibleNames.asSequence().mapNotNull { repoName ->
+            try {
+                if (entityMetadata.isBitemporal) {
+                    // Try BiTemporalRepository first for bitemporal entities
+                    try {
+                        beanFactory.getBean(repoName, BiTemporalRepository::class.java)
+                    } catch (e: Exception) {
+                        // Fall back to BaseRepository
+                        try {
+                            beanFactory.getBean(repoName, BaseRepository::class.java)
+                        } catch (e2: Exception) {
+                            null
+                        }
+                    }
+                } else {
+                    beanFactory.getBean(repoName, BaseRepository::class.java)
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }.firstOrNull() ?: run {
             // For testing, create a mock repository if none exists
             logger.warn("Base repository not found for ${entityClass.simpleName}, creating mock. " +
                     "This is expected during testing but not in production. " +
                     "Ensure Reladomo XML configuration includes ${entityClass.simpleName} class.")
-            createMockBaseRepository(entityMetadata)
+            if (entityMetadata.isBitemporal) {
+                createMockBiTemporalRepository()
+            } else {
+                createMockBaseRepository(entityMetadata)
+            }
         }
         
         val transactionTemplate = try {
@@ -79,12 +109,12 @@ class ReladomoRepositoryFactory(
         
         // Check if it's a bitemporal entity
         return if (entityMetadata.isBitemporal) {
-            // For bitemporal, we need a BiTemporalRepository
-            val biTemporalRepo = try {
-                beanFactory.getBean(baseRepositoryName, BiTemporalRepository::class.java)
-            } catch (e: Exception) {
-                // Create mock bitemporal repository for testing
-                logger.debug("BiTemporal repository not found for ${entityClass.simpleName}, creating mock")
+            // For bitemporal, use the already retrieved repository
+            val biTemporalRepo = if (baseRepository is BiTemporalRepository<*, *>) {
+                baseRepository
+            } else {
+                // This shouldn't happen if the entity is properly configured
+                logger.warn("Expected BiTemporalRepository for ${entityClass.simpleName} but got ${baseRepository::class.simpleName}")
                 createMockBiTemporalRepository()
             }
             @Suppress("UNCHECKED_CAST")
@@ -154,7 +184,13 @@ class ReladomoRepositoryInvocationHandler(
 ) : InvocationHandler {
     
     private val logger = LoggerFactory.getLogger(ReladomoRepositoryInvocationHandler::class.java)
-    private val baseRepositoryMethods = ReladomoRepository::class.java.methods.toSet()
+    private val baseRepositoryMethods = buildSet {
+        addAll(ReladomoRepository::class.java.methods)
+        // Include BiTemporalReladomoRepository methods if the base repository implements it
+        if (baseRepository is BiTemporalReladomoRepository<*, *>) {
+            addAll(BiTemporalReladomoRepository::class.java.methods)
+        }
+    }
     private val queryMethodCache = mutableMapOf<Method, ParsedQueryMethod>()
     
     override fun invoke(proxy: Any, method: Method, args: Array<Any?>?): Any? {

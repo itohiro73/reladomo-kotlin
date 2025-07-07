@@ -2,6 +2,7 @@ package io.github.kotlinreladomo.spring.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.github.kotlinreladomo.spring.connection.ConnectionManagerRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -80,6 +81,8 @@ class ReladomoDataSourceRegistry {
     
     fun register(name: String, dataSource: DataSource) {
         dataSources[name] = dataSource
+        // Also register in global registry for connection managers
+        ConnectionManagerRegistry.registerDataSource(name, dataSource)
         logger.debug("Registered datasource: $name")
     }
     

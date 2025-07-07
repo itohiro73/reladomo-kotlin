@@ -24,6 +24,7 @@ reladomo:
     repository:
       base-packages:
         - io.github.kotlinreladomo.sample.repository
+        - io.github.kotlinreladomo.sample.model  # Scan for @ReladomoEntity annotated classes
       enable-query-methods: true
     
     # Cache configuration
@@ -38,7 +39,7 @@ reladomo:
     # Timezone configuration
     database-timezone: UTC
     
-    # Connection manager configuration
+    # Connection manager configuration (optional - will use entity scanning if not found)
     connection-manager-config-file: reladomo-runtime-config.xml
     default-transaction-timeout: 120
     default-business-date-provider: CURRENT_TIMESTAMP

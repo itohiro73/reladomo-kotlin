@@ -150,7 +150,7 @@ class OrderKtRepositoryTest {
         assertNotNull(repository.findById(order.orderId!!))
 
         // When - delete with the same business date
-        repository.deleteById(order.orderId!!, businessDate)
+        repository.deleteByIdAsOf(order.orderId!!, businessDate)
 
         // Then - for bitemporal, it should be terminated (not found at current time)
         val deletedOrder = repository.findById(order.orderId!!)

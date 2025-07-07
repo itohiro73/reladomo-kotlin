@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.kotlinreladomo.sample.domain</PackageName>
+    <ClassName>Customer</ClassName>
+    <DefaultTable>CUSTOMERS</DefaultTable>
+    
+    <Attribute name="customerId" javaType="long" columnName="CUSTOMER_ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="CUSTOMER_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.kotlinreladomo.sample.domain.CustomerDatabaseObjectFactory"/>
+    </Attribute>
+    <Attribute name="name" javaType="String" columnName="NAME" maxLength="100" nullable="false"/>
+    <Attribute name="email" javaType="String" columnName="EMAIL" maxLength="100" nullable="false"/>
+    <Attribute name="phone" javaType="String" columnName="PHONE" maxLength="20" nullable="true"/>
+    <Attribute name="address" javaType="String" columnName="ADDRESS" maxLength="500" nullable="true"/>
+    <Attribute name="createdDate" javaType="Timestamp" columnName="CREATED_DATE" nullable="false"/>
+    
+    <Relationship name="orders" relatedObject="Order" relatedIsDependent="true" cardinality="one-to-many">Order.customerId = this.customerId</Relationship>
+</MithraObject>

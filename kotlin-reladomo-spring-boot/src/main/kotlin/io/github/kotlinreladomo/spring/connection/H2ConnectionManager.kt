@@ -2,6 +2,7 @@ package io.github.kotlinreladomo.spring.connection
 
 import com.gs.fw.common.mithra.databasetype.DatabaseType
 import com.gs.fw.common.mithra.databasetype.H2DatabaseType
+import java.util.Properties
 
 /**
  * H2 database connection manager for Reladomo.
@@ -18,4 +19,15 @@ class H2ConnectionManager : SpringAwareConnectionManager() {
     override fun getDatabaseType(): DatabaseType = H2DatabaseType.getInstance()
     
     override fun getDatabaseIdentifier(): String = "H2"
+    
+    companion object {
+        @JvmStatic
+        fun getInstance(properties: Properties): H2ConnectionManager {
+            val connectionManager = H2ConnectionManager()
+            // Apply properties if needed
+            properties.getProperty("databaseName")?.let { connectionManager.databaseName = it }
+            properties.getProperty("inMemory")?.let { connectionManager.inMemory = it }
+            return connectionManager
+        }
+    }
 }

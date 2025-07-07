@@ -54,6 +54,11 @@ abstract class SpringAwareConnectionManager : SourcelessConnectionManager, Appli
     override fun getDatabaseTimeZone(): TimeZone = TimeZone.getDefault()
     
     override fun getConnection(): Connection {
+        // Try to get datasource if not already initialized
+        if (dataSource == null) {
+            dataSource = ConnectionManagerRegistry.getDataSource(connectionManagerName)
+        }
+        
         return dataSource?.connection
             ?: throw IllegalStateException("DataSource not initialized for connection manager: $connectionManagerName")
     }
