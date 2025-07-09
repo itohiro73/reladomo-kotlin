@@ -9,7 +9,7 @@ plugins {
     `java-library`
 }
 
-group = "io.github.kotlin-reladomo"
+group = "io.github.reladomo-kotlin"
 version = "0.1.0-SNAPSHOT"
 
 allprojects {

@@ -1,6 +1,6 @@
 # Spring Boot Integration Guide
 
-The Kotlin Reladomo Spring Boot integration provides seamless integration between Reladomo ORM and Spring Boot applications, offering auto-configuration, entity scanning, and Spring-native features.
+The Reladomo Kotlin Spring Boot integration provides seamless integration between Reladomo ORM and Spring Boot applications, offering auto-configuration, entity scanning, and Spring-native features.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ Add the Spring Boot starter to your project:
 
 ```kotlin
 dependencies {
-    implementation("io.github.kotlinreladomo:kotlin-reladomo-spring-boot-starter:1.0.0")
+    implementation("io.github.reladomokotlin:reladomo-kotlin-spring-boot-starter:1.0.0")
 }
 ```
 
@@ -178,7 +178,7 @@ reladomo:
     connection-manager: default
     
     # Or specify explicitly
-    connection-manager-class: io.github.kotlinreladomo.spring.connection.PostgreSQLConnectionManager
+    connection-manager-class: io.github.reladomokotlin.spring.connection.PostgreSQLConnectionManager
 ```
 
 ### Multi-DataSource Support
@@ -298,7 +298,7 @@ class ReladomoConfig {
     fun reladomoConfiguration(): ReladomoConfiguration {
         return ReladomoConfigurationBuilder()
             .connectionManager("primary") {
-                className = "io.github.kotlinreladomo.spring.connection.PostgreSQLConnectionManager"
+                className = "io.github.reladomokotlin.spring.connection.PostgreSQLConnectionManager"
                 property("databaseName", "myapp")
             }
             .entity("com.example.Order") {
@@ -429,7 +429,7 @@ Enable debug logging:
 ```yaml
 logging:
   level:
-    io.github.kotlinreladomo: DEBUG
+    io.github.reladomokotlin: DEBUG
     com.gs.fw.common.mithra: DEBUG
 ```
 

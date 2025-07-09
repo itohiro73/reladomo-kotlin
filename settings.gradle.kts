@@ -1,11 +1,11 @@
-rootProject.name = "kotlin-reladomo"
+rootProject.name = "reladomo-kotlin"
 
 include(
-    "kotlin-reladomo-core",
-    "kotlin-reladomo-generator",
-    "kotlin-reladomo-spring-boot",
-    "kotlin-reladomo-gradle-plugin",
-    "kotlin-reladomo-sample"
+    "reladomo-kotlin-core",
+    "reladomo-kotlin-generator",
+    "reladomo-kotlin-spring-boot",
+    "reladomo-kotlin-gradle-plugin",
+    "reladomo-kotlin-sample"
 )
 
 pluginManagement {

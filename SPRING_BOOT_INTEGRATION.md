@@ -1,10 +1,10 @@
-# Spring Boot Integration for Kotlin Reladomo
+# Spring Boot Integration for Reladomo Kotlin
 
-This document describes the comprehensive Spring Boot integration features available in Kotlin Reladomo.
+This document describes the comprehensive Spring Boot integration features available in Reladomo Kotlin.
 
 ## Overview
 
-Kotlin Reladomo provides seamless Spring Boot integration with auto-configuration, Spring Data-style repositories, and query method support. It follows Spring conventions to make Reladomo feel like a native part of the Spring ecosystem.
+Reladomo Kotlin provides seamless Spring Boot integration with auto-configuration, Spring Data-style repositories, and query method support. It follows Spring conventions to make Reladomo feel like a native part of the Spring ecosystem.
 
 ## Features
 
@@ -238,7 +238,7 @@ reladomo:
 
 1. Add the dependency:
 ```kotlin
-implementation("io.github.kotlinreladomo:kotlin-reladomo-spring-boot:1.0.0")
+implementation("io.github.reladomokotlin:reladomo-kotlin-spring-boot:1.0.0")
 ```
 
 2. Create your repository interface:

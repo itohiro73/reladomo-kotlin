@@ -10,12 +10,12 @@ This is a Kotlin wrapper library for Reladomo ORM that enables transparent use o
 
 ### Module Structure (Planned)
 ```
-kotlin-reladomo/
-├── kotlin-reladomo-core/          # Core wrapper functionality
-├── kotlin-reladomo-generator/     # XML to Kotlin code generation
-├── kotlin-reladomo-spring-boot/   # Spring Boot integration
-├── kotlin-reladomo-gradle-plugin/ # Gradle plugin for build integration
-└── kotlin-reladomo-sample/        # Sample application
+reladomo-kotlin/
+├── reladomo-kotlin-core/          # Core wrapper functionality
+├── reladomo-kotlin-generator/     # XML to Kotlin code generation
+├── reladomo-kotlin-spring-boot/   # Spring Boot integration
+├── reladomo-kotlin-gradle-plugin/ # Gradle plugin for build integration
+└── reladomo-kotlin-sample/        # Sample application
 ```
 
 ### Core Design Principles
@@ -28,7 +28,7 @@ kotlin-reladomo/
 
 ### Build Commands
 
-**IMPORTANT**: Always check your current directory with `pwd` before running gradle commands. Gradle commands should be run from the project root directory `/data/data/com.termux/files/home/development/kotlin-reladomo/`.
+**IMPORTANT**: Always check your current directory with `pwd` before running gradle commands. Gradle commands should be run from the project root directory `/data/data/com.termux/files/home/development/reladomo-kotlin/`.
 
 **IMPORTANT**: When checking for running processes, always use `ps -ef` instead of `ps aux` for better compatibility.
 
@@ -37,7 +37,7 @@ kotlin-reladomo/
 pwd
 
 # If not in project root, navigate to it
-cd /data/data/com.termux/files/home/development/kotlin-reladomo/
+cd /data/data/com.termux/files/home/development/reladomo-kotlin/
 
 # Full project build
 ./gradlew build
@@ -49,8 +49,8 @@ cd /data/data/com.termux/files/home/development/kotlin-reladomo/
 ./gradlew test
 
 # Run specific module tests
-./gradlew :kotlin-reladomo-generator:test
-./gradlew :kotlin-reladomo-sample:test
+./gradlew :reladomo-kotlin-generator:test
+./gradlew :reladomo-kotlin-sample:test
 
 # Clean build
 ./gradlew clean build
@@ -60,7 +60,7 @@ cd /data/data/com.termux/files/home/development/kotlin-reladomo/
 
 ```bash
 # Run the sample application
-./gradlew :kotlin-reladomo-sample:bootRun
+./gradlew :reladomo-kotlin-sample:bootRun
 
 # Test CRUD operations
 # GET all orders
@@ -86,7 +86,7 @@ curl -s http://localhost:8080/api/orders/{id} | python3 -m json.tool
 ### Code Generation Configuration
 The project will use a Gradle plugin to generate Kotlin code from Reladomo XML files:
 ```kotlin
-kotlinReladomo {
+reladomoKotlin {
     xmlDirectory = file("src/main/resources/reladomo")
     outputDirectory = file("build/generated/kotlin")
     packageName = "com.example.domain.kotlin"
@@ -133,7 +133,7 @@ The framework provides `GenericSequenceObjectFactory` that works with Reladomo's
 - No need to create individual factory classes per entity
 - Automatically manages sequences in MITHRA_SEQUENCE table
 - Thread-safe with proper transaction handling
-- Reference in XML: `sequenceObjectFactoryName="io.github.kotlinreladomo.springboot.sequence.GenericSequenceObjectFactory"`
+- Reference in XML: `sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"`
 
 ### Repository Pattern
 Repositories extend `AbstractBiTemporalRepository` which provides:

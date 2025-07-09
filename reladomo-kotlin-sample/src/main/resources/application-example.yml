@@ -1,0 +1,73 @@
+# Example configuration for Kotlin Reladomo Spring Boot integration
+reladomo:
+  kotlin:
+    # Basic configuration
+    connection-manager-config-file: reladomo-runtime-config.xml
+    database-time-zone: UTC
+    enable-debug-logging: false
+    initialize-on-startup: true
+    
+    # Cache configuration
+    cache:
+      type: PARTIAL          # Options: FULL, PARTIAL, NONE
+      timeout: 3600          # Seconds (for PARTIAL cache)
+      max-size: 10000        # Maximum number of objects in cache
+      relationship-timeout: 3600
+    
+    # Multi-datasource configuration
+    datasources:
+      primary:
+        url: jdbc:postgresql://localhost:5432/orders_db
+        username: orders_user
+        password: orders_pass
+        driver-class-name: org.postgresql.Driver
+        connection-pool:
+          min-size: 5
+          max-size: 20
+          connection-timeout: 30000
+          idle-timeout: 600000
+      
+      customer:
+        url: jdbc:postgresql://localhost:5432/customers_db
+        username: customers_user
+        password: customers_pass
+        driver-class-name: org.postgresql.Driver
+        connection-pool:
+          min-size: 3
+          max-size: 10
+          connection-timeout: 30000
+          idle-timeout: 600000
+      
+      reporting:
+        url: jdbc:postgresql://localhost:5433/reporting_db
+        username: reporting_user
+        password: reporting_pass
+        driver-class-name: org.postgresql.Driver
+        connection-pool:
+          min-size: 2
+          max-size: 5
+          connection-timeout: 30000
+          idle-timeout: 600000
+    
+    # Repository configuration
+    repository:
+      base-packages:
+        - io.github.reladomokotlin.sample.repository
+        - com.mycompany.repositories
+      enable-query-methods: true
+      naming-strategy: DEFAULT
+
+# Spring configuration
+spring:
+  jpa:
+    open-in-view: false
+  
+  transaction:
+    default-timeout: 120
+
+# Logging
+logging:
+  level:
+    io.github.reladomokotlin: DEBUG
+    com.gs.fw.common.mithra: INFO
+    com.zaxxer.hikari: INFO

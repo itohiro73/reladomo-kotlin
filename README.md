@@ -1,4 +1,4 @@
-# Kotlin Reladomo
+# Reladomo Kotlin
 
 A Kotlin wrapper library for [Reladomo ORM](https://github.com/goldmansachs/reladomo) that provides type-safe, null-safe Kotlin APIs with Spring Boot integration.
 
@@ -19,14 +19,14 @@ A Kotlin wrapper library for [Reladomo ORM](https://github.com/goldmansachs/rela
 
 ```kotlin
 plugins {
-    id("io.github.kotlin-reladomo") version "0.1.0-SNAPSHOT"
+    id("io.github.reladomo-kotlin") version "0.1.0-SNAPSHOT"
 }
 ```
 
 ### 2. Configure the Plugin
 
 ```kotlin
-kotlinReladomo {
+reladomoKotlin {
     xmlDirectory = file("src/main/resources/reladomo")
     outputDirectory = file("build/generated/kotlin")
     packageName = "com.example.domain.kotlin"
@@ -125,11 +125,11 @@ class OrderService(
 
 ## Project Structure
 
-- `kotlin-reladomo-core`: Core interfaces and base classes
-- `kotlin-reladomo-generator`: Code generation logic
-- `kotlin-reladomo-spring-boot`: Spring Boot integration
-- `kotlin-reladomo-gradle-plugin`: Gradle plugin
-- `kotlin-reladomo-sample`: Sample application
+- `reladomo-kotlin-core`: Core interfaces and base classes
+- `reladomo-kotlin-generator`: Code generation logic
+- `reladomo-kotlin-spring-boot`: Spring Boot integration
+- `reladomo-kotlin-gradle-plugin`: Gradle plugin
+- `reladomo-kotlin-sample`: Sample application
 
 ## Building from Source
 
@@ -142,7 +142,7 @@ class OrderService(
 The project includes a sample Spring Boot application demonstrating the functionality:
 
 ```bash
-./gradlew :kotlin-reladomo-sample:bootRun
+./gradlew :reladomo-kotlin-sample:bootRun
 ```
 
 Once running, you can test the REST API:

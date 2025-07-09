@@ -1,14 +1,14 @@
-# Code Review: Kotlin Reladomo Implementation
+# Code Review: Reladomo Kotlin Implementation
 
 ## Architecture Review
 
 ### ✅ Module Structure
 The project follows a clean multi-module architecture:
-- **kotlin-reladomo-core**: Core interfaces and abstractions
-- **kotlin-reladomo-generator**: Code generation logic
-- **kotlin-reladomo-spring-boot**: Spring Boot integration
-- **kotlin-reladomo-gradle-plugin**: Build tool integration
-- **kotlin-reladomo-sample**: Working example
+- **reladomo-kotlin-core**: Core interfaces and abstractions
+- **reladomo-kotlin-generator**: Code generation logic
+- **reladomo-kotlin-spring-boot**: Spring Boot integration
+- **reladomo-kotlin-gradle-plugin**: Build tool integration
+- **reladomo-kotlin-sample**: Working example
 
 ### ✅ Design Patterns
 

@@ -1,6 +1,6 @@
 # Annotation-Based Configuration Guide
 
-This guide covers the annotation-based entity configuration feature introduced in Kotlin Reladomo, which provides a more idiomatic Kotlin approach to defining Reladomo entities without XML.
+This guide covers the annotation-based entity configuration feature introduced in Reladomo Kotlin, which provides a more idiomatic Kotlin approach to defining Reladomo entities without XML.
 
 ## Overview
 
@@ -497,8 +497,8 @@ Enable debug logging to see entity discovery:
 ```yaml
 logging:
   level:
-    io.github.kotlinreladomo.spring.scanner: DEBUG
-    io.github.kotlinreladomo.spring.config: DEBUG
+    io.github.reladomokotlin.spring.scanner: DEBUG
+    io.github.reladomokotlin.spring.config: DEBUG
 ```
 
 ## See Also

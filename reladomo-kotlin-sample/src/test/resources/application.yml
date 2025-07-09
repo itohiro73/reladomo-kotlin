@@ -1,0 +1,38 @@
+spring:
+  profiles:
+    active: test
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+# Reladomo configuration
+reladomo:
+  kotlin:
+    connection-manager-config-file: reladomo-runtime-config.xml
+    repository:
+      base-packages:
+        - io.github.reladomokotlin.sample.domain
+  # Enable sequence generation for tests
+  sequence:
+    enabled: true
+    type: IN_MEMORY
+    in-memory:
+      start-value: 1000
+      increment-by: 1
+
+# Connection pooling
+spring.datasource.hikari:
+  maximum-pool-size: 10
+  minimum-idle: 5
+  idle-timeout: 300000
+  connection-timeout: 20000
+  max-lifetime: 1200000

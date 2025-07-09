@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<MithraRuntime>
-    <ConnectionManager className="io.github.kotlinreladomo.sample.config.TestConnectionManager">
-        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Order" cacheType="partial"/>
-        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Customer" cacheType="partial"/>
-        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.Product" cacheType="partial"/>
-        <MithraObjectConfiguration className="io.github.kotlinreladomo.sample.domain.OrderItem" cacheType="partial"/>
-    </ConnectionManager>
-</MithraRuntime>

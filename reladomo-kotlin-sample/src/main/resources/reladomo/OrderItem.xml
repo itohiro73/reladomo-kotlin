@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.reladomokotlin.sample.domain</PackageName>
+    <ClassName>OrderItem</ClassName>
+    <DefaultTable>ORDER_ITEMS</DefaultTable>
+    
+    <Attribute name="orderItemId" javaType="long" columnName="ORDER_ITEM_ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="ORDER_ITEM_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="orderId" javaType="long" columnName="ORDER_ID" nullable="false"/>
+    <Attribute name="productId" javaType="long" columnName="PRODUCT_ID" nullable="false"/>
+    <Attribute name="quantity" javaType="int" columnName="QUANTITY" nullable="false"/>
+    <Attribute name="unitPrice" javaType="BigDecimal" columnName="UNIT_PRICE" scale="2" precision="10" nullable="false"/>
+    <Attribute name="totalPrice" javaType="BigDecimal" columnName="TOTAL_PRICE" scale="2" precision="10" nullable="false"/>
+    
+    <Relationship name="order" relatedObject="Order" relatedIsDependent="false" cardinality="many-to-one">this.orderId = Order.orderId</Relationship>
+    <Relationship name="product" relatedObject="Product" relatedIsDependent="false" cardinality="many-to-one">this.productId = Product.productId</Relationship>
+</MithraObject>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.reladomokotlin.spring.connection.H2ConnectionManager">
+        <Property name="connectionManagerName" value="test"/>
+        <Property name="databaseName" value="test"/>
+        <Property name="inMemory" value="true"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.spring.config.test.TestEntity" cacheType="none"/>
+    </ConnectionManager>
+</MithraRuntime>
