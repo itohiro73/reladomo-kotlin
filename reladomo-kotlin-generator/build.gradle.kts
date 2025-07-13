@@ -13,8 +13,8 @@ dependencies {
     
     // XML parsing
     implementation("javax.xml.bind:jaxb-api:2.3.1")
-    implementation("com.sun.xml.bind:jaxb-core:4.0.4")
-    implementation("com.sun.xml.bind:jaxb-impl:4.0.4")
+    implementation("com.sun.xml.bind:jaxb-core:4.0.5")
+    implementation("com.sun.xml.bind:jaxb-impl:4.0.5")
     
     // Reladomo generator
     implementation("com.goldmansachs.reladomo:reladomogen:${property("reladomoVersion")}")
