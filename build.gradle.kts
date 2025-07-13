@@ -7,10 +7,11 @@ plugins {
     id("io.spring.dependency-management") version "1.1.4" apply false
     `maven-publish`
     `java-library`
+    signing
 }
 
-group = "io.github.reladomo-kotlin"
-version = "0.1.0-SNAPSHOT"
+group = property("group").toString()
+version = property("version").toString()
 
 allprojects {
     repositories {
@@ -21,6 +22,13 @@ allprojects {
 subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "maven-publish")
+    apply(plugin = "signing")
+    
+    // Apply publishing conventions to eligible modules
+    if (name in setOf("reladomo-kotlin-core", "reladomo-kotlin-generator", 
+                      "reladomo-kotlin-spring-boot", "reladomo-kotlin-gradle-plugin")) {
+        apply(from = rootProject.file("buildSrc/src/main/kotlin/publishing-conventions.gradle.kts"))
+    }
     
     group = rootProject.group
     version = rootProject.version

@@ -25,3 +25,17 @@ local.properties
 
 # Gradle wrapper
 !gradle/wrapper/gradle-wrapper.jar
+
+# Sensitive maintainer documentation
+docs/maintainer/
+/docs/maintainer/**
+
+# Local signing configuration
+signing.properties
+secring.gpg
+*.asc
+*.gpg
+
+# Release credentials
+ossrh.properties
+maven-central.properties

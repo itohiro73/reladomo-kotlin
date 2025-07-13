@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Minimal permissions
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Validate tag format
+      run: |
+        if [[ ! "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          echo "Invalid tag format. Expected: vX.Y.Z or vX.Y.Z-suffix"
+          exit 1
+        fi
+    
+    - name: Get version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Releasing version: $VERSION"
+
+  build-and-publish:
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    environment: release  # Requires approval for production releases
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+        server-id: ossrh
+        server-username: MAVEN_USERNAME
+        server-password: MAVEN_PASSWORD
+        gpg-private-key: ${{ secrets.SIGNING_SECRET_KEY }}
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+    
+    - name: Validate gradle wrapper
+      uses: gradle/wrapper-validation-action@v1
+    
+    - name: Configure GPG
+      run: |
+        echo "${{ secrets.SIGNING_SECRET_KEY }}" | base64 -d | gpg --batch --import
+        gpg --list-secret-keys --keyid-format SHORT
+    
+    - name: Update version
+      run: |
+        echo "version=${{ needs.validate-tag.outputs.version }}" > gradle.properties
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add gradle.properties
+        git diff --cached --quiet || git commit -m "Release version ${{ needs.validate-tag.outputs.version }}"
+    
+    - name: Build artifacts
+      run: ./gradlew clean build -x test --no-daemon
+    
+    - name: Run tests
+      run: ./gradlew test --no-daemon
+    
+    - name: Publish to Maven Central
+      env:
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+        SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSWORD }}
+      run: |
+        ./gradlew publish \
+          -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} \
+          -Psigning.password=${{ secrets.SIGNING_PASSWORD }} \
+          -Psigning.secretKeyRingFile=$HOME/.gnupg/secring.gpg \
+          --no-daemon --stacktrace
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ needs.validate-tag.outputs.version }}
+        draft: false
+        prerelease: ${{ contains(needs.validate-tag.outputs.version, '-') }}
+        generate_release_notes: true
+        files: |
+          **/build/libs/*.jar
+          **/build/libs/*.jar.asc
+        body: |
+          ## Reladomo-Kotlin ${{ needs.validate-tag.outputs.version }}
+          
+          ### Maven Central Coordinates
+          ```xml
+          <dependency>
+              <groupId>io.github.reladomo-kotlin</groupId>
+              <artifactId>reladomo-kotlin-spring-boot</artifactId>
+              <version>${{ needs.validate-tag.outputs.version }}</version>
+          </dependency>
+          ```
+          
+          ```kotlin
+          implementation("io.github.reladomo-kotlin:reladomo-kotlin-spring-boot:${{ needs.validate-tag.outputs.version }}")
+          ```
+          
+          ### Gradle Plugin
+          ```kotlin
+          plugins {
+              id("io.github.reladomo-kotlin") version "${{ needs.validate-tag.outputs.version }}"
+          }
+          ```
+          
+          See [CHANGELOG.md](https://github.com/reladomo-kotlin/reladomo-kotlin/blob/main/CHANGELOG.md) for details.
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: |
+          **/build/libs/*.jar
+          **/build/libs/*.pom
+          **/build/libs/*.jar.asc
+        retention-days: 30
+
+  post-release:
+    needs: [validate-tag, build-and-publish]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Update version to next snapshot
+      run: |
+        CURRENT_VERSION=${{ needs.validate-tag.outputs.version }}
+        # Parse version and increment patch
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]%%[^0-9]*}
+        NEXT_PATCH=$((PATCH + 1))
+        NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH-SNAPSHOT"
+        
+        echo "version=$NEXT_VERSION" > gradle.properties
+        
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add gradle.properties
+        git commit -m "Prepare next development version $NEXT_VERSION"
+        git push origin HEAD:main
