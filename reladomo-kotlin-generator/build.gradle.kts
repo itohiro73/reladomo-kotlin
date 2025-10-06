@@ -32,7 +32,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:${property("junitVersion")}")
     testImplementation("org.jetbrains.kotlin:kotlin-test:${property("kotlinVersion")}")
     testImplementation("org.assertj:assertj-core:3.24.2")
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("io.mockk:mockk:1.14.6")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
