@@ -86,3 +86,23 @@ jobs:
         VALIDATE_JSON: false
         FILTER_REGEX_EXCLUDE: .*build/.*
       continue-on-error: true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run dependency check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'reladomo-kotlin'
+        path: '.'
+        format: 'HTML'
+
+    - name: Upload dependency check results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-check-report
+        path: reports/
+        retention-days: 7
