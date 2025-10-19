@@ -69,8 +69,20 @@ jobs:
       env:
         DEFAULT_BRANCH: main
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Only validate changed files in PRs
+        VALIDATE_ALL_CODEBASE: false
+        # Enable only necessary linters
         VALIDATE_KOTLIN: true
         VALIDATE_YAML: true
         VALIDATE_MARKDOWN: true
+        # Disable all other linters for speed
+        VALIDATE_BASH: false
+        VALIDATE_GO: false
+        VALIDATE_PYTHON: false
+        VALIDATE_JAVASCRIPT_ES: false
+        VALIDATE_TYPESCRIPT_ES: false
+        VALIDATE_CSS: false
+        VALIDATE_HTML: false
+        VALIDATE_JSON: false
         FILTER_REGEX_EXCLUDE: .*build/.*
       continue-on-error: true
