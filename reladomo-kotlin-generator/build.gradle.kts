@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     `java-library`
+    id("publishing-conventions")
 }
 
 dependencies {

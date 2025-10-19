@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.spring")
     `java-library`
+    id("publishing-conventions")
 }
 
 dependencies {
