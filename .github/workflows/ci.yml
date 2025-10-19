@@ -34,12 +34,12 @@ jobs:
     
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    
+
     - name: Build with Gradle
-      run: ./gradlew build -x :reladomo-kotlin-sample:test --no-daemon --warning-mode all
+      run: ./gradlew build -x :reladomo-kotlin-sample:test --warning-mode all
 
     - name: Run tests
-      run: ./gradlew test -x :reladomo-kotlin-sample:test --no-daemon
+      run: ./gradlew test -x :reladomo-kotlin-sample:test
     
     - name: Generate test report
       uses: dorny/test-reporter@v1
