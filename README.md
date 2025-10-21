@@ -21,7 +21,7 @@ Add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:0.1.0-SNAPSHOT")
+    implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:0.0.1")
 }
 ```
 
@@ -31,7 +31,7 @@ Add the Gradle plugin for code generation:
 
 ```kotlin
 plugins {
-    id("io.github.itohiro73.reladomo-kotlin") version "0.1.0-SNAPSHOT"
+    id("io.github.itohiro73.reladomo-kotlin") version "0.0.1"
 }
 ```
 
@@ -43,7 +43,7 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>io.github.itohiro73</groupId>
     <artifactId>reladomo-kotlin-spring-boot</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.0.1</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ Add the dependency to your `pom.xml`:
 
 ```kotlin
 plugins {
-    id("io.github.itohiro73.reladomo-kotlin") version "0.1.0-SNAPSHOT"
+    id("io.github.itohiro73.reladomo-kotlin") version "0.0.1"
 }
 ```
 
