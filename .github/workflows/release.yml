@@ -50,23 +50,13 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
-        server-id: ossrh
-        server-username: MAVEN_USERNAME
-        server-password: MAVEN_PASSWORD
-        gpg-private-key: ${{ secrets.SIGNING_SECRET_KEY }}
-        gpg-passphrase: MAVEN_GPG_PASSPHRASE
-    
+
     - name: Validate gradle wrapper
       uses: gradle/wrapper-validation-action@v1
-    
-    - name: Configure GPG
-      run: |
-        echo "${{ secrets.SIGNING_SECRET_KEY }}" | base64 -d | gpg --batch --import
-        gpg --list-secret-keys --keyid-format SHORT
-    
+
     - name: Update version
       run: |
-        echo "version=${{ needs.validate-tag.outputs.version }}" > gradle.properties
+        sed -i "s/version=.*/version=${{ needs.validate-tag.outputs.version }}/" gradle.properties
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add gradle.properties
@@ -80,17 +70,12 @@ jobs:
     
     - name: Publish to Maven Central
       env:
-        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
-        SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.SIGNING_PASSWORD }}
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_SECRET_KEY }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
       run: |
-        ./gradlew publish \
-          -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} \
-          -Psigning.password=${{ secrets.SIGNING_PASSWORD }} \
-          -Psigning.secretKeyRingFile=$HOME/.gnupg/secring.gpg \
-          --no-daemon --stacktrace
+        ./gradlew publishAndReleaseToMavenCentral --no-daemon --stacktrace
     
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -104,28 +89,28 @@ jobs:
           **/build/libs/*.jar.asc
         body: |
           ## Reladomo-Kotlin ${{ needs.validate-tag.outputs.version }}
-          
+
           ### Maven Central Coordinates
           ```xml
           <dependency>
-              <groupId>io.github.reladomo-kotlin</groupId>
+              <groupId>io.github.itohiro73</groupId>
               <artifactId>reladomo-kotlin-spring-boot</artifactId>
               <version>${{ needs.validate-tag.outputs.version }}</version>
           </dependency>
           ```
-          
+
           ```kotlin
-          implementation("io.github.reladomo-kotlin:reladomo-kotlin-spring-boot:${{ needs.validate-tag.outputs.version }}")
+          implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:${{ needs.validate-tag.outputs.version }}")
           ```
-          
+
           ### Gradle Plugin
           ```kotlin
           plugins {
-              id("io.github.reladomo-kotlin") version "${{ needs.validate-tag.outputs.version }}"
+              id("io.github.itohiro73.reladomo-kotlin") version "${{ needs.validate-tag.outputs.version }}"
           }
           ```
-          
-          See [CHANGELOG.md](https://github.com/reladomo-kotlin/reladomo-kotlin/blob/main/CHANGELOG.md) for details.
+
+          See [CHANGELOG.md](https://github.com/itohiro73/reladomo-kotlin/blob/main/CHANGELOG.md) for details.
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -157,9 +142,9 @@ jobs:
         PATCH=${VERSION_PARTS[2]%%[^0-9]*}
         NEXT_PATCH=$((PATCH + 1))
         NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH-SNAPSHOT"
-        
-        echo "version=$NEXT_VERSION" > gradle.properties
-        
+
+        sed -i "s/version=.*/version=$NEXT_VERSION/" gradle.properties
+
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add gradle.properties

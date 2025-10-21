@@ -1,10 +1,7 @@
-import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.kotlin.dsl.signing
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
-    `maven-publish`
-    signing
-    `java-library`
+    id("com.vanniktech.maven.publish")
 }
 
 // Only publish specific modules
@@ -16,77 +13,52 @@ val publishedModules = setOf(
 )
 
 if (project.name in publishedModules) {
-    java {
-        withJavadocJar()
-        withSourcesJar()
-    }
+    mavenPublishing {
+        // Publish to Central Portal (2025+ requirement)
+        publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                artifactId = project.name
-                from(components["java"])
+        // Sign all publications (required by Maven Central)
+        // Only sign if signing credentials are available
+        val signingKey = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")
+        if (!signingKey.isNullOrEmpty()) {
+            signAllPublications()
+        }
 
-                pom {
-                    name.set(property("pomName").toString() + " - ${project.name}")
-                    description.set(property("pomDescription").toString())
-                    url.set(property("pomUrl").toString())
+        // Configure Maven coordinates
+        coordinates(
+            groupId = findProperty("group")?.toString() ?: "io.github.itohiro73",
+            artifactId = project.name,
+            version = project.version.toString()
+        )
 
-                    licenses {
-                        license {
-                            name.set(property("pomLicenseName").toString())
-                            url.set(property("pomLicenseUrl").toString())
-                        }
-                    }
+        // Configure POM metadata
+        pom {
+            name.set(project.name)
+            description.set(findProperty("pomDescription")?.toString() ?: "Kotlin wrapper for Reladomo ORM")
+            inceptionYear.set("2025")
+            url.set(findProperty("pomUrl")?.toString() ?: "https://github.com/itohiro73/reladomo-kotlin")
 
-                    developers {
-                        developer {
-                            id.set("reladomo-kotlin")
-                            name.set(property("pomDeveloperName").toString())
-                            email.set(property("pomDeveloperEmail").toString())
-                        }
-                    }
-
-                    scm {
-                        url.set(property("pomScmUrl").toString())
-                        connection.set(property("pomScmConnection").toString())
-                        developerConnection.set(property("pomScmConnection").toString().replace("git://", "ssh://"))
-                    }
+            licenses {
+                license {
+                    name.set(findProperty("pomLicenseName")?.toString() ?: "The Apache License, Version 2.0")
+                    url.set(findProperty("pomLicenseUrl")?.toString() ?: "http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    distribution.set("repo")
                 }
             }
-        }
 
-        repositories {
-            maven {
-                name = "OSSRH"
-                val releasesRepoUrl = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                val snapshotsRepoUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-                
-                credentials {
-                    username = System.getenv("OSSRH_USERNAME") ?: property("ossrhUsername")?.toString()
-                    password = System.getenv("OSSRH_PASSWORD") ?: property("ossrhPassword")?.toString()
+            developers {
+                developer {
+                    id.set("itohiro73")
+                    name.set(findProperty("pomDeveloperName")?.toString() ?: "Hiroshi Ito")
+                    email.set(findProperty("pomDeveloperEmail")?.toString() ?: "")
                 }
             }
-        }
-    }
 
-    signing {
-        val signingKeyId = System.getenv("SIGNING_KEY_ID") ?: property("signing.keyId")?.toString()
-        val signingPassword = System.getenv("SIGNING_PASSWORD") ?: property("signing.password")?.toString()
-        val signingKey = System.getenv("SIGNING_SECRET_KEY") ?: property("signing.secretKeyRingFile")?.toString()
-
-        if (!signingKeyId.isNullOrEmpty()) {
-            if (!signingKey.isNullOrEmpty() && signingKey.contains("BEGIN PGP")) {
-                useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-            } else {
-                useGpgCmd()
+            scm {
+                url.set(findProperty("pomScmUrl")?.toString() ?: "https://github.com/itohiro73/reladomo-kotlin")
+                connection.set(findProperty("pomScmConnection")?.toString() ?: "scm:git:git://github.com/itohiro73/reladomo-kotlin.git")
+                developerConnection.set("scm:git:ssh://git@github.com/itohiro73/reladomo-kotlin.git")
             }
-            sign(publishing.publications["maven"])
         }
-    }
-
-    tasks.withType<Sign> {
-        onlyIf { !version.toString().endsWith("SNAPSHOT") }
     }
 }

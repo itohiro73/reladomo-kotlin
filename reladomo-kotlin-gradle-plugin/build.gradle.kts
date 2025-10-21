@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm")
     `java-gradle-plugin`
-    `maven-publish`
+    id("publishing-conventions")
 }
 
 dependencies {

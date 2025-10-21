@@ -62,6 +62,6 @@ class SimpleRepositoryScanningTest {
         
         // Mock base repository for TestOrder
         @Bean
-        fun testOrderRepository() = io.mockk.mockk<BiTemporalRepository<TestOrder, Long>>()
+        fun testOrderRepository() = org.mockito.kotlin.mock<BiTemporalRepository<TestOrder, Long>>()
     }
 }

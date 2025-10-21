@@ -39,3 +39,6 @@ secring.gpg
 # Release credentials
 ossrh.properties
 maven-central.properties
+
+# Local documentation (may contain sensitive information)
+.local/

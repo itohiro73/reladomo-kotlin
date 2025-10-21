@@ -13,13 +13,47 @@ A Kotlin wrapper library for [Reladomo ORM](https://github.com/goldmansachs/rela
 - **Automatic Entity Discovery**: Scan classpath for @ReladomoEntity annotated classes
 - **Spring Data-Style Repositories**: Familiar repository pattern with query methods
 
+## Installation
+
+### Gradle (Kotlin DSL)
+
+Add the dependency to your `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:0.1.0-SNAPSHOT")
+}
+```
+
+### Gradle Plugin
+
+Add the Gradle plugin for code generation:
+
+```kotlin
+plugins {
+    id("io.github.itohiro73.reladomo-kotlin") version "0.1.0-SNAPSHOT"
+}
+```
+
+### Maven
+
+Add the dependency to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>io.github.itohiro73</groupId>
+    <artifactId>reladomo-kotlin-spring-boot</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
 ## Quick Start
 
 ### 1. Add the Gradle Plugin
 
 ```kotlin
 plugins {
-    id("io.github.reladomo-kotlin") version "0.1.0-SNAPSHOT"
+    id("io.github.itohiro73.reladomo-kotlin") version "0.1.0-SNAPSHOT"
 }
 ```
 

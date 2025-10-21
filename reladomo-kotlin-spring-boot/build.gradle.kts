@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.spring")
     `java-library`
+    id("publishing-conventions")
 }
 
 dependencies {
@@ -27,7 +28,9 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.assertj:assertj-core:3.24.2")
-    testImplementation("io.mockk:mockk:1.13.8")
+    // Replaced MockK with Mockito for better Java 17/21 compatibility
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("com.h2database:h2:2.2.224")
 }
 

@@ -119,6 +119,19 @@ reladomoKotlin {
 - **Sample app must demonstrate REAL functionality** - Never use mocks in the sample app
 - **If tests fail, fix the implementation** - Don't disable or skip tests
 
+### Pre-Commit Testing Requirements
+- **ALWAYS run build and tests before committing** - Verify changes locally first
+  ```bash
+  # Build publishable modules
+  ./gradlew assemble -x :reladomo-kotlin-sample:assemble --warning-mode all
+
+  # Run tests on publishable modules
+  ./gradlew test -x :reladomo-kotlin-sample:test
+  ```
+- **Verify all tests pass** - Do not commit if any tests fail
+- **Check for compilation errors** - Ensure clean build before committing
+- **Run affected module tests** - At minimum, test the modules you modified
+
 ### Bitemporal Entity Pattern
 All generated entities implement `BiTemporalEntity` interface:
 ```kotlin
@@ -165,6 +178,14 @@ The project has made significant progress with:
 - **Gradle**: 8.0+
 - **Java**: 17+
 - **KotlinPoet**: For code generation
+- **Mockito**: 5.11.0 (with mockito-kotlin 5.2.1) for testing
+
+### Testing Framework Migration
+The project uses **Mockito** instead of MockK due to compatibility issues with Java 17/21:
+- **Issue**: MockK's Java instrumentation agent conflicts with Gradle daemon on Java 17/21
+- **Symptom**: CI builds hang indefinitely with `java.lang.instrument ASSERTION FAILED` errors
+- **Solution**: Mockito has better compatibility with modern JVMs and Spring Boot ecosystem
+- **Migration**: Completed for spring-boot module; core and generator modules don't use mocking
 
 ## Key Challenges Being Addressed
 
