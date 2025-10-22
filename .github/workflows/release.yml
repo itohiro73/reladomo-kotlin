@@ -145,10 +145,21 @@ jobs:
         NEXT_PATCH=$((PATCH + 1))
         NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH-SNAPSHOT"
 
-        sed -i "s/version=.*/version=$NEXT_VERSION/" gradle.properties
+        # Checkout main branch (we're currently on detached HEAD at tag)
+        git checkout main
+        git pull origin main
 
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add gradle.properties
-        git commit -m "Prepare next development version $NEXT_VERSION"
-        git push origin HEAD:main
+        # Update version only if it's different
+        CURRENT_FILE_VERSION=$(grep '^version=' gradle.properties | cut -d'=' -f2)
+        if [ "$CURRENT_FILE_VERSION" != "$NEXT_VERSION" ]; then
+          sed -i "s/version=.*/version=$NEXT_VERSION/" gradle.properties
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add gradle.properties
+          git commit -m "Prepare next development version $NEXT_VERSION"
+          git push origin main
+          echo "Version updated to $NEXT_VERSION"
+        else
+          echo "Version is already $NEXT_VERSION, skipping update"
+        fi
