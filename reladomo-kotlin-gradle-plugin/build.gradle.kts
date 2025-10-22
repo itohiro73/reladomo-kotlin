@@ -23,7 +23,7 @@ dependencies {
 gradlePlugin {
     plugins {
         create("kotlinReladomo") {
-            id = "io.github.reladomo-kotlin"
+            id = "io.github.itohiro73.reladomo-kotlin"
             implementationClass = "io.github.reladomokotlin.gradle.KotlinReladomoPlugin"
             displayName = "Kotlin Reladomo Plugin"
             description = "Gradle plugin for generating Kotlin wrappers from Reladomo XML files"
