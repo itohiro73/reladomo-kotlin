@@ -16,10 +16,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.data:spring-data-commons")
     
-    // Project dependencies
-    implementation(project(":reladomo-kotlin-core"))
-    implementation(project(":reladomo-kotlin-spring-boot"))
-    implementation(project(":reladomo-kotlin-generator"))
+    // Reladomo Kotlin dependencies from Maven Central
+    implementation("io.github.itohiro73:reladomo-kotlin-core:0.0.2")
+    implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:0.0.2")
+    implementation("io.github.itohiro73:reladomo-kotlin-generator:0.0.2")
     
     // Database
     runtimeOnly("com.h2database:h2:2.2.224")
@@ -64,18 +64,11 @@ sourceSets {
 val generateReladomoCode = tasks.register<JavaExec>("generateReladomoCode") {
     group = "code generation"
     description = "Generate Reladomo Java code and Kotlin wrappers"
-    
-    // We need the generator classes to be compiled first
-    dependsOn(":reladomo-kotlin-generator:classes")
-    
+
     mainClass.set("io.github.reladomokotlin.generator.cli.GeneratorCli")
-    
-    // Build classpath for running the generator
-    classpath = files(
-        project(":reladomo-kotlin-generator").sourceSets["main"].output,
-        project(":reladomo-kotlin-core").sourceSets["main"].output,
-        configurations.runtimeClasspath
-    )
+
+    // Use runtime classpath which includes Maven Central dependencies
+    classpath = configurations.runtimeClasspath.get()
     
     args = listOf(
         "src/main/resources/reladomo",
