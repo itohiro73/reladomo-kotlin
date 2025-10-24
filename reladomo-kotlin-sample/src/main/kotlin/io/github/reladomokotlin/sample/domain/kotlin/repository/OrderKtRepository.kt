@@ -48,9 +48,9 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
   }
 
   override fun findById(id: Long): OrderKt? {
-    // For bitemporal objects, find the current active record using equalsEdgePoint
+    // For bitemporal objects, find active record (businessDate at infinity, processingDate at transaction time)
     val operation = OrderFinder.orderId().eq(id)
-        .and(OrderFinder.businessDate().equalsEdgePoint())
+        .and(OrderFinder.businessDate().equalsInfinity())
         .and(OrderFinder.processingDate().equalsEdgePoint())
     val entity = OrderFinder.findOne(operation)
     return entity?.let { OrderKt.fromReladomo(it) }
@@ -120,11 +120,10 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
     processingDate: Instant,
   ): OrderKt? {
     // Find by primary key as of specific business and processing dates
-    val operation = OrderFinder.orderId().eq(id)
-        .and(OrderFinder.businessDate().eq(Timestamp.from(businessDate)))
-        .and(OrderFinder.processingDate().eq(Timestamp.from(processingDate)))
-    val order = OrderFinder.findOne(operation)
-    return order?.let { OrderKt.fromReladomo(it) }
+    val businessDateTs = Timestamp.from(businessDate)
+    val processingDateTs = Timestamp.from(processingDate)
+    val entity = OrderFinder.findByPrimaryKey(id, businessDateTs, processingDateTs)
+    return entity?.let { OrderKt.fromReladomo(it) }
   }
 
   override fun update(entity: OrderKt): OrderKt = update(entity, Instant.now())

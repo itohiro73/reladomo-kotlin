@@ -255,14 +255,14 @@ class KotlinRepositoryGenerator {
             ?: throw IllegalArgumentException("No primary key found")
 
         return if (definition.isBitemporal) {
-            // For bitemporal objects, use equalsEdgePoint to find the current active record
+            // For bitemporal objects, find active record (not terminated)
             FunSpec.builder("findById")
                 .addModifiers(KModifier.OVERRIDE)
                 .addParameter("id", primaryKeyType)
                 .returns(entityType.copy(nullable = true))
-                .addComment("For bitemporal objects, find the current active record using equalsEdgePoint")
+                .addComment("For bitemporal objects, find active record (businessDate at infinity, processingDate at transaction time)")
                 .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
-                .addStatement("    .and(%T.businessDate().equalsEdgePoint())", finderType)
+                .addStatement("    .and(%T.businessDate().equalsInfinity())", finderType)
                 .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
                 .addStatement("val entity = %T.findOne(operation)", finderType)
                 .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
@@ -296,11 +296,10 @@ class KotlinRepositoryGenerator {
                 .addParameter("processingDate", Instant::class)
                 .returns(entityType.copy(nullable = true))
                 .addComment("Find by primary key as of specific business and processing dates")
-                .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
-                .addStatement("    .and(%T.businessDate().eq(Timestamp.from(businessDate)))", finderType)
-                .addStatement("    .and(%T.processingDate().eq(Timestamp.from(processingDate)))", finderType)
-                .addStatement("val order = %T.findOne(operation)", finderType)
-                .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
+                .addStatement("val businessDateTs = Timestamp.from(businessDate)")
+                .addStatement("val processingDateTs = Timestamp.from(processingDate)")
+                .addStatement("val entity = %T.findByPrimaryKey(id, businessDateTs, processingDateTs)", finderType)
+                .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
                 .build()
         } else {
             // For non-temporal objects, ignore the dates
