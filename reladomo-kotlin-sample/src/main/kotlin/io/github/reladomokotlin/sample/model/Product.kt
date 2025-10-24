@@ -10,8 +10,8 @@ import java.time.Instant
  */
 @ReladomoEntity(
     tableName = "PRODUCTS",
-    cacheType = CacheType.FULL,  // Products change less frequently
-    bitemporal = true
+    cacheType = CacheType.PARTIAL,  // Use partial cache to avoid eager loading before schema initialization
+    bitemporal = false  // Product is not bitemporal in the current schema
 )
 data class Product(
     @PrimaryKey(columnName = "PRODUCT_ID")
