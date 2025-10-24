@@ -242,7 +242,7 @@ class OrderKtRepositoryTest {
         assertNotNull(currentOrder)
         assertEquals("UPDATED", currentOrder?.status)
         assertEquals(BigDecimal("100.00"), currentOrder?.amount)
-        
+
         // Historical query at the same business date should also show updated version
         // since we updated in place
         val historicalOrder = repository.findByIdAsOf(order.orderId!!, baseTime, infinityDate)

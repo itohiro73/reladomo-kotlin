@@ -296,9 +296,12 @@ class KotlinRepositoryGenerator {
                 .addParameter("processingDate", Instant::class)
                 .returns(entityType.copy(nullable = true))
                 .addComment("Find by primary key as of specific business and processing dates")
-                .addStatement("val businessDateTs = Timestamp.from(businessDate)")
-                .addStatement("val processingDateTs = Timestamp.from(processingDate)")
-                .addStatement("val entity = %T.findByPrimaryKey(id, businessDateTs, processingDateTs)", finderType)
+                .addComment("Use operation-based query to handle infinity dates correctly")
+                .addStatement("val infinityThreshold = Instant.parse(\"9999-01-01T00:00:00Z\")")
+                .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
+                .addStatement("    .and(%T.businessDate().eq(Timestamp.from(businessDate)))", finderType)
+                .addStatement("    .and(if (processingDate.isAfter(infinityThreshold)) %T.processingDate().equalsInfinity() else %T.processingDate().eq(Timestamp.from(processingDate)))", finderType, finderType)
+                .addStatement("val entity = %T.findOne(operation)", finderType)
                 .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
                 .build()
         } else {
@@ -702,16 +705,29 @@ class KotlinRepositoryGenerator {
     ): FunSpec {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
-            
-        return FunSpec.builder("getHistory")
-            .addModifiers(KModifier.OVERRIDE)
-            .addParameter("id", primaryKeyType)
-            .returns(LIST.parameterizedBy(entityType))
-            .addComment("Get all versions of the entity across time")
-            .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
-            .addStatement("val orders = %T.findMany(operation)", finderType)
-            .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
-            .build()
+
+        return if (definition.isBitemporal) {
+            FunSpec.builder("getHistory")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("id", primaryKeyType)
+                .returns(LIST.parameterizedBy(entityType))
+                .addComment("Get all versions of the entity across time")
+                .addComment("For now, returns current version only. Full temporal history query requires")
+                .addComment("using MithraManager API or database-specific queries.")
+                .addStatement("val current = findById(id)")
+                .addStatement("return if (current != null) listOf(current) else emptyList()")
+                .build()
+        } else {
+            FunSpec.builder("getHistory")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("id", primaryKeyType)
+                .returns(LIST.parameterizedBy(entityType))
+                .addComment("Get all versions of the entity across time")
+                .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
+                .addStatement("val orders = %T.findMany(operation)", finderType)
+                .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
+                .build()
+        }
     }
     
     private fun generateDeleteByIdAsOfMethod(
