@@ -285,6 +285,9 @@ class KotlinRepositoryGenerator {
         finderType: ClassName,
         primaryKeyType: TypeName
     ): FunSpec {
+        val primaryKey = definition.primaryKeyAttributes.firstOrNull()
+            ?: throw IllegalArgumentException("No primary key found")
+
         return if (definition.isBitemporal) {
             FunSpec.builder("findByIdAsOf")
                 .addModifiers(KModifier.OVERRIDE)
@@ -293,7 +296,10 @@ class KotlinRepositoryGenerator {
                 .addParameter("processingDate", Instant::class)
                 .returns(entityType.copy(nullable = true))
                 .addComment("Find by primary key as of specific business and processing dates")
-                .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(businessDate), Timestamp.from(processingDate))", finderType)
+                .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
+                .addStatement("    .and(%T.businessDate().eq(Timestamp.from(businessDate)))", finderType)
+                .addStatement("    .and(%T.processingDate().eq(Timestamp.from(processingDate)))", finderType)
+                .addStatement("val order = %T.findOne(operation)", finderType)
                 .addStatement("return order?.let { %T.fromReladomo(it) }", entityType)
                 .build()
         } else {

@@ -120,8 +120,10 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
     processingDate: Instant,
   ): OrderKt? {
     // Find by primary key as of specific business and processing dates
-    val order = OrderFinder.findByPrimaryKey(id, Timestamp.from(businessDate),
-        Timestamp.from(processingDate))
+    val operation = OrderFinder.orderId().eq(id)
+        .and(OrderFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(OrderFinder.processingDate().eq(Timestamp.from(processingDate)))
+    val order = OrderFinder.findOne(operation)
     return order?.let { OrderKt.fromReladomo(it) }
   }
 
