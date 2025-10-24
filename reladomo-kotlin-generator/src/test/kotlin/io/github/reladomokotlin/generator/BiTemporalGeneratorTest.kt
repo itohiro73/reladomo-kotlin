@@ -59,20 +59,20 @@ class BiTemporalGeneratorTest {
         val repoFile = repositoryGenerator.generateToFile(definition, tempDir)
         val content = repoFile.readText()
         
-        // Then - Critical fix validation
+        // Then - Verify correct bitemporal query pattern
         val findByIdMethod = content.substringAfter("override fun findById(id: Long): OrderKt?")
             .substringBefore("override fun")
-        
-        assertFalse(
-            findByIdMethod.contains("equalsEdgePoint()"),
-            "findById should NOT use equalsEdgePoint() - this was a critical fix!"
-        )
-        
-        // Verify it uses findByPrimaryKey instead
-        
+
+        // Should use operation-based query with equalsInfinity() for businessDate
         assertTrue(
-            findByIdMethod.contains("OrderFinder.findByPrimaryKey(id, now, infinityTs)"),
-            "findById should use findByPrimaryKey with current time and infinity"
+            findByIdMethod.contains("OrderFinder.businessDate().equalsInfinity()"),
+            "findById should use equalsInfinity() for businessDate to get active records"
+        )
+
+        // Should use equalsEdgePoint() for processingDate (current transaction time)
+        assertTrue(
+            findByIdMethod.contains("OrderFinder.processingDate().equalsEdgePoint()"),
+            "findById should use equalsEdgePoint() for processingDate"
         )
     }
     
@@ -91,17 +91,21 @@ class BiTemporalGeneratorTest {
             "Update method should accept businessDate parameter"
         )
         
-        // Verify implementation fetches as of business date
+        // Verify implementation uses operation-based query with businessDate
         val updateMethod = content.substringAfter("fun update(entity: OrderKt, businessDate: Instant")
             .substringBefore("fun delete")
-        
+
         assertTrue(
-            updateMethod.contains("val businessDateTs = Timestamp.from(businessDate)"),
-            "Should convert business date to timestamp"
+            updateMethod.contains("val operation = OrderFinder.orderId().eq(entity.orderId!!)"),
+            "Should build operation with primary key"
         )
         assertTrue(
-            updateMethod.contains("OrderFinder.findByPrimaryKey(entity.orderId!!, businessDateTs, infinityTs)"),
-            "Should fetch existing record as of business date"
+            updateMethod.contains("OrderFinder.businessDate().eq(Timestamp.from(businessDate))"),
+            "Should query with exact businessDate"
+        )
+        assertTrue(
+            updateMethod.contains("OrderFinder.processingDate().equalsInfinity()"),
+            "Should use equalsInfinity() for processingDate to find modifiable record"
         )
     }
     
@@ -120,13 +124,21 @@ class BiTemporalGeneratorTest {
             "Delete method should have deleteByIdAsOf with businessDate parameter"
         )
         
-        // Verify implementation - check deleteByIdAsOf method
+        // Verify implementation - check deleteByIdAsOf method uses operation-based query
         val deleteByIdAsOfMethod = content.substringAfter("fun deleteByIdAsOf(id: Long, businessDate: Instant)")
             .substringBefore("fun find")
-        
+
         assertTrue(
-            deleteByIdAsOfMethod.contains("OrderFinder.findByPrimaryKey(id, businessDateTs, infinityTs)"),
-            "Should fetch record using findByPrimaryKey"
+            deleteByIdAsOfMethod.contains("val operation = OrderFinder.orderId().eq(id)"),
+            "Should build operation with primary key"
+        )
+        assertTrue(
+            deleteByIdAsOfMethod.contains("OrderFinder.businessDate().eq(Timestamp.from(businessDate))"),
+            "Should query with exact businessDate"
+        )
+        assertTrue(
+            deleteByIdAsOfMethod.contains("OrderFinder.processingDate().equalsInfinity()"),
+            "Should use equalsInfinity() for processingDate"
         )
         assertTrue(
             deleteByIdAsOfMethod.contains(".terminate()"),
@@ -152,14 +164,24 @@ class BiTemporalGeneratorTest {
             "Should have findByIdAsOf method"
         )
         
-        // Verify implementation
+        // Verify implementation uses operation-based query with infinity handling
         val findByIdAsOfMethod = content.substringAfter("fun findByIdAsOf")
             .substringBefore("fun update")
-        
+
         assertTrue(
-            findByIdAsOfMethod.contains("OrderFinder.findByPrimaryKey(id, Timestamp.from(businessDate)") ||
-            findByIdAsOfMethod.contains("OrderFinder.findByPrimaryKey(id, businessDateTs, processingDateTs)"),
-            "Should use findByPrimaryKey with both temporal parameters"
+            findByIdAsOfMethod.contains("val infinityThreshold = Instant.parse(\"9999-01-01T00:00:00Z\")"),
+            "Should define infinity threshold for intelligent date handling"
+        )
+
+        assertTrue(
+            findByIdAsOfMethod.contains("OrderFinder.businessDate().eq(Timestamp.from(businessDate))"),
+            "Should query with exact businessDate"
+        )
+
+        assertTrue(
+            findByIdAsOfMethod.contains("if (processingDate.isAfter(infinityThreshold))") &&
+            findByIdAsOfMethod.contains("equalsInfinity()"),
+            "Should use equalsInfinity() when processingDate is far-future"
         )
     }
     
@@ -267,10 +289,11 @@ class BiTemporalGeneratorTest {
         // 2. Save method exists
         assertTrue(repoContent.contains("fun save(entity: OrderKt): OrderKt"))
         
-        // 3. Find current version
+        // 3. Find current version with correct bitemporal query
         assertTrue(repoContent.contains("fun findById(id: Long): OrderKt?"))
         val findByIdSection = repoContent.substringAfter("override fun findById(id: Long): OrderKt?").substringBefore("override fun")
-        assertFalse(findByIdSection.contains("equalsEdgePoint()"))
+        assertTrue(findByIdSection.contains("equalsInfinity()"), "Should use equalsInfinity() for businessDate")
+        assertTrue(findByIdSection.contains("equalsEdgePoint()"), "Should use equalsEdgePoint() for processingDate")
         
         // 4. Find historical version
         assertTrue(repoContent.contains("fun findByIdAsOf(") && repoContent.contains("id: Long,") && repoContent.contains("businessDate: Instant,"))

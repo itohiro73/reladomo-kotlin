@@ -57,27 +57,28 @@ class OrderService(
     fun updateOrder(id: Long, request: CreateOrderRequest): OrderDto {
         val existingOrder = orderRepository.findById(id)
             ?: throw EntityNotFoundException("Order not found with id: $id")
-        
+
         val infinityDate = Instant.parse("9999-12-01T23:59:00Z")
+        val now = Instant.now()
         val updatedOrder = existingOrder.copy(
             customerId = request.customerId,
             amount = request.amount,
             status = request.status,
             description = request.description,
-            businessDate = existingOrder.businessDate, // Keep the same business date
+            businessDate = now, // Use current time for business date
             processingDate = infinityDate
         )
-        
-        // Update with the existing business date
-        val savedOrder = orderRepository.update(updatedOrder, existingOrder.businessDate)
+
+        // Update with current business date
+        val savedOrder = orderRepository.update(updatedOrder, now)
         return savedOrder.toDto()
     }
     
     fun deleteOrder(id: Long) {
         val existingOrder = orderRepository.findById(id)
             ?: throw EntityNotFoundException("Order not found with id: $id")
-        // Delete with the existing business date
-        orderRepository.deleteByIdAsOf(id, existingOrder.businessDate)
+        // Delete with current business date
+        orderRepository.deleteByIdAsOf(id, Instant.now())
     }
     
     fun findOrdersByCustomer(customerId: Long): List<OrderDto> {
