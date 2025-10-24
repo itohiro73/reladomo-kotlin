@@ -57,10 +57,10 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
   }
 
   override fun update(entity: OrderKt, businessDate: Instant): OrderKt {
-    // For bitemporal objects, find current active record for update
+    // For bitemporal objects, find record with infinity processing date at specified business date
     val operation = OrderFinder.orderId().eq(entity.orderId!!)
-        .and(OrderFinder.businessDate().equalsEdgePoint())
-        .and(OrderFinder.processingDate().equalsEdgePoint())
+        .and(OrderFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(OrderFinder.processingDate().equalsInfinity())
     val existingEntity = OrderFinder.findOne(operation)
         ?: throw EntityNotFoundException("Order not found with id: ${entity.orderId}")
 
@@ -143,10 +143,10 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
   }
 
   override fun deleteByIdAsOf(id: Long, businessDate: Instant) {
-    // For bitemporal objects, find current active record for termination
+    // For bitemporal objects, find record with infinity processing date at specified business date for termination
     val operation = OrderFinder.orderId().eq(id)
-        .and(OrderFinder.businessDate().equalsEdgePoint())
-        .and(OrderFinder.processingDate().equalsEdgePoint())
+        .and(OrderFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(OrderFinder.processingDate().equalsInfinity())
     val entity = OrderFinder.findOne(operation)
         ?: throw EntityNotFoundException("Order not found with id: $id")
     entity.terminate()
