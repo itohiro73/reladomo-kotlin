@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.reladomokotlin.demo.domain</PackageName>
+    <ClassName>Product</ClassName>
+    <DefaultTable>PRODUCTS</DefaultTable>
+
+    <!-- Uni-temporal entity - business date only (valid from/to period) -->
+    <AsOfAttribute name="businessDate"
+                   fromColumnName="VALID_FROM"
+                   toColumnName="VALID_TO"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="PRODUCT_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="categoryId" javaType="long" columnName="CATEGORY_ID" nullable="false"/>
+    <Attribute name="name" javaType="String" columnName="NAME" maxLength="200" nullable="false"/>
+    <Attribute name="description" javaType="String" columnName="DESCRIPTION" maxLength="1000" nullable="true"/>
+
+    <Relationship name="category" relatedObject="Category" relatedIsDependent="false" cardinality="many-to-one">this.categoryId = Category.id</Relationship>
+</MithraObject>
