@@ -96,13 +96,13 @@ class KotlinRepositoryGeneratorTest {
         // Verify delete method exists - bitemporal has businessDate parameter
         assertTrue(content.contains("override fun deleteById(id: Long)"))
         assertTrue(content.contains("override fun deleteByIdAsOf(id: Long, businessDate: Instant)"))
-        
-        // Verify finder usage
-        assertTrue(content.contains("OrderFinder.findByPrimaryKey"))
-        
-        // For bitemporal objects, should use equalsEdgePoint for queries
+
+        // For bitemporal objects, should use equalsEdgePoint for processingDate in findAll
         assertTrue(content.contains("equalsEdgePoint()"))
-        
+
+        // Should use equalsInfinity for businessDate in findById
+        assertTrue(content.contains("equalsInfinity()"))
+
         // Verify terminate is used for delete
         assertTrue(content.contains(".terminate()"))
     }
@@ -130,15 +130,17 @@ class KotlinRepositoryGeneratorTest {
         
         // Then
         println("Generated Trade repository content:\n$content")
-        
+
         // Verify findById exists
         assertTrue(content.contains("override fun findById(id: Long): TradeKt?"))
-        
-        // Verify it uses findByPrimaryKey
-        assertTrue(content.contains("TradeFinder.findByPrimaryKey"))
-        
-        // Since this is bitemporal, it should use equalsEdgePoint for queries like findAll
-        assertTrue(content.contains("equalsEdgePoint()"))
+
+        // For bitemporal findById, should use equalsInfinity for businessDate
+        assertTrue(content.contains("equalsInfinity()"),
+            "findById should use equalsInfinity() for businessDate")
+
+        // Should use equalsEdgePoint for processingDate
+        assertTrue(content.contains("equalsEdgePoint()"),
+            "Should use equalsEdgePoint() for processingDate")
     }
     
     @Test
@@ -167,11 +169,12 @@ class KotlinRepositoryGeneratorTest {
         
         // Verify update method has businessDate parameter for bitemporal
         assertTrue(content.contains("override fun update(entity: PositionKt, businessDate: Instant): PositionKt"))
-        
-        // Verify it finds existing entity
-        assertTrue(content.contains("PositionFinder.findByPrimaryKey"))
+
+        // Verify it uses operation-based query to find existing entity
+        assertTrue(content.contains("val operation = PositionFinder.positionId()"))
+        assertTrue(content.contains("equalsInfinity()"))
         assertTrue(content.contains("?: throw EntityNotFoundException"))
-        
+
         // Verify field updates (setters)
         assertTrue(content.contains("setQuantity(entity.quantity"))
     }
@@ -297,9 +300,10 @@ class KotlinRepositoryGeneratorTest {
         // Should have deleteById with businessDate for bitemporal
         assertTrue(content.contains("override fun deleteById(id: Long)"))
         assertTrue(content.contains("override fun deleteByIdAsOf(id: Long, businessDate: Instant)"))
-        
-        // Verify delete implementation
-        assertTrue(content.contains("AccountFinder.findByPrimaryKey"))
+
+        // Verify delete implementation uses operation-based query
+        assertTrue(content.contains("val operation = AccountFinder.accountId()"))
+        assertTrue(content.contains("equalsInfinity()"))
         assertTrue(content.contains(".terminate()"))
     }
     
