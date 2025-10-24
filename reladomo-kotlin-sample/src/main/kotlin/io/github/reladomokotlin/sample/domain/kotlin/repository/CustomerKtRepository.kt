@@ -49,8 +49,8 @@ public class CustomerKtRepository : BaseRepository<CustomerKt, Long> {
   }
 
   override fun findById(id: Long): CustomerKt? {
-    val order = CustomerFinder.findByPrimaryKey(id)
-    return order?.let { CustomerKt.fromReladomo(it) }
+    val entity = CustomerFinder.findByPrimaryKey(id)
+    return entity?.let { CustomerKt.fromReladomo(it) }
   }
 
   override fun update(entity: CustomerKt): CustomerKt {

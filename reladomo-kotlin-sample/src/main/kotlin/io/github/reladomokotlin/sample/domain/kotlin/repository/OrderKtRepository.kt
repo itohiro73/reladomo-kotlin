@@ -48,31 +48,29 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
   }
 
   override fun findById(id: Long): OrderKt? {
-    // For bitemporal objects, find the current active record
-    // Use infinity processing date to get the latest version
-    val now = Timestamp.from(Instant.now())
-    val infinityTs = Timestamp.valueOf("9999-12-01 23:59:00.0")
-    val order = OrderFinder.findByPrimaryKey(id, now, infinityTs)
-    return order?.let { OrderKt.fromReladomo(it) }
+    // For bitemporal objects, find the current active record using equalsEdgePoint
+    val operation = OrderFinder.orderId().eq(id)
+        .and(OrderFinder.businessDate().equalsEdgePoint())
+        .and(OrderFinder.processingDate().equalsEdgePoint())
+    val entity = OrderFinder.findOne(operation)
+    return entity?.let { OrderKt.fromReladomo(it) }
   }
 
   override fun update(entity: OrderKt, businessDate: Instant): OrderKt {
-    // For bitemporal objects, fetch as of the business date and update
-    // Processing date should be infinity to get the current active record
-    val businessDateTs = Timestamp.from(businessDate)
+    // For bitemporal objects, fetch with infinity processing date for updates
     val infinityTs = Timestamp.valueOf("9999-12-01 23:59:00.0")
-
-    val existingOrder = OrderFinder.findByPrimaryKey(entity.orderId!!, businessDateTs, infinityTs)
+    val existingEntity = OrderFinder.findByPrimaryKey(entity.orderId!!,
+        Timestamp.from(Instant.now()), infinityTs)
         ?: throw EntityNotFoundException("Order not found with id: ${entity.orderId}")
 
     // Update fields - Reladomo handles bitemporal chaining
-    existingOrder.setCustomerId(entity.customerId)
-    existingOrder.setOrderDate(Timestamp.from(entity.orderDate))
-    existingOrder.setAmount(entity.amount)
-    existingOrder.setStatus(entity.status)
-    entity.description?.let { existingOrder.setDescription(it) }
+    existingEntity.setCustomerId(entity.customerId)
+    existingEntity.setOrderDate(Timestamp.from(entity.orderDate))
+    existingEntity.setAmount(entity.amount)
+    existingEntity.setStatus(entity.status)
+    entity.description?.let { existingEntity.setDescription(it) }
 
-    return OrderKt.fromReladomo(existingOrder)
+    return OrderKt.fromReladomo(existingEntity)
   }
 
   override fun deleteById(id: Long) {
@@ -144,14 +142,11 @@ public class OrderKtRepository : BiTemporalRepository<OrderKt, Long> {
   }
 
   override fun deleteByIdAsOf(id: Long, businessDate: Instant) {
-    // For bitemporal objects, use findByPrimaryKey with specific business date
-    // Processing date should be infinity to get the current active record
-    val businessDateTs = Timestamp.from(businessDate)
+    // For bitemporal objects, use findByPrimaryKey with infinity processing date for termination
     val infinityTs = Timestamp.valueOf("9999-12-01 23:59:00.0")
-
-    val order = OrderFinder.findByPrimaryKey(id, businessDateTs, infinityTs)
+    val entity = OrderFinder.findByPrimaryKey(id, Timestamp.from(Instant.now()), infinityTs)
         ?: throw EntityNotFoundException("Order not found with id: $id")
-    order.terminate()
+    entity.terminate()
   }
 
   public fun find(query: QueryContext.() -> Unit): List<OrderKt> {

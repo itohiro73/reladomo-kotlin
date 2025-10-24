@@ -48,8 +48,8 @@ public class ProductKtRepository : BaseRepository<ProductKt, Long> {
   }
 
   override fun findById(id: Long): ProductKt? {
-    val order = ProductFinder.findByPrimaryKey(id)
-    return order?.let { ProductKt.fromReladomo(it) }
+    val entity = ProductFinder.findByPrimaryKey(id)
+    return entity?.let { ProductKt.fromReladomo(it) }
   }
 
   override fun update(entity: ProductKt): ProductKt {
