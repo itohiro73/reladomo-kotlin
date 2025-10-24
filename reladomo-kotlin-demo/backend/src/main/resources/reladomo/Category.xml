@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.reladomokotlin.demo.domain</PackageName>
+    <ClassName>Category</ClassName>
+    <DefaultTable>CATEGORIES</DefaultTable>
+
+    <!-- Non-temporal entity - simple CRUD -->
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="CATEGORY_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="name" javaType="String" columnName="NAME" maxLength="100" nullable="false"/>
+    <Attribute name="description" javaType="String" columnName="DESCRIPTION" maxLength="500" nullable="true"/>
+</MithraObject>

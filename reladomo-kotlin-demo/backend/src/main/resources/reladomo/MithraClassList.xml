@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Mithra>
+    <MithraObjectResource name="Category"/>
+    <MithraObjectResource name="Product"/>
+    <MithraObjectResource name="ProductPrice"/>
+</Mithra>
