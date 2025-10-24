@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2025-10-24
+
+### Fixed
+- **Critical bitemporal query fixes** - Achieved 100% test pass rate (76/76 tests passing)
+  - `findById()` now correctly uses `equalsInfinity()` for businessDate to retrieve only active (non-terminated) records
+  - `findById()` uses `equalsEdgePoint()` for processingDate to get current transaction time view
+  - `update()` now uses operation-based queries with `equalsInfinity()` for processingDate to find modifiable records
+  - `deleteByIdAsOf()` now uses operation-based queries instead of `findByPrimaryKey` for reliable termination
+  - `findByIdAsOf()` implements intelligent infinity date handling - detects far-future dates and uses `equalsInfinity()` instead of exact timestamp matching
+  - All bitemporal operations now use operation-based queries instead of `findByPrimaryKey` to avoid timestamp precision issues
+
+### Changed
+- Generator now produces operation-based queries for all bitemporal CRUD operations
+- `findByIdAsOf()` now intelligently handles infinity dates (processingDate > 9999-01-01) by using `equalsInfinity()` instead of exact timestamp matching
+- Updated generator tests to verify operation-based query patterns (all 43 tests passing)
+- `getHistory()` now returns current version as MVP implementation (full temporal history requires MithraManager API)
+
+### Removed
+- Removed unused `ProductDatabaseObjectFactory` - superseded by framework's `GenericSequenceObjectFactory`
+
+### Technical Details
+- **Root Cause**: Reladomo's internal infinity representation doesn't match custom infinity timestamps (e.g., 9999-12-01T23:59:00Z)
+- **Solution**: Operation-based queries with `equalsInfinity()` correctly handle Reladomo's internal infinity dates
+- **Impact**: All sample tests (33/33) and generator tests (43/43) now pass reliably
+
 ## [0.0.1] - 2025-10-22
 
 ### Added
@@ -92,5 +117,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - XML to annotation migration guide
 - Release methodology and CI/CD documentation
 
-[Unreleased]: https://github.com/itohiro73/reladomo-kotlin/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/itohiro73/reladomo-kotlin/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/itohiro73/reladomo-kotlin/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/itohiro73/reladomo-kotlin/releases/tag/v0.0.1
