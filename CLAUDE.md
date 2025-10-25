@@ -132,6 +132,28 @@ reladomoKotlin {
 - **Check for compilation errors** - Ensure clean build before committing
 - **Run affected module tests** - At minimum, test the modules you modified
 
+### Git Commit Guidelines
+- **ALWAYS write commit messages in English** - Maintain consistency with existing commit history
+- **Use conventional commit format**:
+  - First line: Concise summary (imperative mood, e.g., "Add feature" not "Added feature")
+  - Blank line
+  - Bullet points describing specific changes
+  - Blank line
+  - Claude Code footer (automatic)
+- **Example commit message**:
+  ```
+  Add time-travel query endpoint for bitemporal demonstration
+
+  - Implement GET /api/product-prices/asof endpoint
+  - Add SQL range queries for both time dimensions
+  - Support querying historical data at specific points in time
+  - Add comprehensive error handling
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude <noreply@anthropic.com>
+  ```
+
 ### Bitemporal Entity Pattern
 All generated entities implement `BiTemporalEntity` interface:
 ```kotlin
