@@ -2,6 +2,7 @@ import './App.css';
 import { CategoryList } from './components/CategoryList';
 import { ProductList } from './components/ProductList';
 import { ProductPriceTimeline } from './components/ProductPriceTimeline';
+import { BitemporalTimeline2D } from './components/BitemporalTimeline2D';
 import { TimeTravelQuery } from './components/TimeTravelQuery';
 import { PriceUpdateForm } from './components/PriceUpdateForm';
 import { DatabaseViewer } from './components/DatabaseViewer';
@@ -18,6 +19,7 @@ function App() {
         <CategoryList />
         <ProductList />
         <ProductPriceTimeline />
+        <BitemporalTimeline2D />
         <TimeTravelQuery />
         <PriceUpdateForm />
         <DatabaseViewer />

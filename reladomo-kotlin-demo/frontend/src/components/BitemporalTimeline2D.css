@@ -1,0 +1,357 @@
+.timeline-2d-explanation {
+  background: #2a2a2a;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  color: #ddd;
+}
+
+.timeline-2d-explanation strong {
+  color: #8b5cf6;
+}
+
+.product-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.product-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid #333;
+  background: #1a1a1a;
+  color: #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.product-button:hover {
+  background: #2a2a2a;
+  border-color: #8b5cf6;
+}
+
+.product-button.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+  font-weight: 600;
+}
+
+.timeline-2d-container {
+  position: relative;
+  padding: 60px 20px 100px 160px;
+  margin-top: 2rem;
+}
+
+.timeline-2d-axis-label {
+  position: absolute;
+  font-weight: 700;
+  color: #8b5cf6;
+  font-size: 1.1rem;
+  z-index: 10;
+  background: #1a1a1a;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 2px solid #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.timeline-2d-y-axis-label {
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-50%) rotate(-90deg);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.timeline-2d-x-axis-label {
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Axis tick labels */
+.axis-labels {
+  position: absolute;
+  z-index: 5;
+}
+
+.y-axis-labels {
+  left: 35px;
+  top: 60px;
+  height: 400px;
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.x-axis-labels {
+  bottom: 60px;
+  left: 160px;
+  right: 20px;
+  height: 35px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.axis-tick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.y-axis-labels .axis-tick {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.x-axis-labels .axis-tick {
+  align-items: center;
+  text-align: center;
+}
+
+.x-axis-labels .axis-tick.left {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.x-axis-labels .axis-tick.right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.tick-date {
+  font-weight: 600;
+  color: #ddd;
+}
+
+.tick-time {
+  font-size: 0.7rem;
+  color: #888;
+}
+
+.timeline-2d-grid {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(to right, #1a1a1a 0%, #2a2a2a 100%);
+  border: 3px solid #8b5cf6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Grid lines */
+.timeline-2d-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 19px, #333 19px, #333 20px),
+    repeating-linear-gradient(90deg, transparent, transparent 19px, #333 19px, #333 20px);
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Axis lines */
+.timeline-2d-grid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(0deg, transparent 0%, transparent calc(100% - 2px), #8b5cf6 calc(100% - 2px), #8b5cf6 100%),
+    linear-gradient(90deg, transparent 0%, transparent 2px, transparent 2px, transparent 100%, #8b5cf6 0%, #8b5cf6 2px);
+  pointer-events: none;
+}
+
+.timeline-2d-point {
+  position: absolute;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+}
+
+.timeline-2d-point.active {
+  background: rgba(139, 92, 246, 0.7);
+  border-color: #8b5cf6;
+}
+
+.timeline-2d-point.historical {
+  background: rgba(107, 114, 128, 0.5);
+  border-color: #6b7280;
+}
+
+.timeline-2d-point:hover {
+  transform: scale(1.1);
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+}
+
+.timeline-2d-point.selected {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+  z-index: 25;
+}
+
+.timeline-2d-point-label {
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  font-size: 0.7rem;
+  padding: 2px 4px;
+}
+
+.timeline-2d-legend {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+}
+
+.legend-color.active {
+  background: rgba(139, 92, 246, 0.7);
+  border-color: #8b5cf6;
+}
+
+.legend-color.historical {
+  background: rgba(107, 114, 128, 0.5);
+  border-color: #6b7280;
+}
+
+.timeline-2d-detail {
+  background: #2a2a2a;
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.timeline-2d-detail h3 {
+  color: #8b5cf6;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-section h4 {
+  color: #aaa;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.detail-section p {
+  color: #ddd;
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.detail-section strong {
+  color: #8b5cf6;
+  margin-right: 0.5rem;
+}
+
+.close-button {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+}
+
+@media (max-width: 768px) {
+  .timeline-2d-container {
+    padding: 50px 15px 80px 130px;
+  }
+
+  .timeline-2d-grid {
+    height: 300px;
+  }
+
+  .y-axis-labels {
+    height: 300px;
+    left: 25px;
+    width: 90px;
+  }
+
+  .timeline-2d-y-axis-label {
+    font-size: 0.75rem;
+    left: 65px;
+  }
+
+  .timeline-2d-x-axis-label {
+    font-size: 0.75rem;
+  }
+
+  .x-axis-labels {
+    left: 130px;
+  }
+
+  .axis-tick {
+    font-size: 0.65rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
