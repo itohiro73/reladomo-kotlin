@@ -125,20 +125,20 @@ export function ProductList() {
                 </tr>
                 {expandedProductId === product.id && (
                   <tr>
-                    <td colSpan={7} style={{ padding: '1rem', backgroundColor: '#f9fafb' }}>
+                    <td colSpan={7} style={{ padding: '1rem', backgroundColor: '#374151' }}>
                       {loadingHistory === product.id ? (
-                        <div style={{ textAlign: 'center', color: '#888' }}>履歴を読み込み中...</div>
+                        <div style={{ textAlign: 'center', color: '#9ca3af' }}>履歴を読み込み中...</div>
                       ) : (
                         <div>
-                          <h4 style={{ marginTop: 0, marginBottom: '0.5rem', color: '#374151' }}>
+                          <h4 style={{ marginTop: 0, marginBottom: '0.5rem', color: '#f9fafb' }}>
                             📋 変更履歴 ({productHistory[product.id]?.length || 0} 件)
                           </h4>
                           {productHistory[product.id]?.length === 0 ? (
-                            <div style={{ color: '#888' }}>履歴がありません</div>
+                            <div style={{ color: '#9ca3af' }}>履歴がありません</div>
                           ) : (
                             <table style={{ width: '100%', marginTop: '0.5rem' }}>
                               <thead>
-                                <tr style={{ backgroundColor: '#e5e7eb' }}>
+                                <tr style={{ backgroundColor: '#4b5563' }}>
                                   <th>バージョン</th>
                                   <th>商品名</th>
                                   <th>カテゴリID</th>
@@ -176,8 +176,8 @@ export function ProductList() {
                                         </span>
                                       ) : (
                                         <span style={{
-                                          backgroundColor: '#e5e7eb',
-                                          color: '#6b7280',
+                                          backgroundColor: '#4b5563',
+                                          color: '#d1d5db',
                                           padding: '0.25rem 0.5rem',
                                           borderRadius: '0.25rem',
                                           fontSize: '0.75rem'
