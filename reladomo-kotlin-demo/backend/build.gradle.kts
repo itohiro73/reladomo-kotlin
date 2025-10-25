@@ -83,3 +83,8 @@ tasks.compileKotlin {
 tasks.register("generateCode") {
     dependsOn(generateReladomoCode)
 }
+
+// Set JVM timezone to UTC for consistent timestamp handling
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs = listOf("-Duser.timezone=UTC")
+}
