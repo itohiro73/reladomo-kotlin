@@ -429,3 +429,34 @@ reladomo:
   - Demonstrates more advanced Reladomo capabilities
 
 **For demos**: Use non-temporal entities for simple relationships and bitemporal for showcasing temporal features. Skip uni-temporal unless specifically required.
+
+### Full-Stack Feature Implementation Checklist
+
+When adding new fields to entities (especially for demo applications), ensure ALL layers are updated:
+
+1. **Database Schema** (`schema.sql`)
+   - Add column to CREATE TABLE statement
+   - Update sample INSERT statements
+
+2. **Reladomo XML** (`*.xml`)
+   - Add attribute definition
+   - Regenerate code if using code generation
+
+3. **Controllers and DTOs**
+   - Update domain controllers to save/return the field
+   - Update DTO classes if using separate DTOs
+
+4. **DatabaseViewController** (for demo apps with raw database views)
+   - ⚠️ **CRITICAL**: Update SQL queries to include new column
+   - Add column to row mapping (e.g., `"FIELD_NAME" to rs.getString("FIELD_NAME")`)
+   - Add column to columns list
+   - **Why this is easy to miss**: DatabaseViewController bypasses the ORM layer and directly queries the database, so changes aren't automatically picked up through Reladomo entities
+
+5. **Frontend Components**
+   - Update API client types
+   - Add UI fields for input/display
+   - Add appropriate styling
+
+**Common pitfall**: Implementing the feature in controllers (1-3) and frontend (5) but forgetting DatabaseViewController (4), resulting in the field not appearing in raw database views even though the data is being saved correctly.
+
+**Debugging tip**: If a field isn't displaying in the UI but you've confirmed the frontend code is correct, check the API response from the backend. DatabaseViewController often requires manual updates when new columns are added.
