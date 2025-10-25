@@ -100,23 +100,23 @@ export function BitemporalTimeline2D() {
   // Position calculation helper
   const getPosition = (point: TimelinePoint) => {
     // Calculate positions for bitemporal rectangle
-    // X-axis (Business Time): left edge starts at businessFrom
-    const left = ((point.businessFrom.getTime() - minBusinessTime) / businessRange) * 100;
+    // X-axis (Processing Time): left edge starts at processingFrom
+    const left = ((point.processingFrom.getTime() - minProcessingTime) / processingRange) * 100;
 
-    // Y-axis (Processing Time): top edge is at processingThru (newer time = higher on screen)
-    const processingThruTime = point.processingThru.getFullYear() === 9999
-      ? maxProcessingTime
-      : point.processingThru.getTime();
-    const top = ((maxProcessingTime - processingThruTime) / processingRange) * 100;
-
-    // Width: businessFrom to businessThru
+    // Y-axis (Business Time): top edge is at businessThru (newer time = higher on screen)
     const businessThruTime = point.businessThru.getFullYear() === 9999
       ? maxBusinessTime
       : point.businessThru.getTime();
-    const width = ((businessThruTime - point.businessFrom.getTime()) / businessRange) * 100;
+    const top = ((maxBusinessTime - businessThruTime) / businessRange) * 100;
 
-    // Height: processingFrom to processingThru
-    const height = ((processingThruTime - point.processingFrom.getTime()) / processingRange) * 100;
+    // Width: processingFrom to processingThru
+    const processingThruTime = point.processingThru.getFullYear() === 9999
+      ? maxProcessingTime
+      : point.processingThru.getTime();
+    const width = ((processingThruTime - point.processingFrom.getTime()) / processingRange) * 100;
+
+    // Height: businessFrom to businessThru
+    const height = ((businessThruTime - point.businessFrom.getTime()) / businessRange) * 100;
 
     return { left, top, width, height };
   };
@@ -167,8 +167,8 @@ export function BitemporalTimeline2D() {
 
       <div className="timeline-2d-explanation">
         <p>
-          <strong>横軸（ビジネス時間）</strong>: その価格がいつから有効か（現実世界の時間）<br/>
-          <strong>縦軸（処理時間）</strong>: その情報をいつシステムに記録したか（システム記録時刻）
+          <strong>横軸（処理時間）</strong>: その情報をいつシステムに記録したか（システム記録時刻）<br/>
+          <strong>縦軸（ビジネス時間）</strong>: その価格がいつから有効か（現実世界の時間）
         </p>
         <p style={{ marginTop: '0.5rem', color: '#10b981' }}>
           💡 同じビジネス期間に複数のバージョンが存在することで、過去の修正や計画変更の履歴を完全に保持できます
@@ -202,41 +202,41 @@ export function BitemporalTimeline2D() {
 
       <div className="timeline-2d-container">
         <div className="timeline-2d-axis-label timeline-2d-y-axis-label">
-          処理時間（いつ記録したか）⬆️
+          ビジネス時間（いつから有効か）⬆️
         </div>
         <div className="timeline-2d-axis-label timeline-2d-x-axis-label">
-          ビジネス時間（いつから有効か）➡️
+          処理時間（いつ記録したか）➡️
         </div>
 
-        {/* Y-axis (Processing Time) labels */}
+        {/* Y-axis (Business Time) labels */}
         <div className="axis-labels y-axis-labels">
           <div className="axis-tick top">
-            <span className="tick-date">{formatAxisDate(maxProcessingTime)}</span>
-            <span className="tick-time">{formatAxisTime(maxProcessingTime)}</span>
-          </div>
-          <div className="axis-tick middle">
-            <span className="tick-date">{formatAxisDate((maxProcessingTime + minProcessingTime) / 2)}</span>
-            <span className="tick-time">{formatAxisTime((maxProcessingTime + minProcessingTime) / 2)}</span>
-          </div>
-          <div className="axis-tick bottom">
-            <span className="tick-date">{formatAxisDate(minProcessingTime)}</span>
-            <span className="tick-time">{formatAxisTime(minProcessingTime)}</span>
-          </div>
-        </div>
-
-        {/* X-axis (Business Time) labels */}
-        <div className="axis-labels x-axis-labels">
-          <div className="axis-tick left">
-            <span className="tick-date">{formatAxisDate(minBusinessTime)}</span>
-            <span className="tick-time">{formatAxisTime(minBusinessTime)}</span>
+            <span className="tick-date">{formatAxisDate(maxBusinessTime)}</span>
+            <span className="tick-time">{formatAxisTime(maxBusinessTime)}</span>
           </div>
           <div className="axis-tick middle">
             <span className="tick-date">{formatAxisDate((maxBusinessTime + minBusinessTime) / 2)}</span>
             <span className="tick-time">{formatAxisTime((maxBusinessTime + minBusinessTime) / 2)}</span>
           </div>
+          <div className="axis-tick bottom">
+            <span className="tick-date">{formatAxisDate(minBusinessTime)}</span>
+            <span className="tick-time">{formatAxisTime(minBusinessTime)}</span>
+          </div>
+        </div>
+
+        {/* X-axis (Processing Time) labels */}
+        <div className="axis-labels x-axis-labels">
+          <div className="axis-tick left">
+            <span className="tick-date">{formatAxisDate(minProcessingTime)}</span>
+            <span className="tick-time">{formatAxisTime(minProcessingTime)}</span>
+          </div>
+          <div className="axis-tick middle">
+            <span className="tick-date">{formatAxisDate((maxProcessingTime + minProcessingTime) / 2)}</span>
+            <span className="tick-time">{formatAxisTime((maxProcessingTime + minProcessingTime) / 2)}</span>
+          </div>
           <div className="axis-tick right">
-            <span className="tick-date">{formatAxisDate(maxBusinessTime)}</span>
-            <span className="tick-time">{formatAxisTime(maxBusinessTime)}</span>
+            <span className="tick-date">{formatAxisDate(maxProcessingTime)}</span>
+            <span className="tick-time">{formatAxisTime(maxProcessingTime)}</span>
           </div>
         </div>
 
