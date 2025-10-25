@@ -36,6 +36,10 @@ export function DatabaseViewer() {
     return temporalColumns.includes(columnName);
   };
 
+  const isAuditColumn = (columnName: string): boolean => {
+    return columnName === 'UPDATED_BY';
+  };
+
   return (
     <div className="section">
       <div className="section-header">
@@ -72,10 +76,11 @@ export function DatabaseViewer() {
                     {currentTable.columns.map((column) => (
                       <th
                         key={column}
-                        className={isTemporalColumn(column) ? 'highlight-temporal' : ''}
+                        className={isTemporalColumn(column) ? 'highlight-temporal' : isAuditColumn(column) ? 'highlight-audit' : ''}
                       >
                         {column}
                         {isTemporalColumn(column) && ' ⏰'}
+                        {isAuditColumn(column) && ' 👤'}
                       </th>
                     ))}
                   </tr>
@@ -93,7 +98,7 @@ export function DatabaseViewer() {
                         {currentTable.columns.map((column) => (
                           <td
                             key={column}
-                            className={isTemporalColumn(column) ? 'highlight-temporal' : ''}
+                            className={isTemporalColumn(column) ? 'highlight-temporal' : isAuditColumn(column) ? 'highlight-audit' : ''}
                           >
                             {row[column] !== null && row[column] !== undefined
                               ? String(row[column])

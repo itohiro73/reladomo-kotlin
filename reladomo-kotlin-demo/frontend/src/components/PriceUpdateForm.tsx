@@ -8,6 +8,7 @@ export function PriceUpdateForm() {
   const [selectedProductId, setSelectedProductId] = useState<number>(1);
   const [newPrice, setNewPrice] = useState<string>('1100');
   const [businessDate, setBusinessDate] = useState<string>('2025-01-01T00:00:00Z');
+  const [updatedBy, setUpdatedBy] = useState<string>('alice@example.com');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,8 +36,9 @@ export function PriceUpdateForm() {
         productId: selectedProductId,
         price: parseFloat(newPrice),
         businessDate: businessDate,
+        updatedBy: updatedBy,
       });
-      setSuccess(`価格を更新しました！新しい価格: ¥${parseFloat(newPrice).toLocaleString()}`);
+      setSuccess(`価格を更新しました！新しい価格: ¥${parseFloat(newPrice).toLocaleString()} (更新者: ${updatedBy})`);
     } catch (err) {
       setError('価格の更新に失敗しました');
       console.error(err);
@@ -51,6 +53,7 @@ export function PriceUpdateForm() {
       productId: 1,
       price: '1200',
       businessDate: '2025-01-01T00:00:00Z',
+      updatedBy: 'alice@example.com',
       description: '来年1月から1200円に値上げする計画を記録'
     },
     {
@@ -58,6 +61,7 @@ export function PriceUpdateForm() {
       productId: 1,
       price: '950',
       businessDate: new Date().toISOString(),
+      updatedBy: 'bob@example.com',
       description: '今日から950円に値下げ'
     },
   ];
@@ -83,6 +87,7 @@ export function PriceUpdateForm() {
               setSelectedProductId(scenario.productId);
               setNewPrice(scenario.price);
               setBusinessDate(scenario.businessDate);
+              setUpdatedBy(scenario.updatedBy);
             }}
             className="scenario-button"
           >
@@ -133,6 +138,19 @@ export function PriceUpdateForm() {
             />
           </label>
           <small>未来の日付を指定すると、その日から有効な価格計画として記録されます</small>
+        </div>
+
+        <div className="form-group">
+          <label>
+            更新者（誰が変更？）:
+            <input
+              type="text"
+              value={updatedBy}
+              onChange={(e) => setUpdatedBy(e.target.value)}
+              placeholder="alice@example.com"
+            />
+          </label>
+          <small>監査証跡として記録されます</small>
         </div>
 
         <button type="submit" disabled={loading} className="submit-button">

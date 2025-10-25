@@ -260,6 +260,12 @@ tr:hover {
   font-weight: 600;
 }
 
+.highlight-audit {
+  background: rgba(16, 185, 129, 0.1);
+  font-weight: 600;
+  color: #10b981;
+}
+
 @media (max-width: 768px) {
   .app {
     padding: 1rem;
