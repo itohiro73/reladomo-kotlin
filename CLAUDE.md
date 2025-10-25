@@ -178,9 +178,519 @@ Repositories extend `AbstractBiTemporalRepository` which provides:
 
 ### XML to Kotlin Type Mapping
 - `long` → `Long`
-- `Timestamp` → `Instant` 
+- `Timestamp` → `Instant`
 - `BigDecimal` → `BigDecimal`
 - Nullable attributes → Kotlin nullable types
+
+## Timezone Handling Best Practices
+
+### Fundamental Principle: "UTC Everywhere, Convert at Edges"
+
+**Architecture Overview:**
+```
+[Database]     [Backend]      [Frontend]     [User]
+   UTC    →→→    UTC     →→→  UTC(receive) →→→ JST(display)
+                                  ↓convert
+                              toLocaleString()
+```
+
+### 1. Database Layer
+
+**Principle:** Store all timestamps in UTC
+
+**Why:**
+- Global consistency across time zones
+- Avoids daylight saving time complications
+- Immune to timezone configuration changes
+- Easy multi-region support
+
+**Implementation:**
+```sql
+-- Store timestamps in UTC
+CREATE TABLE PRODUCT_PRICES (
+    ID BIGINT NOT NULL,
+    BUSINESS_FROM TIMESTAMP NOT NULL,  -- UTC
+    BUSINESS_THRU TIMESTAMP NOT NULL,  -- UTC
+    PROCESSING_FROM TIMESTAMP NOT NULL, -- UTC
+    PROCESSING_THRU TIMESTAMP NOT NULL, -- UTC
+    ...
+);
+
+-- Example data (UTC)
+INSERT INTO PRODUCT_PRICES (..., BUSINESS_FROM, ...)
+VALUES (..., '2023-12-31 15:00:00', ...);  -- Midnight JST = 15:00 UTC
+```
+
+### 2. Backend Layer (Spring Boot/Kotlin)
+
+**Principle:** All internal processing uses UTC, type is `Instant` or `OffsetDateTime(UTC)`
+
+**Configuration:**
+```yaml
+# application.yml
+spring:
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+reladomo:
+  database-timezone: UTC
+```
+
+```xml
+<!-- MithraRuntimeConfig.xml -->
+<MithraRuntime>
+  <ConnectionManager>
+    <Property name="databaseTimezone" value="UTC"/>
+  </ConnectionManager>
+</MithraRuntime>
+```
+
+**JVM Settings:**
+```bash
+# Set JVM timezone to UTC
+-Duser.timezone=UTC
+```
+
+**API Response Format (ISO 8601 with UTC):**
+```json
+{
+  "businessFrom": "2024-01-01T00:00:00Z",
+  "processingFrom": "2024-11-15T00:00:00Z"
+}
+```
+
+**Kotlin Code:**
+```kotlin
+// Use Instant for temporal values
+data class ProductPriceDto(
+    val id: Long,
+    val price: BigDecimal,
+    val businessFrom: Instant,      // Always UTC internally
+    val businessThru: Instant,
+    val processingFrom: Instant,
+    val processingThru: Instant
+)
+
+// Repository operations use Instant
+interface BiTemporalRepository<T> {
+    fun findAsOf(
+        businessDate: Instant,    // UTC
+        processingDate: Instant   // UTC
+    ): List<T>
+}
+```
+
+### 3. Frontend Layer (React/TypeScript)
+
+**Principle:** Receive UTC from server, convert to local timezone only for display
+
+**Implementation:**
+```typescript
+// API Response (UTC strings)
+interface ProductPrice {
+  businessFrom: string;   // "2024-01-01T00:00:00Z"
+  processingFrom: string; // "2024-11-15T00:00:00Z"
+}
+
+// Parse to Date (internally UTC)
+const date = new Date(apiResponse.businessFrom);
+
+// Display in user's timezone (automatic)
+const formatted = date.toLocaleString('ja-JP');
+// Output: "2024/01/01 09:00:00" (if user is in JST)
+
+// Display in specific timezone
+const formattedJST = date.toLocaleString('ja-JP', {
+  timeZone: 'Asia/Tokyo',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit'
+});
+// Output: "2024/01/01 09:00:00"
+```
+
+**Common Pitfall:**
+```typescript
+// ❌ WRONG: Using getTime() for range calculations without timezone awareness
+const minTime = Math.min(...dates.map(d => d.getTime()));
+// This works because getTime() returns UTC milliseconds
+
+// ✅ CORRECT: For display, always use toLocaleString()
+const displayDate = new Date(minTime).toLocaleString('ja-JP');
+```
+
+### 4. Business Time vs Processing Time
+
+**Business Time (ビジネス時間):**
+- User-intended validity period
+- Example: "Price changes from January 1, 2024"
+- Storage: UTC (2023-12-31T15:00:00Z)
+- Display: JST (2024/01/01 00:00)
+- **Requires explicit timezone context when users input dates**
+
+**Processing Time (処理時間):**
+- System-recorded timestamp
+- Always server system clock (UTC)
+- Independent of user timezone
+- No conversion needed for input (system-generated)
+
+### 5. Reladomo-Kotlin Specific Recommendations
+
+```kotlin
+// 1. Entity attributes use Instant
+@BusinessAsOfAttribute
+val businessFrom: Instant
+
+@BusinessAsOfAttribute
+val businessThru: Instant
+
+// 2. Repository methods accept Instant
+fun findAtBusinessDate(date: Instant): List<ProductPrice> {
+    return ProductPriceFinder.findMany(
+        ProductPriceFinder.businessDate().eq(Timestamp.from(date))
+    )
+}
+
+// 3. REST controllers output ISO 8601 (UTC)
+@GetMapping("/product-prices")
+fun getPrices(): List<ProductPriceDto> {
+    return service.findAll().map { entity ->
+        ProductPriceDto(
+            businessFrom = entity.businessFrom.toString(), // ISO 8601 UTC
+            processingFrom = entity.processingFrom.toString()
+        )
+    }
+}
+```
+
+### 6. Testing Timezone Behavior
+
+```kotlin
+// Test with UTC times
+@Test
+fun `should handle bitemporal queries in UTC`() {
+    val businessDate = Instant.parse("2024-01-01T00:00:00Z")  // Midnight JST in UTC
+    val prices = repository.findAtBusinessDate(businessDate)
+
+    assertThat(prices).isNotEmpty()
+}
+```
+
+### 7. Common Issues and Solutions
+
+**Issue:** Frontend displays dates shifted by 9 hours (JST offset)
+**Cause:** Data stored in UTC (2023-12-31 15:00:00) displays as 2024/01/01 00:00 in JST
+**Solution:** This is correct behavior - no fix needed. UTC offset is working as intended.
+
+**Issue:** Axis labels in 2D timeline show wrong date ranges
+**Cause:** Using `Date.now()` or current time for max ranges on 9999-year records
+**Solution:** Filter out 9999-year and future timestamps before calculating ranges
+
+**Issue:** User input "2024-01-01" gets stored with wrong timestamp
+**Cause:** Browser interprets local date as UTC without explicit timezone
+**Solution:** When accepting user input for business dates, explicitly construct UTC instant:
+```typescript
+// Frontend: Convert user input to UTC
+const userInput = "2024-01-01";  // User means JST midnight
+const utcDate = new Date(userInput + "T00:00:00+09:00").toISOString();
+// Sends: "2023-12-31T15:00:00Z" to backend
+```
+
+### 8. Create and Update Operations with Timezone Handling
+
+**Principle:** User input for business dates must be explicitly converted to UTC before sending to backend.
+
+#### Frontend: User Input to UTC Conversion
+
+**Pattern 1: Date Picker Input (Business Date)**
+```typescript
+// User selects "2024-01-01" in a date picker (meaning JST midnight)
+const handleBusinessDateChange = (userInputDate: string) => {
+  // User's date is in local timezone (JST for Japanese users)
+  // We need to send UTC to the backend
+
+  // Method 1: Using timezone offset
+  const utcTimestamp = new Date(userInputDate + "T00:00:00+09:00").toISOString();
+  // Result: "2023-12-31T15:00:00Z" (JST midnight converted to UTC)
+
+  // Method 2: Using Intl.DateTimeFormat (more robust)
+  const date = new Date(userInputDate);
+  const utcTimestamp = new Date(
+    date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' })
+  ).toISOString();
+
+  return utcTimestamp;
+};
+```
+
+**Pattern 2: DateTime Picker Input (Business DateTime)**
+```typescript
+// User selects "2024-01-01 14:30" in a datetime picker
+const handleBusinessDateTimeChange = (userInputDateTime: string) => {
+  // Parse the user input with explicit timezone
+  const utcTimestamp = new Date(userInputDateTime + "+09:00").toISOString();
+  // Input: "2024-01-01T14:30:00+09:00"
+  // Result: "2024-01-01T05:30:00Z"
+
+  return utcTimestamp;
+};
+```
+
+**Pattern 3: Create Request**
+```typescript
+interface ProductPriceCreateRequest {
+  productId: number;
+  price: number;
+  businessFrom: string;  // ISO 8601 UTC
+  updatedBy: string;
+}
+
+const createPrice = async () => {
+  const userInputDate = "2024-01-01";  // From date picker
+
+  const request: ProductPriceCreateRequest = {
+    productId: 123,
+    price: 1000.00,
+    businessFrom: new Date(userInputDate + "T00:00:00+09:00").toISOString(),
+    updatedBy: "user@example.com"
+  };
+
+  // Sends: { businessFrom: "2023-12-31T15:00:00Z", ... }
+  await fetch('/api/product-prices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+};
+```
+
+**Pattern 4: Update Request**
+```typescript
+const updatePrice = async (id: number) => {
+  const userInputDate = "2024-01-02";  // User wants to change business date
+
+  const request = {
+    price: 1200.00,
+    businessFrom: new Date(userInputDate + "T00:00:00+09:00").toISOString(),
+    updatedBy: "user@example.com"
+  };
+
+  // Sends: { businessFrom: "2024-01-01T15:00:00Z", ... }
+  await fetch(`/api/product-prices/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request)
+  });
+};
+```
+
+#### Backend: Accepting and Processing UTC Dates
+
+**Pattern 1: Create DTO with Instant**
+```kotlin
+data class ProductPriceCreateDto(
+    val productId: Long,
+    val price: BigDecimal,
+    val businessFrom: String,  // ISO 8601 UTC from frontend
+    val updatedBy: String
+)
+
+@PostMapping("/product-prices")
+fun createPrice(@RequestBody dto: ProductPriceCreateDto): ProductPriceDto {
+    return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+        // Convert ISO 8601 string to Instant (already UTC)
+        val businessFrom = Instant.parse(dto.businessFrom)
+
+        // Create new entity
+        val entity = ProductPrice()
+        entity.productId = dto.productId
+        entity.price = dto.price
+        entity.businessFromAttribute = Timestamp.from(businessFrom)
+        entity.businessThruAttribute = Timestamp.from(Instant.parse("9999-12-31T23:59:59Z"))
+        entity.updatedBy = dto.updatedBy
+
+        // Reladomo automatically sets processingFrom to current UTC time
+        // and processingThru to infinity
+        entity.insert()
+
+        // Convert back to DTO
+        toDto(entity)
+    }
+}
+```
+
+**Pattern 2: Update with AsOf Query**
+```kotlin
+data class ProductPriceUpdateDto(
+    val price: BigDecimal,
+    val businessFrom: String,  // New business date (ISO 8601 UTC)
+    val updatedBy: String
+)
+
+@PutMapping("/product-prices/{id}")
+fun updatePrice(
+    @PathVariable id: Long,
+    @RequestBody dto: ProductPriceUpdateDto
+): ProductPriceDto {
+    return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+        // Parse the target business date
+        val newBusinessFrom = Instant.parse(dto.businessFrom)
+
+        // Find existing record using AsOf query
+        // Query for record valid at new business date, currently active
+        val operation = ProductPriceFinder.id().eq(id)
+            .and(ProductPriceFinder.businessDate().eq(Timestamp.from(newBusinessFrom)))
+            .and(ProductPriceFinder.processingDate().equalsInfinity())
+
+        val existing = ProductPriceFinder.findOne(operation)
+            ?: throw ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Price not found for business date ${dto.businessFrom}"
+            )
+
+        // Update properties - Reladomo handles bitemporal chaining
+        existing.price = dto.price
+        existing.updatedBy = dto.updatedBy
+
+        // Reladomo automatically:
+        // 1. Terminates old version (sets PROCESSING_THRU to now)
+        // 2. Creates new version (PROCESSING_FROM = now, PROCESSING_THRU = infinity)
+        // 3. Preserves BUSINESS_FROM/THRU from existing record
+
+        toDto(existing)
+    }
+}
+```
+
+**Pattern 3: Create with Future Business Date (Planning)**
+```kotlin
+// User wants to plan a price change for future business date
+@PostMapping("/product-prices/plan")
+fun planFuturePrice(@RequestBody dto: ProductPriceCreateDto): ProductPriceDto {
+    return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+        val futureBusinessFrom = Instant.parse(dto.businessFrom)  // e.g., 2024-06-01
+        val now = Instant.now()
+
+        // Validate future date
+        if (futureBusinessFrom.isBefore(now)) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Business date must be in the future for planning"
+            )
+        }
+
+        // Create entity with future business date
+        val entity = ProductPrice()
+        entity.productId = dto.productId
+        entity.price = dto.price
+        entity.businessFromAttribute = Timestamp.from(futureBusinessFrom)
+        entity.businessThruAttribute = Timestamp.from(Instant.parse("9999-12-31T23:59:59Z"))
+        entity.updatedBy = dto.updatedBy
+
+        // Processing time is NOW (when the plan is recorded)
+        // Business time is FUTURE (when the price becomes effective)
+        entity.insert()
+
+        toDto(entity)
+    }
+}
+```
+
+#### Business Time vs Processing Time in Create/Update
+
+**Business Time (User-Controlled):**
+- User explicitly sets when the data is **valid/effective**
+- Frontend must convert user's timezone to UTC
+- Backend accepts as ISO 8601 UTC string
+- Example: "Price changes from January 1, 2024" → `"2023-12-31T15:00:00Z"` (UTC)
+
+**Processing Time (System-Controlled):**
+- Reladomo **automatically** sets to current server time (UTC)
+- Frontend **NEVER** sends this value
+- Backend **NEVER** accepts this from user input
+- Always represents "when the system recorded this change"
+
+**Example Flow:**
+```typescript
+// Frontend: User creates new price effective from 2024-01-01 (JST)
+const request = {
+  businessFrom: "2023-12-31T15:00:00Z",  // User-specified (converted to UTC)
+  price: 1000.00
+  // NO processingFrom - system will set automatically
+};
+
+// Backend: Reladomo creates record
+// BUSINESS_FROM = 2023-12-31 15:00:00 (from request)
+// BUSINESS_THRU = 9999-12-31 23:59:59 (infinity)
+// PROCESSING_FROM = 2024-11-15 10:30:45 (current server time, automatic)
+// PROCESSING_THRU = 9999-12-31 23:59:59 (infinity, automatic)
+```
+
+#### Common Mistakes and Solutions
+
+**Mistake 1: Sending local timezone without conversion**
+```typescript
+// ❌ WRONG
+const date = new Date("2024-01-01").toISOString();
+// This interprets as local midnight, but toISOString() converts browser timezone
+// In JST: Results in "2023-12-31T15:00:00Z" - accidentally correct!
+// In EST: Results in "2024-01-01T05:00:00Z" - WRONG (off by 5 hours)
+```
+
+```typescript
+// ✅ CORRECT: Always specify timezone explicitly
+const date = new Date("2024-01-01T00:00:00+09:00").toISOString();
+// Always results in "2023-12-31T15:00:00Z" regardless of browser timezone
+```
+
+**Mistake 2: Trying to set processingFrom from frontend**
+```typescript
+// ❌ WRONG - Frontend should NOT send processingFrom
+const request = {
+  businessFrom: "2024-01-01T00:00:00Z",
+  processingFrom: new Date().toISOString()  // DON'T DO THIS
+};
+```
+
+```kotlin
+// ✅ CORRECT - Backend ignores any processingFrom in request
+@PostMapping("/product-prices")
+fun createPrice(@RequestBody dto: ProductPriceCreateDto) {
+    // DTO should not have processingFrom field
+    // Reladomo sets it automatically
+}
+```
+
+**Mistake 3: Not preserving businessFrom/businessThru on updates**
+```kotlin
+// ❌ WRONG - Creating new business validity period instead of updating
+val entity = ProductPrice()
+entity.businessFromAttribute = Timestamp.from(Instant.now())  // WRONG
+entity.price = newPrice
+entity.insert()
+```
+
+```kotlin
+// ✅ CORRECT - Use AsOf query to find existing record
+val existing = ProductPriceFinder.findOne(
+    ProductPriceFinder.productId().eq(productId)
+        .and(ProductPriceFinder.businessDate().eq(targetBusinessDate))
+        .and(ProductPriceFinder.processingDate().equalsInfinity())
+)
+existing.price = newPrice  // Reladomo preserves business time range
+```
+
+### Reference Documentation
+
+For detailed timezone handling patterns, see:
+- [ISO 8601 Standard](https://en.wikipedia.org/wiki/ISO_8601)
+- [MDN: Date.toLocaleString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString)
+- [MDN: Date.toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+- [Spring Boot Jackson Configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.data.spring.jackson.time-zone)
 
 ## Current Status
 
