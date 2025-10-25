@@ -55,30 +55,53 @@ INSERT INTO CATEGORIES (ID, NAME, DESCRIPTION) VALUES
 INSERT INTO PRODUCTS (ID, CATEGORY_ID, NAME, DESCRIPTION) VALUES
 -- Regular product
 (1, 1, 'Laptop Pro 15', 'High-performance laptop'),
--- Seasonal product (summer 2024)
+-- Seasonal product (summer 2025)
 (2, 3, 'Summer T-Shirt', 'Limited edition summer collection'),
 -- Annual reference book
-(3, 2, 'Programming Guide 2024', 'Annual programming reference');
+(3, 2, 'Programming Guide 2025', 'Annual programming reference');
 
 -- Insert sample product prices (bitemporal)
--- Scenario: Price changes for Laptop Pro 15
+-- Scenario: Price changes for Laptop Pro 15 with proper bitemporal chaining
+-- Key principle: 2D plane should have NO gaps and NO overlaps when properly chained
 
--- Initial price: 1000.00 from Jan 1, registered on Jan 1 by pricing team
+-- Step 1 (2025/07/01): pricing-team registers "1000 from Jul 1"
+-- ID 1: Original registration - "From Jul 1 to Oct 1, we thought Jul 1 onwards would be 1000"
+-- When Step 2 happens, BUSINESS_THRU changes to 2025-11-01, PROCESSING_THRU changes to 2025-10-01
 INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(1, 1, 1000.00, 'pricing-team', '2024-01-01 00:00:00', '2024-11-30 23:59:59', '2024-01-01 00:00:00', '2024-11-01 00:00:00');
+(1, 1, 1000.00, 'pricing-team', '2025-07-01 00:00:00', '9999-12-01 00:00:00', '2025-07-01 00:00:00', '2025-10-01 00:00:00');
 
--- Price increase planned for Dec 1: 1200.00, registered on Nov 1 by Alice
+-- Step 2 (2025/10/01): Alice registers "1200 from Nov 1"
+-- This splits pricing-team's record: BUSINESS_THRU becomes 2025-11-01
+-- ID 2: Continuation of pricing-team - "From Oct 1 onwards, we know Jul 1 to Nov 1 was 1000"
 INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(2, 1, 1200.00, 'alice@example.com', '2024-12-01 00:00:00', '9999-12-01 23:59:00', '2024-11-01 00:00:00', '2024-11-15 00:00:00');
+(2, 1, 1000.00, 'pricing-team', '2025-07-01 00:00:00', '2025-11-01 00:00:00', '2025-10-01 00:00:00', '9999-12-01 00:00:00');
 
--- Price change corrected on Nov 15: Actually 1100.00, not 1200.00 by Bob
+-- ID 3: Alice's 1200 - "From Oct 1 to Oct 15, we thought Nov 1 onwards would be 1200"
+-- BUSINESS_THRU stays 9999! Bob's correction only changes PROCESSING_THRU
 INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(3, 1, 1100.00, 'bob@example.com', '2024-12-01 00:00:00', '9999-12-01 23:59:00', '2024-11-15 00:00:00', '9999-12-01 23:59:00');
+(3, 1, 1200.00, 'alice@example.com', '2025-11-01 00:00:00', '9999-12-01 00:00:00', '2025-10-01 00:00:00', '2025-10-15 00:00:00');
+
+-- Step 3 (2025/10/15): Bob corrects to "1100 from Nov 1"
+-- Alice's PROCESSING_THRU becomes 2025-10-15, but BUSINESS_THRU stays 9999
+-- ID 4: Bob's 1100 - "From Oct 15 to Oct 20, we thought Nov 1 onwards would be 1100"
+-- When Step 4 happens, BUSINESS_THRU changes to 2025-12-01
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(4, 1, 1100.00, 'bob@example.com', '2025-11-01 00:00:00', '9999-12-01 00:00:00', '2025-10-15 00:00:00', '2025-10-20 00:00:00');
+
+-- Step 4 (2025/10/20): Charlie registers "1250 from Dec 1"
+-- This splits Bob's record: BUSINESS_THRU becomes 2025-12-01
+-- ID 5: Continuation of Bob - "From Oct 20 onwards, we know Nov 1 to Dec 1 is 1100"
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(5, 1, 1100.00, 'bob@example.com', '2025-11-01 00:00:00', '2025-12-01 00:00:00', '2025-10-20 00:00:00', '9999-12-01 00:00:00');
+
+-- ID 6: Charlie's 1250 - "From Oct 20 onwards, we know Dec 1 onwards is 1250"
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(6, 1, 1250.00, 'charlie@example.com', '2025-12-01 00:00:00', '9999-12-01 00:00:00', '2025-10-20 00:00:00', '9999-12-01 00:00:00');
 
 -- Summer T-Shirt price by marketing team
 INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(4, 2, 29.99, 'marketing-team', '2024-06-01 00:00:00', '9999-12-01 23:59:00', '2024-06-01 00:00:00', '9999-12-01 23:59:00');
+(7, 2, 29.99, 'marketing-team', '2025-06-01 00:00:00', '9999-12-01 00:00:00', '2025-06-01 00:00:00', '9999-12-01 00:00:00');
 
 -- Programming Guide price by content team
 INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(5, 3, 49.99, 'content-team', '2024-01-01 00:00:00', '9999-12-01 23:59:00', '2024-01-01 00:00:00', '9999-12-01 23:59:00');
+(8, 3, 49.99, 'content-team', '2025-07-01 00:00:00', '9999-12-01 00:00:00', '2025-07-01 00:00:00', '9999-12-01 00:00:00');

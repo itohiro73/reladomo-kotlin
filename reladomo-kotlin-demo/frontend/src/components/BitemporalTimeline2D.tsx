@@ -86,23 +86,37 @@ export function BitemporalTimeline2D() {
   const minBusinessTime = Math.min(...allBusinessFromTimes);
   const minProcessingTime = Math.min(...allProcessingFromTimes);
 
-  // For max, use actual max from non-9999 records, or add a reasonable range
+  // Use actual THRU values (excluding 9999) with small margin for better visualization
   const maxBusinessTime = actualBusinessTimes.length > 0
-    ? Math.max(...actualBusinessTimes)
-    : Math.max(...allBusinessFromTimes) + (30 * 24 * 60 * 60 * 1000); // +30 days
+    ? Math.max(...actualBusinessTimes) + (90 * 24 * 60 * 60 * 1000)  // +90 days
+    : Math.max(...allBusinessFromTimes) + (180 * 24 * 60 * 60 * 1000); // +180 days fallback
   const maxProcessingTime = actualProcessingTimes.length > 0
-    ? Math.max(...actualProcessingTimes)
-    : Math.max(...allProcessingFromTimes) + (30 * 24 * 60 * 60 * 1000); // +30 days
+    ? Math.max(...actualProcessingTimes) + (90 * 24 * 60 * 60 * 1000)  // +90 days
+    : Math.max(...allProcessingFromTimes) + (180 * 24 * 60 * 60 * 1000); // +180 days fallback
 
   const businessRange = maxBusinessTime - minBusinessTime;
   const processingRange = maxProcessingTime - minProcessingTime;
 
   // Position calculation helper
   const getPosition = (point: TimelinePoint) => {
+    // Calculate positions for bitemporal rectangle
+    // X-axis (Business Time): left edge starts at businessFrom
     const left = ((point.businessFrom.getTime() - minBusinessTime) / businessRange) * 100;
-    const top = ((maxProcessingTime - point.processingFrom.getTime()) / processingRange) * 100;
-    const width = ((point.businessThru.getFullYear() === 9999 ? maxBusinessTime : point.businessThru.getTime()) - point.businessFrom.getTime()) / businessRange * 100;
-    const height = ((point.processingThru.getFullYear() === 9999 ? maxProcessingTime : point.processingThru.getTime()) - point.processingFrom.getTime()) / processingRange * 100;
+
+    // Y-axis (Processing Time): top edge is at processingThru (newer time = higher on screen)
+    const processingThruTime = point.processingThru.getFullYear() === 9999
+      ? maxProcessingTime
+      : point.processingThru.getTime();
+    const top = ((maxProcessingTime - processingThruTime) / processingRange) * 100;
+
+    // Width: businessFrom to businessThru
+    const businessThruTime = point.businessThru.getFullYear() === 9999
+      ? maxBusinessTime
+      : point.businessThru.getTime();
+    const width = ((businessThruTime - point.businessFrom.getTime()) / businessRange) * 100;
+
+    // Height: processingFrom to processingThru
+    const height = ((processingThruTime - point.processingFrom.getTime()) / processingRange) * 100;
 
     return { left, top, width, height };
   };

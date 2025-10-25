@@ -743,6 +743,111 @@ Bitemporal tables require these columns:
 - Processing time columns: `PROCESSING_FROM`, `PROCESSING_THRU`
 - Composite primary key including temporal columns
 
+## Bitemporal Data Chaining - Critical Concepts
+
+### Core Principle: No Gaps, No Overlaps
+When properly chained, bitemporal data forms a **complete 2D plane with NO gaps and NO overlaps**. Every point in time must be covered by exactly one valid record version.
+
+### Understanding the Two Time Dimensions
+
+1. **Business Time (横軸)**: When the fact is valid in the real world
+   - `BUSINESS_FROM`: Start of validity period
+   - `BUSINESS_THRU`: End of validity period
+   - `BUSINESS_THRU = 9999`: "We don't know when this will end"
+
+2. **Processing Time (縦軸)**: When the system recorded this knowledge
+   - `PROCESSING_FROM`: When we learned this fact
+   - `PROCESSING_THRU`: When we stopped believing this version
+   - `PROCESSING_THRU = 9999`: "This is currently what we believe"
+
+### Record Splitting Pattern
+
+When a new price is registered for a future business date, existing records **split into two parts**:
+
+**Example**: pricing-team registers 1000円 on 2025-07-01, then Alice registers "1200円 from 2025-11-01" on 2025-10-01
+
+1. **Past Version** (what we thought before):
+   ```
+   1000円, BUS[2025-07-01, 9999), PROC[2025-07-01, 2025-10-01)
+   ```
+   - `BUSINESS_THRU` changes from `9999` to `2025-11-01` (when the new price starts)
+   - `PROCESSING_THRU` changes from `9999` to `2025-10-01` (when we learned about the change)
+
+2. **Continuation Version** (what we know now):
+   ```
+   1000円, BUS[2025-07-01, 2025-11-01), PROC[2025-10-01, 9999)
+   ```
+   - Same business period, but new processing period
+   - "From Oct 1 onwards, we know Jul 1 to Nov 1 was 1000"
+
+3. **New Record**:
+   ```
+   1200円, BUS[2025-11-01, 9999), PROC[2025-10-01, 9999)
+   ```
+
+### Correction vs New Price
+
+**CRITICAL**: When correcting a mistake, `BUSINESS_THRU` stays `9999` - only `PROCESSING_THRU` changes!
+
+**Example**: Bob corrects Alice's 1200円 to 1100円 on 2025-10-15
+
+Alice's record becomes:
+```
+1200円, BUS[2025-11-01, 9999), PROC[2025-10-01, 2025-10-15)
+```
+- `BUSINESS_THRU` **stays 9999** (it was meant to be valid forever, just wrong)
+- `PROCESSING_THRU` = `2025-10-15` (we stopped believing this on Oct 15)
+- This preserves the history: "From Oct 1 to Oct 15, we incorrectly thought Nov 1 onwards would be 1200"
+
+Bob's correction creates:
+```
+1100円, BUS[2025-11-01, 9999), PROC[2025-10-15, 9999)
+```
+
+### Timestamp Format Consistency
+
+**IMPORTANT**: Always use `9999-12-01 00:00:00` format for infinite timestamps, never `9999-12-31 23:59:59`.
+
+**BAD** (causes gaps):
+```sql
+BUSINESS_THRU = '2025-10-31 23:59:59'  -- Next record starts at 2025-11-01 00:00:00
+```
+
+**GOOD** (perfect alignment):
+```sql
+BUSINESS_THRU = '2025-11-01 00:00:00'  -- Exactly matches next BUSINESS_FROM
+```
+
+### Verification Checklist for Seed Data
+
+When creating bitemporal test data:
+
+1. ✅ **2D Coverage**: Plot all records on a 2D plane - there should be no gaps or overlaps
+2. ✅ **THRU matches FROM**: Each record's `BUSINESS_THRU` must exactly equal the next record's `BUSINESS_FROM`
+3. ✅ **Corrections preserve BUSINESS_THRU**: When fixing mistakes, only `PROCESSING_THRU` changes
+4. ✅ **Splits create pairs**: New future prices split existing records into (past version, continuation version)
+5. ✅ **Current records**: Exactly one chain of records should have `PROCESSING_THRU = 9999` at any business time
+
+### Example: Complete Chain
+
+```sql
+-- Step 1: Initial registration (2025-07-01)
+-- "We think 1000 from Jul 1 forever"
+(1, 1000.00, 'pricing-team', '2025-07-01', '9999', '2025-07-01', '2025-10-01')
+
+-- Step 2: Alice registers future price (2025-10-01)
+-- "We now know: Jul 1-Nov 1 was 1000, Nov 1 onwards will be 1200"
+(2, 1000.00, 'pricing-team', '2025-07-01', '2025-11-01', '2025-10-01', '9999')
+(3, 1200.00, 'alice@example.com', '2025-11-01', '9999', '2025-10-01', '2025-10-15')
+
+-- Step 3: Bob corrects (2025-10-15)
+-- "We now know: Nov 1 onwards should be 1100, not 1200"
+(4, 1100.00, 'bob@example.com', '2025-11-01', '9999', '2025-10-15', '9999')
+-- Note: Alice's record (3) keeps BUSINESS_THRU=9999, only PROCESSING_THRU changed
+```
+
+This creates a **complete 2D plane** where every business time × processing time point is covered by exactly one record.
+
 ## Learnings from Demo Project Implementation
 
 ### Reladomo Entity Relationships and Temporal Attributes
