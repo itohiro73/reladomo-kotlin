@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Product, ProductPrice, DatabaseTable } from '../types';
+import type { Category, Product, ProductPrice, DatabaseTable, PriceUpdateRequest } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -27,6 +27,10 @@ export const api = {
       const response = await axios.get(`${API_BASE_URL}/product-prices/asof`, {
         params: { businessDate, processingDate },
       });
+      return response.data;
+    },
+    updatePrice: async (request: PriceUpdateRequest): Promise<ProductPrice> => {
+      const response = await axios.post(`${API_BASE_URL}/product-prices`, request);
       return response.data;
     },
   },

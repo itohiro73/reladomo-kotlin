@@ -28,3 +28,9 @@ export interface DatabaseTable {
   columns: string[];
   rows: Record<string, unknown>[];
 }
+
+export interface PriceUpdateRequest {
+  productId: number;
+  price: number;
+  businessDate: string;
+}
