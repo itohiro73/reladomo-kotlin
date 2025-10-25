@@ -17,21 +17,48 @@ reladomo-kotlin-demo/
 ├── backend/          # Spring Boot REST API (ポート 8081)
 │   ├── src/main/resources/reladomo/  # Reladomo XMLエンティティ定義
 │   └── src/main/kotlin/              # Kotlin実装
-└── frontend/         # Vite + React + TypeScript (予定)
+└── frontend/         # Vite + React + TypeScript (ポート 3000)
+    ├── src/components/              # Reactコンポーネント
+    ├── src/api/                     # APIクライアント
+    └── src/types/                   # TypeScript型定義
 ```
 
-## バックエンド起動方法
+## 起動方法
 
-### 1. アプリケーション起動
+### バックエンド起動
+
+**ターミナル1:**
 
 ```bash
 cd /Users/hiroshi.ito/Development/github/itohiro73/reladomo-kotlin
 ./gradlew :reladomo-kotlin-demo:backend:bootRun
 ```
 
-アプリケーションは http://localhost:8081 で起動します。
+バックエンドは http://localhost:8081 で起動します。
 
-### 2. H2コンソール (データベースビューア)
+### フロントエンド起動
+
+**ターミナル2:**
+
+```bash
+cd /Users/hiroshi.ito/Development/github/itohiro73/reladomo-kotlin/reladomo-kotlin-demo/frontend
+
+# 初回のみ: 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+```
+
+フロントエンドは http://localhost:3000 で起動します。
+
+ブラウザで http://localhost:3000 を開くと、以下の画面が表示されます:
+- 📁 カテゴリ一覧（非テンポラル）
+- 📦 商品一覧（非テンポラル）
+- 💰 商品価格履歴タイムライン（バイテンポラル）
+- 🗄️ データベースビューア（生のテーブルデータ）
+
+### H2コンソール (オプション)
 
 ブラウザで http://localhost:8081/h2-console にアクセス:
 
@@ -172,11 +199,18 @@ curl http://localhost:8081/api/product-prices | python3 -m json.tool
 
 ## 技術スタック
 
-- **Backend Framework**: Spring Boot 3.2.0
+### バックエンド
+- **Framework**: Spring Boot 3.2.0
 - **ORM**: Reladomo 18.1.0 + reladomo-kotlin wrapper
 - **Database**: H2 (in-memory)
 - **Language**: Kotlin 1.9
 - **Build Tool**: Gradle 8.5
+
+### フロントエンド
+- **Framework**: React 18.2 + TypeScript
+- **Build Tool**: Vite 5.0
+- **HTTP Client**: Axios 1.6
+- **Styling**: CSS Modules
 
 ## データモデル
 
@@ -196,6 +230,8 @@ curl http://localhost:8081/api/product-prices | python3 -m json.tool
 
 ## 開発コマンド
 
+### バックエンド
+
 ```bash
 # ビルド
 ./gradlew :reladomo-kotlin-demo:backend:build
@@ -210,8 +246,39 @@ curl http://localhost:8081/api/product-prices | python3 -m json.tool
 ./gradlew :reladomo-kotlin-demo:backend:clean build
 ```
 
-## Next Steps
+### フロントエンド
 
-- [ ] フロントエンド実装 (Vite + React + TypeScript)
-- [ ] バイテンポラルクエリUIの実装
-- [ ] データベースビューアの統合
+```bash
+cd reladomo-kotlin-demo/frontend
+
+# 開発サーバー起動
+npm run dev
+
+# プロダクションビルド
+npm run build
+
+# プロダクションプレビュー
+npm run preview
+
+# Linting
+npm run lint
+```
+
+## デモのポイント
+
+### 1. 非テンポラルデータ (Category, Product)
+- シンプルなCRUD操作
+- 通常のデータベーステーブルと同じ扱い
+- カテゴリと商品の関連を表示
+
+### 2. バイテンポラルデータ (ProductPrice)
+- **2つの時間軸**による履歴管理:
+  - ビジネス日付: その価格がいつから有効か（未来の計画も記録可能）
+  - 処理日付: その情報をいつシステムに記録したか（監査履歴）
+- **タイムライン表示**で価格変更履歴を視覚化
+- **修正履歴の追跡**: 過去の計画が後で修正された場合も完全に記録
+
+### 3. データベースビューア
+- 生のテーブルデータをリアルタイムで表示
+- テンポラル列（BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU）をハイライト
+- データモデルの理解を深めるための教育的ツール
