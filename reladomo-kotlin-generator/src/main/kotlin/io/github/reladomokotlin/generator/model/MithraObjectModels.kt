@@ -18,7 +18,10 @@ data class MithraObjectDefinition(
 ) {
     val isBitemporal: Boolean
         get() = asOfAttributes.size >= 2
-    
+
+    val isUnitemporal: Boolean
+        get() = asOfAttributes.size == 1
+
     val primaryKeyAttributes: List<AttributeDefinition>
         get() = attributes.filter { it.isPrimaryKey }
 }

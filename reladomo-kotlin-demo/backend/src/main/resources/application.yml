@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: reladomo-kotlin-demo
+
+  datasource:
+    url: jdbc:h2:mem:demodb;MODE=PostgreSQL;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+server:
+  port: 8081
+
+# Reladomo configuration
+reladomo:
+  kotlin:
+    # Repository scanning configuration
+    repository:
+      base-packages:
+        - io.github.reladomokotlin.demo.domain  # Reladomo entity classes
+        - io.github.reladomokotlin.demo.domain.kotlin.repository  # Kotlin repositories
+      enable-query-methods: true
+
+    # Transaction management
+    transaction-management-enabled: true
+
+    # Timezone configuration
+    database-timezone: UTC
+
+  sequence:
+    enabled: true
+    type: IN_MEMORY
+    start-value: 1000

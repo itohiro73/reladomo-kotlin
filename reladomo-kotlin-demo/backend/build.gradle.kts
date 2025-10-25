@@ -15,10 +15,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.data:spring-data-commons")
 
-    // Reladomo Kotlin dependencies from Maven Central
-    implementation("io.github.itohiro73:reladomo-kotlin-core:0.0.2")
-    implementation("io.github.itohiro73:reladomo-kotlin-spring-boot:0.0.2")
-    implementation("io.github.itohiro73:reladomo-kotlin-generator:0.0.2")
+    // Reladomo Kotlin dependencies - using local project for latest changes
+    implementation(project(":reladomo-kotlin-core"))
+    implementation(project(":reladomo-kotlin-spring-boot"))
+    implementation(project(":reladomo-kotlin-generator"))
 
     // Database
     runtimeOnly("com.h2database:h2:2.2.224")
