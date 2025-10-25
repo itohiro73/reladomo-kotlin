@@ -4,6 +4,7 @@ import io.github.reladomokotlin.demo.domain.kotlin.repository.ProductPriceKtRepo
 import io.github.reladomokotlin.demo.domain.kotlin.repository.ProductKtRepository
 import io.github.reladomokotlin.demo.dto.ProductPriceDto
 import io.github.reladomokotlin.demo.dto.CreateProductPriceRequest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -12,32 +13,36 @@ import java.time.Instant
 @CrossOrigin(origins = ["*"])
 class ProductPriceController(
     private val repository: ProductPriceKtRepository,
-    private val productRepository: ProductKtRepository
+    private val productRepository: ProductKtRepository,
+    private val jdbcTemplate: JdbcTemplate
 ) {
 
     /**
-     * Get all product prices as of a specific business date and processing date
-     * This demonstrates bitemporal querying
+     * Get all product prices - returns all versions from database with correct THRU timestamps
+     * This demonstrates bitemporal data storage
      */
     @GetMapping
-    fun getAll(
-        @RequestParam(required = false) businessDate: String?,
-        @RequestParam(required = false) processingDate: String?
-    ): List<ProductPriceDto> {
-        val businessInstant = businessDate?.let { Instant.parse(it) } ?: Instant.now()
-        val processingInstant = processingDate?.let { Instant.parse(it) } ?: Instant.now()
+    fun getAll(): List<ProductPriceDto> {
+        val sql = """
+            SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
+                   pp.BUSINESS_FROM, pp.BUSINESS_THRU,
+                   pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   p.NAME as PRODUCT_NAME
+            FROM PRODUCT_PRICES pp
+            LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+            ORDER BY pp.PRODUCT_ID, pp.BUSINESS_FROM, pp.PROCESSING_FROM
+        """.trimIndent()
 
-        return repository.findAllAsOf(businessInstant, processingInstant).map { price ->
-            val product = productRepository.findById(price.productId!!)
+        return jdbcTemplate.query(sql) { rs, _ ->
             ProductPriceDto(
-                id = price.id!!,
-                productId = price.productId!!,
-                productName = product?.name,
-                price = price.price,
-                businessFrom = price.businessDate,
-                businessThru = price.businessDate, // Will be updated to show ranges
-                processingFrom = price.processingDate,
-                processingThru = price.processingDate
+                id = rs.getLong("ID"),
+                productId = rs.getLong("PRODUCT_ID"),
+                productName = rs.getString("PRODUCT_NAME"),
+                price = rs.getBigDecimal("PRICE"),
+                businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
+                businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
+                processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
             )
         }
     }
@@ -78,23 +83,29 @@ class ProductPriceController(
      */
     @GetMapping("/product/{productId}/history")
     fun getHistory(@PathVariable productId: Long): List<ProductPriceDto> {
-        // This would require a special query to get ALL versions
-        // For now, return current version
-        val current = repository.findAll().filter { it.productId == productId }
+        val sql = """
+            SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
+                   pp.BUSINESS_FROM, pp.BUSINESS_THRU,
+                   pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   p.NAME as PRODUCT_NAME
+            FROM PRODUCT_PRICES pp
+            LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+            WHERE pp.PRODUCT_ID = ?
+            ORDER BY pp.BUSINESS_FROM, pp.PROCESSING_FROM
+        """.trimIndent()
 
-        return current.map { price ->
-            val product = productRepository.findById(price.productId!!)
+        return jdbcTemplate.query(sql, { rs, _ ->
             ProductPriceDto(
-                id = price.id!!,
-                productId = price.productId!!,
-                productName = product?.name,
-                price = price.price,
-                businessFrom = price.businessDate,
-                businessThru = price.businessDate,
-                processingFrom = price.processingDate,
-                processingThru = price.processingDate
+                id = rs.getLong("ID"),
+                productId = rs.getLong("PRODUCT_ID"),
+                productName = rs.getString("PRODUCT_NAME"),
+                price = rs.getBigDecimal("PRICE"),
+                businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
+                businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
+                processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
             )
-        }
+        }, productId)
     }
 
     /**
