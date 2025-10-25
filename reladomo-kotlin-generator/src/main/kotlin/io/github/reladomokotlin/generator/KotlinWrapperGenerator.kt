@@ -43,6 +43,8 @@ class KotlinWrapperGenerator {
                 }
                 if (definition.isBitemporal) {
                     addImport("io.github.reladomokotlin.core", "BiTemporalEntity")
+                } else if (definition.isUnitemporal) {
+                    addImport("io.github.reladomokotlin.core", "UniTemporalEntity")
                 }
             }
             .build()
@@ -66,9 +68,11 @@ class KotlinWrapperGenerator {
         val builder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
         
-        // Add BiTemporalEntity interface if applicable
+        // Add temporal entity interface if applicable
         if (definition.isBitemporal) {
-            builder.addSuperinterface(BiTemporalEntity::class)
+            builder.addSuperinterface(ClassName("io.github.reladomokotlin.core", "BiTemporalEntity"))
+        } else if (definition.isUnitemporal) {
+            builder.addSuperinterface(ClassName("io.github.reladomokotlin.core", "UniTemporalEntity"))
         }
         
         // Create constructor
@@ -104,12 +108,13 @@ class KotlinWrapperGenerator {
             constructorBuilder.addParameter("businessDate", Instant::class)
             constructorBuilder.addParameter("processingDate", Instant::class)
         } else if (definition.isUnitemporal) {
-            val businessDateProp = PropertySpec.builder("businessDate", Instant::class)
-                .initializer("businessDate")
+            val processingDateProp = PropertySpec.builder("processingDate", Instant::class)
+                .initializer("processingDate")
+                .addModifiers(KModifier.OVERRIDE)
                 .build()
 
-            builder.addProperty(businessDateProp)
-            constructorBuilder.addParameter("businessDate", Instant::class)
+            builder.addProperty(processingDateProp)
+            constructorBuilder.addParameter("processingDate", Instant::class)
         }
         
         builder.primaryConstructor(constructorBuilder.build())
@@ -139,11 +144,11 @@ class KotlinWrapperGenerator {
             .returns(reladomoClassName)
             .apply {
                 // For temporal objects, use constructor with dates
+                // Note: Reladomo only generates temporal constructors for bitemporal entities
                 if (definition.isBitemporal) {
                     addStatement("val obj = %T(Timestamp.from(this.businessDate), Timestamp.from(this.processingDate))", reladomoClassName)
-                } else if (definition.isUnitemporal) {
-                    addStatement("val obj = %T(Timestamp.from(this.businessDate))", reladomoClassName)
                 } else {
+                    // Unitemporal and non-temporal use default constructor
                     addStatement("val obj = %T()", reladomoClassName)
                 }
                 
@@ -240,7 +245,7 @@ class KotlinWrapperGenerator {
                     add("businessDate = obj.businessDate.toInstant(),\n")
                     add("processingDate = obj.processingDate.toInstant()\n")
                 } else if (definition.isUnitemporal) {
-                    add("businessDate = obj.businessDate.toInstant()\n")
+                    add("processingDate = obj.processingDate.toInstant()\n")
                 }
                 
                 unindent()

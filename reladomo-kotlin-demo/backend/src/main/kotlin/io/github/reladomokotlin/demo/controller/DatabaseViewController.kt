@@ -42,19 +42,34 @@ class DatabaseViewController(
     }
 
     private fun getProductsTable(): DatabaseTableDto {
-        val sql = "SELECT * FROM PRODUCTS ORDER BY ID"
+        // Database stores UTC, but display in JST for user-friendliness
+        // Add 9 hours to convert UTC to JST for display (unitemporal: only PROCESSING_FROM/THRU)
+        val sql = """
+            SELECT
+                ID,
+                CATEGORY_ID,
+                NAME,
+                DESCRIPTION,
+                FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_FROM), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_FROM_JST,
+                FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_THRU), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_THRU_JST
+            FROM PRODUCTS
+            ORDER BY ID, PROCESSING_FROM
+        """.trimIndent()
+
         val rows = jdbcTemplate.query(sql) { rs, _ ->
             mapOf<String, Any?>(
                 "ID" to rs.getLong("ID"),
                 "CATEGORY_ID" to rs.getLong("CATEGORY_ID"),
                 "NAME" to rs.getString("NAME"),
-                "DESCRIPTION" to rs.getString("DESCRIPTION")
+                "DESCRIPTION" to rs.getString("DESCRIPTION"),
+                "PROCESSING_FROM" to rs.getString("PROCESSING_FROM_JST"),
+                "PROCESSING_THRU" to rs.getString("PROCESSING_THRU_JST")
             )
         }
 
         return DatabaseTableDto(
             name = "PRODUCTS",
-            columns = listOf("ID", "CATEGORY_ID", "NAME", "DESCRIPTION"),
+            columns = listOf("ID", "CATEGORY_ID", "NAME", "DESCRIPTION", "PROCESSING_FROM", "PROCESSING_THRU"),
             rows = rows
         )
     }

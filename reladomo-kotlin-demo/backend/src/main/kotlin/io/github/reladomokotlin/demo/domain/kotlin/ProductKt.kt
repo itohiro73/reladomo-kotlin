@@ -1,5 +1,6 @@
 package io.github.reladomokotlin.demo.domain.kotlin
 
+import io.github.reladomokotlin.core.UniTemporalEntity
 import io.github.reladomokotlin.demo.domain.Product
 import java.sql.Timestamp
 import java.time.Instant
@@ -11,7 +12,8 @@ public data class ProductKt(
   public val categoryId: Long,
   public val name: String,
   public val description: String?,
-) {
+  override val processingDate: Instant,
+) : UniTemporalEntity {
   public fun toReladomo(): Product {
     val obj = Product()
     this.id?.let { obj.id = it }
@@ -26,7 +28,8 @@ public data class ProductKt(
       id = obj.id,
       categoryId = obj.categoryId,
       name = obj.name,
-      description = obj.description
+      description = obj.description,
+      processingDate = obj.processingDate.toInstant()
     )
   }
 }

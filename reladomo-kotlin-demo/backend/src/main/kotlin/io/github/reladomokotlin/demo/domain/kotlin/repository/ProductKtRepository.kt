@@ -8,6 +8,8 @@ import io.github.reladomokotlin.core.BiTemporalEntity
 import io.github.reladomokotlin.core.BiTemporalRepository
 import io.github.reladomokotlin.core.ReladomoFinder
 import io.github.reladomokotlin.core.ReladomoObject
+import io.github.reladomokotlin.core.UniTemporalEntity
+import io.github.reladomokotlin.core.UniTemporalRepository
 import io.github.reladomokotlin.core.exceptions.EntityNotFoundException
 import io.github.reladomokotlin.demo.domain.Product
 import io.github.reladomokotlin.demo.domain.ProductFinder
@@ -29,7 +31,7 @@ import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
-public class ProductKtRepository : BaseRepository<ProductKt, Long> {
+public class ProductKtRepository : UniTemporalRepository<ProductKt, Long> {
   @Autowired(required = false)
   private var sequenceGenerator: SequenceGenerator? = null
 
@@ -46,12 +48,12 @@ public class ProductKtRepository : BaseRepository<ProductKt, Long> {
   }
 
   override fun findById(id: Long): ProductKt? {
-    val entity = ProductFinder.findByPrimaryKey(id)
+    val entity = ProductFinder.findByPrimaryKey(id, Timestamp.from(Instant.now()))
     return entity?.let { ProductKt.fromReladomo(it) }
   }
 
   override fun update(entity: ProductKt): ProductKt {
-    val existingOrder = ProductFinder.findByPrimaryKey(entity.id!!)
+    val existingOrder = ProductFinder.findByPrimaryKey(entity.id!!,  Timestamp.from(Instant.now()))
         ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
 
     // Update attributes
@@ -63,13 +65,15 @@ public class ProductKtRepository : BaseRepository<ProductKt, Long> {
   }
 
   override fun deleteById(id: Long) {
-    val order = ProductFinder.findByPrimaryKey(id)
+    val order = ProductFinder.findByPrimaryKey(id, Timestamp.from(Instant.now()))
         ?: throw EntityNotFoundException("Order not found with id: $id")
     order.delete()
   }
 
   override fun findAll(): List<ProductKt> {
-    val orders = ProductFinder.findMany(ProductFinder.all())
+    // For unitemporal queries, use equalsInfinity to get current records (PROCESSING_THRU = infinity)
+    val operation = ProductFinder.processingDate().equalsInfinity()
+    val orders = ProductFinder.findMany(operation)
     return orders.map { ProductKt.fromReladomo(it) }
   }
 
@@ -90,6 +94,39 @@ public class ProductKtRepository : BaseRepository<ProductKt, Long> {
   }
 
   override fun count(): Long = findAll().size.toLong()
+
+  override fun findByIdAsOf(id: Long, processingDate: Instant): ProductKt? {
+    // Find by primary key as of specific processing date
+    val infinityThreshold = Instant.parse("9999-01-01T00:00:00Z")
+    val operation = ProductFinder.id().eq(id)
+        .and(if (processingDate.isAfter(infinityThreshold))
+        ProductFinder.processingDate().equalsInfinity() else
+        ProductFinder.processingDate().eq(Timestamp.from(processingDate)))
+    val entity = ProductFinder.findOne(operation)
+    return entity?.let { ProductKt.fromReladomo(it) }
+  }
+
+  override fun findAllAsOf(processingDate: Instant): List<ProductKt> {
+    // Find all entities as of specific processing date
+    val infinityThreshold = Instant.parse("9999-01-01T00:00:00Z")
+    val operation = if (processingDate.isAfter(infinityThreshold)) {
+        ProductFinder.processingDate().equalsInfinity()
+    } else {
+        ProductFinder.processingDate().eq(Timestamp.from(processingDate))
+    }
+    val entities = ProductFinder.findMany(operation)
+    return entities.map { ProductKt.fromReladomo(it) }
+  }
+
+  override fun getHistory(id: Long): List<ProductKt> {
+    // Get all versions of the entity across processing time
+    // Use equalsEdgePoint() to retrieve ALL historical records
+    // Returns history sorted by processing date (oldest first)
+    val operation = ProductFinder.id().eq(id)
+        .and(ProductFinder.processingDate().equalsEdgePoint())
+    val entities = ProductFinder.findMany(operation)
+    return entities.map { ProductKt.fromReladomo(it) }.sortedBy { it.processingDate }
+  }
 
   public fun find(query: QueryContext.() -> Unit): List<ProductKt> {
     // Find entities using Query DSL

@@ -51,7 +51,8 @@ class ProductController(
                 id = null,
                 categoryId = request.categoryId,
                 name = request.name,
-                description = request.description
+                description = request.description,
+                processingDate = Instant.now()
             )
         )
 
@@ -68,5 +69,71 @@ class ProductController(
     @DeleteMapping("/{id}")
     fun delete(@PathVariable id: Long) {
         repository.deleteById(id)
+    }
+
+    /**
+     * Get all versions of a product (version history)
+     * Shows temporal evolution of product information
+     */
+    @GetMapping("/{id}/history")
+    fun getHistory(@PathVariable id: Long): List<ProductDto> {
+        return repository.getHistory(id).map { product ->
+            val category = categoryRepository.findById(product.categoryId)
+            ProductDto(
+                id = product.id,
+                categoryId = product.categoryId,
+                categoryName = category?.name,
+                name = product.name,
+                description = product.description,
+                processingFrom = product.processingDate,
+                processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+            )
+        }
+    }
+
+    /**
+     * Get all products as of a specific processing date
+     * Example: /api/products/asof?processingDate=2025-08-01T00:00:00Z
+     */
+    @GetMapping("/asof")
+    fun getAllAsOf(@RequestParam processingDate: String): List<ProductDto> {
+        val instant = Instant.parse(processingDate)
+        return repository.findAllAsOf(instant).map { product ->
+            val category = categoryRepository.findById(product.categoryId)
+            ProductDto(
+                id = product.id,
+                categoryId = product.categoryId,
+                categoryName = category?.name,
+                name = product.name,
+                description = product.description,
+                processingFrom = product.processingDate,
+                processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+            )
+        }
+    }
+
+    /**
+     * Get a specific product as of a specific processing date
+     * Example: /api/products/1/asof?processingDate=2025-08-01T00:00:00Z
+     */
+    @GetMapping("/{id}/asof")
+    fun getByIdAsOf(
+        @PathVariable id: Long,
+        @RequestParam processingDate: String
+    ): ProductDto {
+        val instant = Instant.parse(processingDate)
+        val product = repository.findByIdAsOf(id, instant)
+            ?: throw NotFoundException("Product not found: $id at $processingDate")
+
+        val category = categoryRepository.findById(product.categoryId)
+        return ProductDto(
+            id = product.id,
+            categoryId = product.categoryId,
+            categoryName = category?.name,
+            name = product.name,
+            description = product.description,
+            processingFrom = product.processingDate,
+            processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+        )
     }
 }

@@ -1073,7 +1073,7 @@ val existing = ProductPriceFinder.findOne(operation)
 **Key points for AsOf queries**:
 - Use `.eq(Timestamp)` for businessDate - finds records where the date falls within [BUSINESS_FROM, BUSINESS_THRU)
 - Use `.equalsInfinity()` for processingDate - finds current version (PROCESSING_THRU = infinity)
-- **DO NOT** use `.equalsEdgePoint()` - this method does not exist in Reladomo-generated Finders
+- Use `.equalsEdgePoint()` ONLY for retrieving ALL historical records (for debugging/reporting)
 - processingDate does NOT need "as of now" specification when using equalsInfinity()
 
 **CORRECT Update Pattern**:
@@ -1130,20 +1130,134 @@ reladomo:
 - Domain package: Contains generated Reladomo entity classes
 - Repository package: Contains generated Kotlin repository classes
 
-### Uni-temporal vs Bitemporal Complexity
-**Recommendation**: For MVPs and demos, prefer **non-temporal** or **bitemporal** over **uni-temporal**.
+### Unitemporal Entity Implementation
 
-- **Uni-temporal** (single time dimension with VALID_FROM/VALID_TO) adds significant complexity:
-  - Code generators need special handling for single AsOfAttribute
-  - Repository methods require different parameter sets
-  - Query construction is more complex than bitemporal
+**UPDATE**: Unitemporal support is now fully implemented and recommended for master data change history tracking!
 
-- **Bitemporal** is better supported in the framework:
-  - Code generators fully handle dual AsOfAttribute pattern
-  - Repository methods consistently use businessDate and processingDate
-  - Demonstrates more advanced Reladomo capabilities
+#### When to Use Each Pattern
 
-**For demos**: Use non-temporal entities for simple relationships and bitemporal for showcasing temporal features. Skip uni-temporal unless specifically required.
+- **Non-temporal**: Reference data with no change history (e.g., Categories)
+- **Unitemporal**: Master data with change history tracking (e.g., Products, organizational structures)
+  - Tracks WHEN data was recorded/changed in the system
+  - Single time dimension: PROCESSING_FROM/PROCESSING_THRU
+  - Example: Product rebranding, description updates, organizational changes
+- **Bitemporal**: Transaction data with full temporal tracking (e.g., Prices, contracts)
+  - Tracks both WHEN facts are valid AND when we learned about them
+  - Dual time dimensions: BUSINESS_FROM/THRU + PROCESSING_FROM/THRU
+
+#### Unitemporal Configuration
+
+**Reladomo XML** (`Product.xml`):
+```xml
+<MithraObject objectType="transactional">
+    <PackageName>io.github.reladomokotlin.demo.domain</PackageName>
+    <ClassName>Product</ClassName>
+
+    <!-- Single AsOfAttribute for processing time -->
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="true"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" primaryKey="true"/>
+    <Attribute name="name" javaType="String"/>
+</MithraObject>
+```
+
+**CRITICAL**: Must set `isProcessingDate="true"` on the AsOfAttribute.
+
+**Database Schema**:
+```sql
+CREATE TABLE PRODUCTS (
+    ID BIGINT NOT NULL,
+    NAME VARCHAR(200) NOT NULL,
+    PROCESSING_FROM TIMESTAMP NOT NULL,
+    PROCESSING_THRU TIMESTAMP NOT NULL,
+    PRIMARY KEY (ID, PROCESSING_FROM)
+);
+
+-- Sample data showing version history
+INSERT INTO PRODUCTS (ID, NAME, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 'Laptop Pro 15', '2025-07-01 00:00:00', '2025-08-01 00:00:00'),  -- V1
+(1, 'Laptop Pro 15 Gen2', '2025-08-01 00:00:00', '2025-09-01 00:00:00'),  -- V2
+(1, 'Laptop Pro 15 Gen2', '2025-09-01 00:00:00', '9999-12-01 23:59:00');  -- V3 (current)
+```
+
+#### Critical Query Patterns for Unitemporal
+
+**1. Get Current Records** (most common):
+```kotlin
+// Use equalsInfinity() to get records with PROCESSING_THRU = infinity
+val operation = ProductFinder.processingDate().equalsInfinity()
+val currentProducts = ProductFinder.findMany(operation)
+```
+
+**2. Get ALL Version History** (for debugging/reporting):
+```kotlin
+// Use equalsEdgePoint() to retrieve ALL historical records
+val operation = ProductFinder.id().eq(productId)
+    .and(ProductFinder.processingDate().equalsEdgePoint())
+val history = ProductFinder.findMany(operation)
+```
+
+**3. Time Travel Query** (as-of specific processing date):
+```kotlin
+val processingDate = Instant.parse("2025-08-01T00:00:00Z")
+val operation = ProductFinder.id().eq(productId)
+    .and(ProductFinder.processingDate().eq(Timestamp.from(processingDate)))
+val historicalVersion = ProductFinder.findOne(operation)
+```
+
+#### Important Differences from Bitemporal
+
+1. **No Temporal Constructor**: Unlike bitemporal entities, Reladomo does NOT generate temporal constructors for unitemporal:
+   ```kotlin
+   // ❌ WRONG - This constructor does not exist for unitemporal
+   val product = Product(Timestamp.from(processingDate))
+
+   // ✅ CORRECT - Use default constructor
+   val product = Product()
+   product.id = 1
+   product.name = "Laptop Pro 15"
+   product.insert()  // Reladomo sets PROCESSING_FROM/THRU automatically
+   ```
+
+2. **equalsEdgePoint() Usage**: MUST be used in getHistory() to retrieve ALL versions:
+   ```kotlin
+   // getHistory() implementation for unitemporal
+   override fun getHistory(id: Long): List<ProductKt> {
+       val operation = ProductFinder.id().eq(id)
+           .and(ProductFinder.processingDate().equalsEdgePoint())  // REQUIRED
+       val entities = ProductFinder.findMany(operation)
+       return entities.map { ProductKt.fromReladomo(it) }.sortedBy { it.processingDate }
+   }
+   ```
+
+3. **Infinity Timestamp Format**: Use `9999-12-01 23:59:00` (Reladomo's default):
+   ```sql
+   -- ✅ CORRECT
+   PROCESSING_THRU = '9999-12-01 23:59:00'
+
+   -- ❌ WRONG - Will not match equalsInfinity() queries
+   PROCESSING_THRU = '9999-12-01 00:00:00'
+   ```
+
+#### Demo Implementation Pattern
+
+The demo showcases all three patterns:
+- **Category** (non-temporal): Simple reference data
+- **Product** (unitemporal): Master data with change history
+  - Version 1: "Laptop Pro 15" (original)
+  - Version 2: "Laptop Pro 15 Gen2" (rebranding)
+  - Version 3: "Laptop Pro 15 Gen2" (description update)
+- **ProductPrice** (bitemporal): Full temporal tracking
+
+Endpoints:
+- `GET /api/products` - Current versions
+- `GET /api/products/{id}/history` - Full version history
+- `GET /api/products/asof?processingDate=2025-08-01T00:00:00Z` - Time travel query
 
 ### Full-Stack Feature Implementation Checklist
 

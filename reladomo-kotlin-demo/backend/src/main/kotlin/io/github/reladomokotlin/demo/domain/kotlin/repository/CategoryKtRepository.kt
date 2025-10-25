@@ -8,6 +8,8 @@ import io.github.reladomokotlin.core.BiTemporalEntity
 import io.github.reladomokotlin.core.BiTemporalRepository
 import io.github.reladomokotlin.core.ReladomoFinder
 import io.github.reladomokotlin.core.ReladomoObject
+import io.github.reladomokotlin.core.UniTemporalEntity
+import io.github.reladomokotlin.core.UniTemporalRepository
 import io.github.reladomokotlin.core.exceptions.EntityNotFoundException
 import io.github.reladomokotlin.demo.domain.Category
 import io.github.reladomokotlin.demo.domain.CategoryFinder
