@@ -10,6 +10,8 @@ export interface Product {
   categoryName: string;
   name: string;
   description: string | null;
+  processingFrom?: string;
+  processingThru?: string;
 }
 
 export interface ProductPrice {

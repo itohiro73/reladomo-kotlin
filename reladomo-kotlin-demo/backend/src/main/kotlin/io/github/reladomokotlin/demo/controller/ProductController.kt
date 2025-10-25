@@ -2,9 +2,11 @@ package io.github.reladomokotlin.demo.controller
 
 import io.github.reladomokotlin.demo.domain.kotlin.repository.ProductKtRepository
 import io.github.reladomokotlin.demo.domain.kotlin.repository.CategoryKtRepository
+import io.github.reladomokotlin.demo.domain.ProductFinder
 import io.github.reladomokotlin.demo.dto.ProductDto
 import io.github.reladomokotlin.demo.dto.CreateProductRequest
 import org.springframework.web.bind.annotation.*
+import java.sql.Timestamp
 import java.time.Instant
 
 @RestController
@@ -17,14 +19,20 @@ class ProductController(
 
     @GetMapping
     fun getAll(): List<ProductDto> {
-        return repository.findAll().map { product ->
-            val category = categoryRepository.findById(product.categoryId)
+        // Get current products using equalsInfinity to get PROCESSING_THRU = infinity records
+        val operation = ProductFinder.processingDate().equalsInfinity()
+        val products = ProductFinder.findMany(operation)
+
+        return products.map { reladomoProduct ->
+            val category = categoryRepository.findById(reladomoProduct.categoryId)
             ProductDto(
-                id = product.id,
-                categoryId = product.categoryId,
+                id = reladomoProduct.id,
+                categoryId = reladomoProduct.categoryId,
                 categoryName = category?.name,
-                name = product.name,
-                description = product.description
+                name = reladomoProduct.name,
+                description = reladomoProduct.description,
+                processingFrom = reladomoProduct.processingDateFrom?.toInstant(),
+                processingThru = reladomoProduct.processingDateTo?.toInstant()
             )
         }
     }
@@ -77,18 +85,23 @@ class ProductController(
      */
     @GetMapping("/{id}/history")
     fun getHistory(@PathVariable id: Long): List<ProductDto> {
-        return repository.getHistory(id).map { product ->
-            val category = categoryRepository.findById(product.categoryId)
+        // Get all versions using equalsEdgePoint
+        val operation = ProductFinder.id().eq(id)
+            .and(ProductFinder.processingDate().equalsEdgePoint())
+        val products = ProductFinder.findMany(operation)
+
+        return products.map { reladomoProduct ->
+            val category = categoryRepository.findById(reladomoProduct.categoryId)
             ProductDto(
-                id = product.id,
-                categoryId = product.categoryId,
+                id = reladomoProduct.id,
+                categoryId = reladomoProduct.categoryId,
                 categoryName = category?.name,
-                name = product.name,
-                description = product.description,
-                processingFrom = product.processingDate,
-                processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+                name = reladomoProduct.name,
+                description = reladomoProduct.description,
+                processingFrom = reladomoProduct.processingDateFrom?.toInstant(),
+                processingThru = reladomoProduct.processingDateTo?.toInstant()
             )
-        }
+        }.sortedBy { it.processingFrom }
     }
 
     /**
@@ -98,16 +111,19 @@ class ProductController(
     @GetMapping("/asof")
     fun getAllAsOf(@RequestParam processingDate: String): List<ProductDto> {
         val instant = Instant.parse(processingDate)
-        return repository.findAllAsOf(instant).map { product ->
-            val category = categoryRepository.findById(product.categoryId)
+        val operation = ProductFinder.processingDate().eq(Timestamp.from(instant))
+        val products = ProductFinder.findMany(operation)
+
+        return products.map { reladomoProduct ->
+            val category = categoryRepository.findById(reladomoProduct.categoryId)
             ProductDto(
-                id = product.id,
-                categoryId = product.categoryId,
+                id = reladomoProduct.id,
+                categoryId = reladomoProduct.categoryId,
                 categoryName = category?.name,
-                name = product.name,
-                description = product.description,
-                processingFrom = product.processingDate,
-                processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+                name = reladomoProduct.name,
+                description = reladomoProduct.description,
+                processingFrom = reladomoProduct.processingDateFrom?.toInstant(),
+                processingThru = reladomoProduct.processingDateTo?.toInstant()
             )
         }
     }
@@ -122,7 +138,9 @@ class ProductController(
         @RequestParam processingDate: String
     ): ProductDto {
         val instant = Instant.parse(processingDate)
-        val product = repository.findByIdAsOf(id, instant)
+        val operation = ProductFinder.id().eq(id)
+            .and(ProductFinder.processingDate().eq(Timestamp.from(instant)))
+        val product = ProductFinder.findOne(operation)
             ?: throw NotFoundException("Product not found: $id at $processingDate")
 
         val category = categoryRepository.findById(product.categoryId)
@@ -132,8 +150,8 @@ class ProductController(
             categoryName = category?.name,
             name = product.name,
             description = product.description,
-            processingFrom = product.processingDate,
-            processingThru = product.processingDate  // TODO: Fix to get actual PROCESSING_THRU
+            processingFrom = product.processingDateFrom?.toInstant(),
+            processingThru = product.processingDateTo?.toInstant()
         )
     }
 }

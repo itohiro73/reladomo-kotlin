@@ -16,6 +16,10 @@ export const api = {
       const response = await axios.get(`${API_BASE_URL}/products`);
       return response.data;
     },
+    getHistory: async (id: number): Promise<Product[]> => {
+      const response = await axios.get(`${API_BASE_URL}/products/${id}/history`);
+      return response.data;
+    },
   },
 
   productPrices: {

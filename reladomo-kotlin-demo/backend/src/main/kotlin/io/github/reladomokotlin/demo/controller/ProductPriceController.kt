@@ -32,6 +32,8 @@ class ProductPriceController(
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+                AND pp.PROCESSING_FROM >= p.PROCESSING_FROM
+                AND pp.PROCESSING_FROM < p.PROCESSING_THRU
             ORDER BY pp.PRODUCT_ID, pp.BUSINESS_FROM, pp.PROCESSING_FROM
         """.trimIndent()
 
@@ -70,6 +72,7 @@ class ProductPriceController(
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+                AND ? >= p.PROCESSING_FROM AND ? < p.PROCESSING_THRU
             WHERE ? >= pp.BUSINESS_FROM AND ? < pp.BUSINESS_THRU
               AND ? >= pp.PROCESSING_FROM AND ? < pp.PROCESSING_THRU
             ORDER BY pp.PRODUCT_ID
@@ -90,7 +93,7 @@ class ProductPriceController(
                 processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant(),
                 updatedBy = rs.getString("UPDATED_BY")
             )
-        }, businessInstant, businessInstant, processingInstant, processingInstant)
+        }, processingInstant, processingInstant, businessInstant, businessInstant, processingInstant, processingInstant)
     }
 
     /**
@@ -106,6 +109,8 @@ class ProductPriceController(
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+                AND pp.PROCESSING_FROM >= p.PROCESSING_FROM
+                AND pp.PROCESSING_FROM < p.PROCESSING_THRU
             WHERE pp.PRODUCT_ID = ?
             ORDER BY pp.BUSINESS_FROM, pp.PROCESSING_FROM
         """.trimIndent()
