@@ -23,6 +23,12 @@ export const api = {
       const response = await axios.get(`${API_BASE_URL}/product-prices`);
       return response.data;
     },
+    getAsOf: async (businessDate: string, processingDate: string): Promise<ProductPrice[]> => {
+      const response = await axios.get(`${API_BASE_URL}/product-prices/asof`, {
+        params: { businessDate, processingDate },
+      });
+      return response.data;
+    },
   },
 
   database: {
