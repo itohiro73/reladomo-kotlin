@@ -1,0 +1,186 @@
+.price-update-form {
+  padding: 20px;
+  background: #1a1a1a;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.price-update-form h2 {
+  color: rgba(255, 255, 255, 0.87);
+  margin-bottom: 15px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.price-update-form h3 {
+  color: #ddd;
+  margin: 15px 0 10px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.price-update-form .explanation {
+  background: rgba(16, 185, 129, 0.15);
+  border-left: 5px solid #10b981;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.price-update-form .explanation p {
+  margin: 0 0 10px 0;
+  color: #ddd;
+  line-height: 1.6;
+}
+
+.price-update-form .explanation p:last-child {
+  margin-bottom: 0;
+}
+
+.price-update-form .explanation strong {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.preset-scenarios {
+  margin: 20px 0;
+  padding: 15px;
+  background: #2a2a2a;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.preset-scenarios h3 {
+  color: rgba(255, 255, 255, 0.87);
+  font-weight: 600;
+}
+
+.scenario-button {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  margin: 10px 0;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.scenario-button:hover {
+  background: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.scenario-description {
+  display: block;
+  font-size: 13px;
+  opacity: 0.9;
+  margin-top: 6px;
+  font-weight: 400;
+}
+
+.update-form {
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #ddd;
+  font-size: 14px;
+}
+
+.form-group select,
+.form-group input[type="number"],
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #333;
+  border-radius: 4px;
+  font-size: 14px;
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.form-group input[type="text"] {
+  font-family: monospace;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 6px;
+  color: #888;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.submit-button:disabled {
+  background: #444;
+  cursor: not-allowed;
+}
+
+.error {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #dc2626;
+  margin: 15px 0;
+}
+
+.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #10b981;
+  margin: 15px 0;
+}
+
+.success-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  opacity: 0.9;
+}

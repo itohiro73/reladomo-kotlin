@@ -342,6 +342,62 @@ Database schema SQL must match entity temporal characteristics **exactly**.
 **Common error**: Keeping temporal columns in CREATE TABLE but forgetting to update INSERT statements (or vice versa)
 **Symptom**: `Column "VALID_FROM" not found` during application startup
 
+### Bitemporal Update Pattern in Reladomo
+
+**CRITICAL**: Reladomo automatically handles bitemporal chaining. **DO NOT** manually update/insert records.
+
+**CORRECT AsOf Query Pattern**:
+```kotlin
+// Find record valid at specific business date, currently valid in processing time
+val operation = ProductPriceFinder.productId().eq(productId)
+    .and(ProductPriceFinder.businessDate().eq(Timestamp.from(businessDate)))
+    .and(ProductPriceFinder.processingDate().equalsInfinity())
+val existing = ProductPriceFinder.findOne(operation)
+```
+
+**Key points for AsOf queries**:
+- Use `.eq(Timestamp)` for businessDate - finds records where the date falls within [BUSINESS_FROM, BUSINESS_THRU)
+- Use `.equalsInfinity()` for processingDate - finds current version (PROCESSING_THRU = infinity)
+- **DO NOT** use `.equalsEdgePoint()` - this method does not exist in Reladomo-generated Finders
+- processingDate does NOT need "as of now" specification when using equalsInfinity()
+
+**CORRECT Update Pattern**:
+```kotlin
+// 1. Find the record valid at the target business date using AsOf query
+val businessDate = Instant.parse("2025-01-02T00:00:00Z")
+val operation = ProductPriceFinder.productId().eq(productId)
+    .and(ProductPriceFinder.businessDate().eq(Timestamp.from(businessDate)))
+    .and(ProductPriceFinder.processingDate().equalsInfinity())
+val existing = ProductPriceFinder.findOne(operation)
+
+// 2. Update the property (e.g., price) - Reladomo handles chaining automatically
+existing?.let {
+    it.price = BigDecimal("1200.00")
+    // Reladomo detects the change and creates new version with bitemporal chaining:
+    // - Terminates old version (sets PROCESSING_THRU to now)
+    // - Creates new version (PROCESSING_FROM = now, PROCESSING_THRU = infinity)
+    // - Preserves BUSINESS_FROM/THRU from existing record
+}
+```
+
+**WRONG Pattern** (manual chaining):
+```kotlin
+// ❌ DO NOT DO THIS
+jdbcTemplate.update("UPDATE ... SET PROCESSING_THRU = ?")
+jdbcTemplate.update("INSERT INTO ... VALUES (...)")
+```
+
+**Why this matters**:
+- Reladomo tracks object state and generates proper SQL
+- Manual UPDATE/INSERT bypasses Reladomo's bitemporal logic
+- BUSINESS_FROM/THRU must be preserved from the existing record
+- Only PROCESSING_FROM/THRU should change when updating
+
+**Common mistake**: Creating new records with wrong BUSINESS_FROM
+- If you manually insert, you might use the target business date as BUSINESS_FROM
+- This creates a new business validity period instead of updating the existing one
+- Correct: Use AsOf query to find existing record, then update its properties
+
 ### Entity Scanning Configuration
 Update `application.yml` to specify correct packages for entity scanning:
 

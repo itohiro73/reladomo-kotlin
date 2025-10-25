@@ -37,7 +37,9 @@ CREATE TABLE PRODUCT_PRICES (
     PROCESSING_FROM TIMESTAMP NOT NULL,
     PROCESSING_THRU TIMESTAMP NOT NULL,
 
-    PRIMARY KEY (ID, BUSINESS_FROM, PROCESSING_FROM)
+    PRIMARY KEY (ID, BUSINESS_FROM, PROCESSING_FROM),
+    -- Bitemporal unique constraint: no two records can have the same product, business end, and processing end
+    CONSTRAINT UK_PRODUCT_PRICES_BITEMPORAL UNIQUE (PRODUCT_ID, BUSINESS_THRU, PROCESSING_THRU)
 );
 
 -- Insert sample categories (non-temporal)

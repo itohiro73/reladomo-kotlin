@@ -3,6 +3,7 @@ import { CategoryList } from './components/CategoryList';
 import { ProductList } from './components/ProductList';
 import { ProductPriceTimeline } from './components/ProductPriceTimeline';
 import { TimeTravelQuery } from './components/TimeTravelQuery';
+import { PriceUpdateForm } from './components/PriceUpdateForm';
 import { DatabaseViewer } from './components/DatabaseViewer';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <ProductList />
         <ProductPriceTimeline />
         <TimeTravelQuery />
+        <PriceUpdateForm />
         <DatabaseViewer />
       </main>
 

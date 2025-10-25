@@ -5,6 +5,7 @@ import io.github.reladomokotlin.demo.domain.kotlin.repository.ProductKtRepositor
 import io.github.reladomokotlin.demo.dto.ProductPriceDto
 import io.github.reladomokotlin.demo.dto.CreateProductPriceRequest
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -119,69 +120,62 @@ class ProductPriceController(
     }
 
     /**
-     * Create a new product price effective from a specific business date
+     * Update product price using Reladomo's bitemporal chaining pattern
+     *
+     * This is the CORRECT way to update bitemporal data in Reladomo:
+     * 1. Find the record that is valid at the specified business date using AsOf query
+     * 2. Update the price property by calling setter
+     * 3. Reladomo automatically handles the chaining:
+     *    - Terminates the old record by setting PROCESSING_THRU to now
+     *    - Creates a new record with the updated price and PROCESSING_FROM = now
+     *    - Preserves BUSINESS_FROM/THRU from the existing record
      */
     @PostMapping
+    @Transactional
     fun create(@RequestBody request: CreateProductPriceRequest): ProductPriceDto {
         val businessDate = Instant.parse(request.businessDate)
 
-        val price = repository.save(
-            io.github.reladomokotlin.demo.domain.kotlin.ProductPriceKt(
-                id = 0L, // Will be generated
-                productId = request.productId,
-                price = request.price,
-                businessDate = businessDate,
-                processingDate = Instant.now()
-            )
-        )
+        // Find existing price record valid at the specified business date using AsOf query
+        // For bitemporal updates, we need to find the record that:
+        // - productId matches
+        // - The specified businessDate falls within [BUSINESS_FROM, BUSINESS_THRU)
+        // - PROCESSING_THRU = infinity (currently valid record in processing time)
+        val operation = io.github.reladomokotlin.demo.domain.ProductPriceFinder.productId().eq(request.productId)
+            .and(io.github.reladomokotlin.demo.domain.ProductPriceFinder.businessDate().eq(java.sql.Timestamp.from(businessDate)))
+            .and(io.github.reladomokotlin.demo.domain.ProductPriceFinder.processingDate().equalsInfinity())
 
-        val product = productRepository.findById(price.productId!!)
+        val existing = io.github.reladomokotlin.demo.domain.ProductPriceFinder.findOne(operation)
+
+        if (existing != null) {
+            // Update the price - Reladomo automatically creates new version
+            existing.price = request.price
+            // Reladomo detects the change and handles the bitemporal chaining:
+            // - Old record: PROCESSING_THRU set to now
+            // - New record: Same BUSINESS_FROM/THRU, PROCESSING_FROM = now, PROCESSING_THRU = infinity
+        } else {
+            // No existing record at this business date - create new one
+            val newPrice = io.github.reladomokotlin.demo.domain.ProductPrice(java.sql.Timestamp.from(businessDate))
+            val newId = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(MAX(ID), 0) + 1 FROM PRODUCT_PRICES WHERE PRODUCT_ID = ?",
+                Long::class.java,
+                request.productId
+            ) ?: 1L
+            newPrice.id = newId
+            newPrice.productId = request.productId
+            newPrice.price = request.price
+            newPrice.insert()
+        }
+
+        val product = productRepository.findById(request.productId)
         return ProductPriceDto(
-            id = price.id!!,
-            productId = price.productId!!,
+            id = existing?.id ?: 0L,
+            productId = request.productId,
             productName = product?.name,
-            price = price.price,
-            businessFrom = price.businessDate,
-            businessThru = price.businessDate,
-            processingFrom = price.processingDate,
-            processingThru = price.processingDate
-        )
-    }
-
-    /**
-     * Update an existing price (creates a new version in processing time)
-     */
-    @PutMapping("/{id}")
-    fun update(
-        @PathVariable id: Long,
-        @RequestBody request: CreateProductPriceRequest
-    ): ProductPriceDto {
-        // Find the current price
-        val existing = repository.findById(id)
-            ?: throw NotFoundException("Price not found: $id")
-
-        // Terminate the old version by updating processing date
-        // Then insert new version
-        val businessDate = Instant.parse(request.businessDate)
-
-        val updated = repository.update(
-            existing.copy(
-                price = request.price,
-                businessDate = businessDate
-            ),
-            businessDate
-        )
-
-        val product = productRepository.findById(updated.productId!!)
-        return ProductPriceDto(
-            id = updated.id!!,
-            productId = updated.productId!!,
-            productName = product?.name,
-            price = updated.price,
-            businessFrom = updated.businessDate,
-            businessThru = updated.businessDate,
-            processingFrom = updated.processingDate,
-            processingThru = updated.processingDate
+            price = request.price,
+            businessFrom = businessDate,
+            businessThru = java.sql.Timestamp.valueOf("9999-12-01 23:59:00").toInstant(),
+            processingFrom = Instant.now(),
+            processingThru = java.sql.Timestamp.valueOf("9999-12-01 23:59:00").toInstant()
         )
     }
 }
