@@ -58,13 +58,44 @@ npm run dev
 - 💰 商品価格履歴タイムライン（バイテンポラル）
 - 🗄️ データベースビューア（生のテーブルデータ）
 
-### H2コンソール (オプション)
+### H2コンソール - データベースを直接確認
 
-ブラウザで http://localhost:8081/h2-console にアクセス:
+バックエンドが起動している間、H2のWebコンソールでデータベースを直接確認できます。
 
-- JDBC URL: `jdbc:h2:mem:demodb`
-- User Name: `sa`
-- Password: (空白)
+**アクセス方法:**
+
+1. ブラウザで http://localhost:8081/h2-console を開く
+2. ログイン画面で以下を入力:
+   - **JDBC URL**: `jdbc:h2:mem:demodb`
+   - **User Name**: `sa`
+   - **Password**: (空白のまま)
+3. **Connect** ボタンをクリック
+
+**便利なSQLクエリ例:**
+
+```sql
+-- 全テーブル一覧
+SELECT * FROM INFORMATION_SCHEMA.TABLES;
+
+-- カテゴリを見る
+SELECT * FROM CATEGORIES;
+
+-- 商品を見る
+SELECT * FROM PRODUCTS;
+
+-- バイテンポラル価格データを見る（4つのタイムスタンプ列に注目！）
+SELECT * FROM PRODUCT_PRICES
+ORDER BY PRODUCT_ID, BUSINESS_FROM, PROCESSING_FROM;
+
+-- シーケンステーブルを見る
+SELECT * FROM MITHRA_SEQUENCE;
+```
+
+**デモのポイント:**
+- `PRODUCT_PRICES` テーブルで4つのタイムスタンプ列を確認できます
+  - `BUSINESS_FROM` / `BUSINESS_THRU`: いつから価格が有効か
+  - `PROCESSING_FROM` / `PROCESSING_THRU`: いつその情報を記録したか
+- 同じ商品IDに対して複数のレコードが存在し、時間の変化を追跡できます
 
 ## API エンドポイント
 
