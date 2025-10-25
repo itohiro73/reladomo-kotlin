@@ -21,6 +21,6 @@
     <Attribute name="price" javaType="BigDecimal" columnName="PRICE" nullable="false" precision="19" scale="2"/>
 
     <Relationship name="product" relatedObject="Product" relatedIsDependent="false" cardinality="many-to-one">
-        this.productId = Product.id and this.businessDate = Product.businessDate
+        this.productId = Product.id
     </Relationship>
 </MithraObject>

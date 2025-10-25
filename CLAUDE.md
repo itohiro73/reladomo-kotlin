@@ -210,3 +210,144 @@ Bitemporal tables require these columns:
 - Business time columns: `BUSINESS_FROM`, `BUSINESS_THRU`
 - Processing time columns: `PROCESSING_FROM`, `PROCESSING_THRU`
 - Composite primary key including temporal columns
+
+## Learnings from Demo Project Implementation
+
+### Reladomo Entity Relationships and Temporal Attributes
+**Critical**: When defining Relationships in Reladomo XML, the join conditions must reference attributes that actually exist on both entities.
+
+- ❌ **Wrong**: Referencing temporal attributes that don't exist
+  ```xml
+  <!-- If Product is non-temporal, it has NO businessDate attribute -->
+  <Relationship name="product" relatedObject="Product">
+      this.productId = Product.id and this.businessDate = Product.businessDate
+  </Relationship>
+  ```
+
+- ✅ **Correct**: Only reference attributes that exist on the entity
+  ```xml
+  <!-- Product is non-temporal, so only join on id -->
+  <Relationship name="product" relatedObject="Product">
+      this.productId = Product.id
+  </Relationship>
+  ```
+
+**Error symptom**: `NullPointerException: Cannot invoke "com.gs.fw.common.mithra.generator.AbstractAttribute.getOwner()" because "rightAttribute" is null`
+
+**Fix approach**: When encountering this error, check all Relationship definitions in XML files. Ensure referenced attributes match the temporal characteristics of both entities.
+
+### MithraRuntimeConfig.xml Configuration
+Reladomo entities must be explicitly registered in `MithraRuntimeConfig.xml` for runtime initialization.
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.reladomokotlin.spring.connection.H2ConnectionManager">
+        <Property name="dataSourceName" value="dataSource"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.Category" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.Product" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.ProductPrice" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>
+```
+
+**Key points**:
+- Use `H2ConnectionManager` for H2 database (not SpringConnectionManager which doesn't exist in Reladomo)
+- All `MithraObjectConfiguration` elements **require** `cacheType` attribute (e.g., `cacheType="partial"`)
+- File location: `src/main/resources/MithraRuntimeConfig.xml`
+
+### ReladomoConfig Spring Bean
+A Spring configuration class is required to initialize MithraManager:
+
+```kotlin
+@Configuration
+class ReladomoConfig {
+    @Autowired
+    private lateinit var dataSource: DataSource
+
+    @Bean
+    fun mithraManager(): MithraManager {
+        val manager = MithraManagerProvider.getMithraManager()
+        manager.setTransactionTimeout(120)
+
+        val configStream: InputStream = javaClass.classLoader.getResourceAsStream("MithraRuntimeConfig.xml")
+            ?: throw IllegalStateException("Could not find MithraRuntimeConfig.xml")
+
+        manager.readConfiguration(configStream)
+        manager.fullyInitialize()  // MUST call after readConfiguration
+
+        return manager
+    }
+}
+```
+
+**Critical steps**:
+1. Load `MithraRuntimeConfig.xml` from classpath
+2. Call `manager.readConfiguration(configStream)`
+3. Call `manager.fullyInitialize()` - this is required for entities to be usable
+
+### Database Schema Consistency
+Database schema SQL must match entity temporal characteristics **exactly**.
+
+- **Non-temporal entities**: No temporal columns in table or INSERT statements
+  ```sql
+  CREATE TABLE PRODUCTS (
+      ID BIGINT NOT NULL PRIMARY KEY,
+      CATEGORY_ID BIGINT NOT NULL,
+      NAME VARCHAR(200) NOT NULL,
+      DESCRIPTION VARCHAR(1000)
+      -- NO VALID_FROM, VALID_TO, or other temporal columns
+  );
+
+  INSERT INTO PRODUCTS (ID, CATEGORY_ID, NAME, DESCRIPTION) VALUES
+  (1, 1, 'Laptop Pro 15', 'High-performance laptop');
+  ```
+
+- **Bitemporal entities**: Four temporal columns required
+  ```sql
+  CREATE TABLE PRODUCT_PRICES (
+      ID BIGINT NOT NULL,
+      PRODUCT_ID BIGINT NOT NULL,
+      PRICE DECIMAL(19, 2) NOT NULL,
+      BUSINESS_FROM TIMESTAMP NOT NULL,
+      BUSINESS_THRU TIMESTAMP NOT NULL,
+      PROCESSING_FROM TIMESTAMP NOT NULL,
+      PROCESSING_THRU TIMESTAMP NOT NULL,
+      PRIMARY KEY (ID, BUSINESS_FROM, PROCESSING_FROM)
+  );
+  ```
+
+**Common error**: Keeping temporal columns in CREATE TABLE but forgetting to update INSERT statements (or vice versa)
+**Symptom**: `Column "VALID_FROM" not found` during application startup
+
+### Entity Scanning Configuration
+Update `application.yml` to specify correct packages for entity scanning:
+
+```yaml
+reladomo:
+  kotlin:
+    repository:
+      base-packages:
+        - io.github.reladomokotlin.demo.domain              # Reladomo entity classes
+        - io.github.reladomokotlin.demo.domain.kotlin.repository  # Kotlin repositories
+      enable-query-methods: true
+```
+
+**Why both packages**:
+- Domain package: Contains generated Reladomo entity classes
+- Repository package: Contains generated Kotlin repository classes
+
+### Uni-temporal vs Bitemporal Complexity
+**Recommendation**: For MVPs and demos, prefer **non-temporal** or **bitemporal** over **uni-temporal**.
+
+- **Uni-temporal** (single time dimension with VALID_FROM/VALID_TO) adds significant complexity:
+  - Code generators need special handling for single AsOfAttribute
+  - Repository methods require different parameter sets
+  - Query construction is more complex than bitemporal
+
+- **Bitemporal** is better supported in the framework:
+  - Code generators fully handle dual AsOfAttribute pattern
+  - Repository methods consistently use businessDate and processingDate
+  - Demonstrates more advanced Reladomo capabilities
+
+**For demos**: Use non-temporal entities for simple relationships and bitemporal for showcasing temporal features. Skip uni-temporal unless specifically required.

@@ -201,8 +201,47 @@ class KotlinRepositoryGenerator {
                     }
                     addStatement("obj.insert()")
                     addStatement("return %T.fromReladomo(obj)", entityType)
+                } else if (definition.isUnitemporal) {
+                    // For uni-temporal entities, create with business date constructor
+                    addStatement("val obj = %T(Timestamp.from(entity.businessDate))", reladomoType)
+                    // Handle primary key
+                    val primaryKeys = definition.primaryKeyAttributes
+                    if (primaryKeys.size == 1 && primaryKeys.first().javaType == "long") {
+                        // Only use sequence generator for single long primary key
+                        val primaryKey = primaryKeys.first()
+                        addStatement("val ${primaryKey.name} = entity.${primaryKey.name}?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId(%S) ?: throw IllegalStateException(%S)",
+                            definition.className,
+                            "No ID provided and sequence generator not available")
+                        addStatement("obj.${primaryKey.name} = ${primaryKey.name}")
+                    } else {
+                        // For composite keys or non-long keys, just set the values
+                        primaryKeys.forEach { pk ->
+                            addStatement("obj.${pk.name} = entity.${pk.name}")
+                        }
+                    }
+                    // Set other attributes
+                    definition.attributes.filter { !it.isPrimaryKey }.forEach { attr ->
+                        when (attr.javaType) {
+                            "Timestamp" -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = Timestamp.from(it) }")
+                                } else {
+                                    addStatement("obj.${attr.name} = Timestamp.from(entity.${attr.name})")
+                                }
+                            }
+                            else -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = it }")
+                                } else {
+                                    addStatement("obj.${attr.name} = entity.${attr.name}")
+                                }
+                            }
+                        }
+                    }
+                    addStatement("obj.insert()")
+                    addStatement("return %T.fromReladomo(obj)", entityType)
                 } else {
-                    // For non-bitemporal entities
+                    // For non-temporal entities
                     addStatement("val obj = %T()", reladomoType)
                     // Handle primary key
                     val primaryKeys = definition.primaryKeyAttributes
@@ -265,6 +304,15 @@ class KotlinRepositoryGenerator {
                 .addStatement("    .and(%T.businessDate().equalsInfinity())", finderType)
                 .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
                 .addStatement("val entity = %T.findOne(operation)", finderType)
+                .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
+                .build()
+        } else if (definition.isUnitemporal) {
+            // For uni-temporal objects, find version valid at current time
+            FunSpec.builder("findById")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("id", primaryKeyType)
+                .returns(entityType.copy(nullable = true))
+                .addStatement("val entity = %T.findByPrimaryKey(id, Timestamp.from(Instant.now()))", finderType)
                 .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
                 .build()
         } else {

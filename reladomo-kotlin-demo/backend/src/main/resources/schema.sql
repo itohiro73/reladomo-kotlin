@@ -1,0 +1,79 @@
+-- Create sequence table for Reladomo
+CREATE TABLE IF NOT EXISTS MITHRA_SEQUENCE (
+    SEQUENCE_NAME VARCHAR(64) NOT NULL PRIMARY KEY,
+    NEXT_ID BIGINT NOT NULL
+);
+
+-- Drop existing tables
+DROP TABLE IF EXISTS PRODUCT_PRICES;
+DROP TABLE IF EXISTS PRODUCTS;
+DROP TABLE IF EXISTS CATEGORIES;
+
+-- Create Categories table (Non-temporal)
+CREATE TABLE CATEGORIES (
+    ID BIGINT NOT NULL PRIMARY KEY,
+    NAME VARCHAR(100) NOT NULL,
+    DESCRIPTION VARCHAR(500)
+);
+
+-- Create Products table (Non-temporal for MVP)
+CREATE TABLE PRODUCTS (
+    ID BIGINT NOT NULL PRIMARY KEY,
+    CATEGORY_ID BIGINT NOT NULL,
+    NAME VARCHAR(200) NOT NULL,
+    DESCRIPTION VARCHAR(1000),
+    FOREIGN KEY (CATEGORY_ID) REFERENCES CATEGORIES(ID)
+);
+
+-- Create Product Prices table (Bitemporal)
+CREATE TABLE PRODUCT_PRICES (
+    ID BIGINT NOT NULL,
+    PRODUCT_ID BIGINT NOT NULL,
+    PRICE DECIMAL(19, 2) NOT NULL,
+
+    -- Bitemporal columns
+    BUSINESS_FROM TIMESTAMP NOT NULL,
+    BUSINESS_THRU TIMESTAMP NOT NULL,
+    PROCESSING_FROM TIMESTAMP NOT NULL,
+    PROCESSING_THRU TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (ID, BUSINESS_FROM, PROCESSING_FROM)
+);
+
+-- Insert sample categories (non-temporal)
+INSERT INTO CATEGORIES (ID, NAME, DESCRIPTION) VALUES
+(1, 'Electronics', 'Electronic devices and accessories'),
+(2, 'Books', 'Physical and digital books'),
+(3, 'Clothing', 'Apparel and fashion items');
+
+-- Insert sample products (non-temporal)
+INSERT INTO PRODUCTS (ID, CATEGORY_ID, NAME, DESCRIPTION) VALUES
+-- Regular product
+(1, 1, 'Laptop Pro 15', 'High-performance laptop'),
+-- Seasonal product (summer 2024)
+(2, 3, 'Summer T-Shirt', 'Limited edition summer collection'),
+-- Annual reference book
+(3, 2, 'Programming Guide 2024', 'Annual programming reference');
+
+-- Insert sample product prices (bitemporal)
+-- Scenario: Price changes for Laptop Pro 15
+
+-- Initial price: 1000.00 from Jan 1, registered on Jan 1
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 1, 1000.00, '2024-01-01 00:00:00', '2024-11-30 23:59:59', '2024-01-01 00:00:00', '2024-11-01 00:00:00');
+
+-- Price increase planned for Dec 1: 1200.00, registered on Nov 1
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(2, 1, 1200.00, '2024-12-01 00:00:00', '9999-12-01 23:59:00', '2024-11-01 00:00:00', '2024-11-15 00:00:00');
+
+-- Price change corrected on Nov 15: Actually 1100.00, not 1200.00
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(3, 1, 1100.00, '2024-12-01 00:00:00', '9999-12-01 23:59:00', '2024-11-15 00:00:00', '9999-12-01 23:59:00');
+
+-- Summer T-Shirt price
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(4, 2, 29.99, '2024-06-01 00:00:00', '9999-12-01 23:59:00', '2024-06-01 00:00:00', '9999-12-01 23:59:00');
+
+-- Programming Guide price
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(5, 3, 49.99, '2024-01-01 00:00:00', '9999-12-01 23:59:00', '2024-01-01 00:00:00', '9999-12-01 23:59:00');
