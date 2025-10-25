@@ -1289,3 +1289,125 @@ When adding new fields to entities (especially for demo applications), ensure AL
 **Common pitfall**: Implementing the feature in controllers (1-3) and frontend (5) but forgetting DatabaseViewController (4), resulting in the field not appearing in raw database views even though the data is being saved correctly.
 
 **Debugging tip**: If a field isn't displaying in the UI but you've confirmed the frontend code is correct, check the API response from the backend. DatabaseViewController often requires manual updates when new columns are added.
+
+### Accessing Processing Dates from Unitemporal Entities
+
+**Challenge**: Auto-generated Kotlin wrapper classes (e.g., `ProductKt`) for unitemporal entities only include `processingDate` field, not `processingThru`.
+
+**Solution**: Use Reladomo Finder directly to access temporal fields from the underlying Reladomo entity:
+
+```kotlin
+// ❌ WRONG: Generated wrapper doesn't have processingThru
+val product = repository.findById(id)
+val thru = product.processingThru  // Compilation error!
+
+// ✅ CORRECT: Use Finder to access Reladomo entity directly
+val operation = ProductFinder.processingDate().equalsInfinity()
+val products = ProductFinder.findMany(operation)
+
+return products.map { reladomoProduct ->
+    ProductDto(
+        id = reladomoProduct.id,
+        processingFrom = reladomoProduct.processingDateFrom?.toInstant(),
+        processingThru = reladomoProduct.processingDateTo?.toInstant()
+    )
+}
+```
+
+**Key Methods**:
+- `processingDateFrom`: Returns Timestamp for PROCESSING_FROM column
+- `processingDateTo`: Returns Timestamp for PROCESSING_THRU column
+- These methods exist on Reladomo-generated entities but not on Kotlin wrappers
+
+### Temporal JOINs to Prevent Duplicates
+
+**Problem**: When joining temporal tables (e.g., PRODUCT_PRICES with PRODUCTS), a simple foreign key JOIN causes duplicate records because multiple versions exist for the same ID.
+
+**Example of Wrong JOIN**:
+```sql
+-- ❌ Creates duplicates - one price record × multiple product versions
+SELECT pp.*, p.NAME
+FROM PRODUCT_PRICES pp
+LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+```
+
+**Correct Temporal JOIN**:
+```sql
+-- ✅ Correlates price with the product version valid at the time the price was recorded
+SELECT pp.*, p.NAME
+FROM PRODUCT_PRICES pp
+LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+    AND pp.PROCESSING_FROM >= p.PROCESSING_FROM
+    AND pp.PROCESSING_FROM < p.PROCESSING_THRU
+```
+
+**Why This Works**:
+- Matches the price record with the product version that was **current when the price was recorded**
+- `pp.PROCESSING_FROM` falls within `[p.PROCESSING_FROM, p.PROCESSING_THRU)` range
+- Each price record maps to exactly one product version
+
+**Application in Controllers**:
+```kotlin
+@GetMapping
+fun getAll(): List<ProductPriceDto> {
+    val sql = """
+        SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
+               pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+               p.NAME as PRODUCT_NAME
+        FROM PRODUCT_PRICES pp
+        LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+            AND pp.PROCESSING_FROM >= p.PROCESSING_FROM
+            AND pp.PROCESSING_FROM < p.PROCESSING_THRU
+        ORDER BY pp.PRODUCT_ID, pp.PROCESSING_FROM
+    """.trimIndent()
+
+    return jdbcTemplate.query(sql) { rs, _ -> /* map to DTO */ }
+}
+```
+
+### Frontend Temporal Data Correlation
+
+**Problem**: Frontend needs to correlate temporal entities (e.g., product prices with product versions) based on temporal overlap.
+
+**Temporal Overlap Logic**:
+```typescript
+// Two time ranges overlap if:
+// rangeA.from < rangeB.thru AND rangeA.thru > rangeB.from
+
+const matchingVersion = productHistory.find(version => {
+  if (!version.processingFrom) return false;
+
+  const priceFrom = new Date(price.processingFrom).getTime();
+  const priceThru = new Date(price.processingThru).getTime();
+  const versionFrom = new Date(version.processingFrom).getTime();
+
+  // Handle infinity dates (year 9999)
+  const INFINITY_THRESHOLD = new Date('9999-01-01').getTime();
+  const versionThru = version.processingThru &&
+    new Date(version.processingThru).getFullYear() < 9999
+      ? new Date(version.processingThru).getTime()
+      : INFINITY_THRESHOLD;
+
+  // Check temporal overlap
+  return priceFrom < versionThru && priceThru > versionFrom;
+});
+```
+
+**Key Considerations**:
+1. **Infinity Dates**: Handle year 9999 as a special threshold value
+2. **Exclusive Upper Bound**: Use `<` for THRU comparisons (half-open interval `[FROM, THRU)`)
+3. **Millisecond Precision**: Convert to timestamps for accurate comparison
+4. **Null Checks**: Validate temporal fields exist before comparing
+
+**Common Pitfall**:
+```typescript
+// ❌ WRONG: Doesn't handle infinity dates
+const versionThru = new Date(version.processingThru).getTime();
+// Result: Invalid date for "9999-12-01T23:59:00Z"
+
+// ✅ CORRECT: Explicit infinity threshold
+const versionThru = version.processingThru &&
+  new Date(version.processingThru).getFullYear() < 9999
+    ? new Date(version.processingThru).getTime()
+    : INFINITY_THRESHOLD;
+```
