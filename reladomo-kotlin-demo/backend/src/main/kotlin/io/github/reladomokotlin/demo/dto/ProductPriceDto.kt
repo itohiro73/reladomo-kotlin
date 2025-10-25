@@ -11,13 +11,15 @@ data class ProductPriceDto(
     val businessFrom: Instant,
     val businessThru: Instant,
     val processingFrom: Instant,
-    val processingThru: Instant
+    val processingThru: Instant,
+    val updatedBy: String?
 )
 
 data class CreateProductPriceRequest(
     val productId: Long,
     val price: BigDecimal,
-    val businessDate: String  // ISO-8601 format - when this price becomes effective
+    val businessDate: String,  // ISO-8601 format - when this price becomes effective
+    val updatedBy: String  // Who is making this change (email or username)
 )
 
 data class DatabaseRowDto(

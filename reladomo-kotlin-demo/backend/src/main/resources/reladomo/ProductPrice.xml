@@ -20,6 +20,9 @@
     <Attribute name="productId" javaType="long" columnName="PRODUCT_ID" nullable="false"/>
     <Attribute name="price" javaType="BigDecimal" columnName="PRICE" nullable="false" precision="19" scale="2"/>
 
+    <!-- Audit trail: who made the change -->
+    <Attribute name="updatedBy" javaType="String" columnName="UPDATED_BY" nullable="true" maxLength="100"/>
+
     <Relationship name="product" relatedObject="Product" relatedIsDependent="false" cardinality="many-to-one">
         this.productId = Product.id
     </Relationship>

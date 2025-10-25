@@ -28,6 +28,7 @@ class ProductPriceController(
             SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
                    pp.BUSINESS_FROM, pp.BUSINESS_THRU,
                    pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   pp.UPDATED_BY,
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
@@ -43,7 +44,8 @@ class ProductPriceController(
                 businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
                 businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
                 processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
-                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant(),
+                updatedBy = rs.getString("UPDATED_BY")
             )
         }
     }
@@ -64,6 +66,7 @@ class ProductPriceController(
             SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
                    pp.BUSINESS_FROM, pp.BUSINESS_THRU,
                    pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   pp.UPDATED_BY,
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
@@ -84,7 +87,8 @@ class ProductPriceController(
                 businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
                 businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
                 processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
-                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant(),
+                updatedBy = rs.getString("UPDATED_BY")
             )
         }, businessInstant, businessInstant, processingInstant, processingInstant)
     }
@@ -98,6 +102,7 @@ class ProductPriceController(
             SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
                    pp.BUSINESS_FROM, pp.BUSINESS_THRU,
                    pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   pp.UPDATED_BY,
                    p.NAME as PRODUCT_NAME
             FROM PRODUCT_PRICES pp
             LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
@@ -114,7 +119,8 @@ class ProductPriceController(
                 businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
                 businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
                 processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
-                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant(),
+                updatedBy = rs.getString("UPDATED_BY")
             )
         }, productId)
     }
@@ -147,8 +153,9 @@ class ProductPriceController(
         val existing = io.github.reladomokotlin.demo.domain.ProductPriceFinder.findOne(operation)
 
         if (existing != null) {
-            // Update the price - Reladomo automatically creates new version
+            // Update the price and audit info - Reladomo automatically creates new version
             existing.price = request.price
+            existing.updatedBy = request.updatedBy
             // Reladomo detects the change and handles the bitemporal chaining:
             // - Old record: PROCESSING_THRU set to now
             // - New record: Same BUSINESS_FROM/THRU, PROCESSING_FROM = now, PROCESSING_THRU = infinity
@@ -163,6 +170,7 @@ class ProductPriceController(
             newPrice.id = newId
             newPrice.productId = request.productId
             newPrice.price = request.price
+            newPrice.updatedBy = request.updatedBy
             newPrice.insert()
         }
 
@@ -175,7 +183,8 @@ class ProductPriceController(
             businessFrom = businessDate,
             businessThru = java.sql.Timestamp.valueOf("9999-12-01 23:59:00").toInstant(),
             processingFrom = Instant.now(),
-            processingThru = java.sql.Timestamp.valueOf("9999-12-01 23:59:00").toInstant()
+            processingThru = java.sql.Timestamp.valueOf("9999-12-01 23:59:00").toInstant(),
+            updatedBy = request.updatedBy
         )
     }
 }
