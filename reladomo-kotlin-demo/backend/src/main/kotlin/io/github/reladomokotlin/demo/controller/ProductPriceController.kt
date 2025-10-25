@@ -48,34 +48,44 @@ class ProductPriceController(
     }
 
     /**
-     * Get price for a specific product with time-travel capability
-     * Example: "What price did we think would be effective on Dec 1st, as of Nov 10th?"
+     * Time-travel query: "As of processing date P, what prices were effective on business date B?"
+     * This is the killer feature of bitemporal data!
+     *
+     * Example: GET /api/product-prices/asof?businessDate=2024-12-01T00:00:00Z&processingDate=2024-11-01T00:00:00Z
+     * Returns: The price we THOUGHT would be effective on Dec 1st, as known on Nov 1st (before correction)
      */
-    @GetMapping("/product/{productId}")
-    fun getByProductId(
-        @PathVariable productId: Long,
-        @RequestParam(required = false) businessDate: String?,
-        @RequestParam(required = false) processingDate: String?
-    ): ProductPriceDto? {
-        val businessInstant = businessDate?.let { Instant.parse(it) } ?: Instant.now()
-        val processingInstant = processingDate?.let { Instant.parse(it) } ?: Instant.now()
+    @GetMapping("/asof")
+    fun getAsOf(
+        @RequestParam businessDate: String,
+        @RequestParam processingDate: String
+    ): List<ProductPriceDto> {
+        val sql = """
+            SELECT pp.ID, pp.PRODUCT_ID, pp.PRICE,
+                   pp.BUSINESS_FROM, pp.BUSINESS_THRU,
+                   pp.PROCESSING_FROM, pp.PROCESSING_THRU,
+                   p.NAME as PRODUCT_NAME
+            FROM PRODUCT_PRICES pp
+            LEFT JOIN PRODUCTS p ON pp.PRODUCT_ID = p.ID
+            WHERE ? >= pp.BUSINESS_FROM AND ? < pp.BUSINESS_THRU
+              AND ? >= pp.PROCESSING_FROM AND ? < pp.PROCESSING_THRU
+            ORDER BY pp.PRODUCT_ID
+        """.trimIndent()
 
-        // Query with both temporal dimensions
-        val prices = repository.findAllAsOf(businessInstant, processingInstant)
-        val price = prices.firstOrNull { it.productId == productId }
-            ?: return null
+        val businessInstant = Instant.parse(businessDate)
+        val processingInstant = Instant.parse(processingDate)
 
-        val product = productRepository.findById(price.productId!!)
-        return ProductPriceDto(
-            id = price.id!!,
-            productId = price.productId!!,
-            productName = product?.name,
-            price = price.price,
-            businessFrom = price.businessDate,
-            businessThru = price.businessDate,
-            processingFrom = price.processingDate,
-            processingThru = price.processingDate
-        )
+        return jdbcTemplate.query(sql, { rs, _ ->
+            ProductPriceDto(
+                id = rs.getLong("ID"),
+                productId = rs.getLong("PRODUCT_ID"),
+                productName = rs.getString("PRODUCT_NAME"),
+                price = rs.getBigDecimal("PRICE"),
+                businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant(),
+                businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant(),
+                processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant(),
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant()
+            )
+        }, businessInstant, businessInstant, processingInstant, processingInstant)
     }
 
     /**
