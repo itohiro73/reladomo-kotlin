@@ -206,6 +206,10 @@ Repositories extend `AbstractBiTemporalRepository` which provides:
 
 **Implementation:**
 ```sql
+-- CRITICAL: Document timezone policy clearly in schema.sql
+-- TIMEZONE POLICY: All timestamps are stored in UTC
+-- JVM timezone is set to UTC (-Duser.timezone=UTC) for consistent TIMESTAMP interpretation
+
 -- Store timestamps in UTC
 CREATE TABLE PRODUCT_PRICES (
     ID BIGINT NOT NULL,
@@ -217,8 +221,25 @@ CREATE TABLE PRODUCT_PRICES (
 );
 
 -- Example data (UTC)
+-- IMPORTANT: Always include JST equivalent in comments for clarity
 INSERT INTO PRODUCT_PRICES (..., BUSINESS_FROM, ...)
-VALUES (..., '2023-12-31 15:00:00', ...);  -- Midnight JST = 15:00 UTC
+VALUES (..., '2023-12-31 15:00:00', ...);  -- 2024-01-01 00:00:00 JST = 2023-12-31 15:00:00 UTC
+
+-- More detailed example with conversion notes
+-- Step 1 (2025/06/30 15:00 UTC = 2025/07/01 00:00 JST): pricing-team registers "1000 from Jul 1 JST"
+INSERT INTO PRODUCT_PRICES (ID, PRODUCT_ID, PRICE, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 1, 1000.00, 'pricing-team', '2025-06-30 15:00:00', '9999-12-01 00:00:00', '2025-06-30 15:00:00', '2025-09-30 15:00:00');
+```
+
+**Common Mistake to Avoid:**
+```sql
+-- ❌ WRONG: Storing JST times directly without JVM timezone setting
+INSERT INTO PRODUCT_PRICES (..., BUSINESS_FROM, ...)
+VALUES (..., '2024-01-01 00:00:00', ...);  -- Ambiguous! What timezone?
+
+-- ✅ CORRECT: Store UTC with clear documentation
+INSERT INTO PRODUCT_PRICES (..., BUSINESS_FROM, ...)
+VALUES (..., '2023-12-31 15:00:00', ...);  -- 2024-01-01 00:00:00 JST = 2023-12-31 15:00:00 UTC
 ```
 
 ### 2. Backend Layer (Spring Boot/Kotlin)
@@ -247,10 +268,44 @@ reladomo:
 </MithraRuntime>
 ```
 
-**JVM Settings:**
+**JVM Settings (CRITICAL for H2 and other databases):**
+
+**Why this is critical:**
+- H2's TIMESTAMP type has **no timezone information**
+- JDBC driver interprets TIMESTAMP values using **JVM's default timezone**
+- Without explicit UTC setting, timestamps are interpreted as local timezone (e.g., JST in Japan)
+- This creates environment-dependent behavior that breaks when deployed to different regions
+
+**Gradle Configuration:**
+```kotlin
+// build.gradle.kts
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs = listOf("-Duser.timezone=UTC")
+}
+```
+
+**Command-line:**
 ```bash
 # Set JVM timezone to UTC
 -Duser.timezone=UTC
+```
+
+**Verification:**
+```kotlin
+// Add debug endpoint to verify raw database values
+@GetMapping("/raw")
+fun getRawTimestamps(): List<Map<String, Any?>> {
+    val sql = """
+        SELECT
+            ID,
+            FORMATDATETIME(BUSINESS_FROM, 'yyyy-MM-dd HH:mm:ss') as BUSINESS_FROM_RAW,
+            FORMATDATETIME(BUSINESS_THRU, 'yyyy-MM-dd HH:mm:ss') as BUSINESS_THRU_RAW
+        FROM PRODUCT_PRICES
+    """.trimIndent()
+    return jdbcTemplate.queryForList(sql)
+}
+// With JVM timezone=UTC, RAW values should show UTC times (e.g., "2025-06-30 15:00:00")
+// Without it, RAW values would show local times (e.g., "2025-07-01 00:00:00" in JST)
 ```
 
 **API Response Format (ISO 8601 with UTC):**
@@ -398,6 +453,51 @@ fun `should handle bitemporal queries in UTC`() {
 const userInput = "2024-01-01";  // User means JST midnight
 const utcDate = new Date(userInput + "T00:00:00+09:00").toISOString();
 // Sends: "2023-12-31T15:00:00Z" to backend
+```
+
+**Issue:** Database viewer shows UTC timestamps but users expect JST
+**Cause:** Database stores UTC, direct query returns UTC values
+**Solution:** Convert to JST in the database query for display purposes:
+```kotlin
+// Database viewer endpoint with UTC-to-JST conversion
+private fun getProductPricesTable(): DatabaseTableDto {
+    // Database stores UTC, but display in JST for user-friendliness
+    val sql = """
+        SELECT
+            ID,
+            PRODUCT_ID,
+            PRICE,
+            UPDATED_BY,
+            FORMATDATETIME(DATEADD('HOUR', 9, BUSINESS_FROM), 'yyyy-MM-dd HH:mm:ss') as BUSINESS_FROM_JST,
+            FORMATDATETIME(DATEADD('HOUR', 9, BUSINESS_THRU), 'yyyy-MM-dd HH:mm:ss') as BUSINESS_THRU_JST,
+            FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_FROM), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_FROM_JST,
+            FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_THRU), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_THRU_JST
+        FROM PRODUCT_PRICES
+        ORDER BY PRODUCT_ID, BUSINESS_FROM, PROCESSING_FROM
+    """.trimIndent()
+
+    val rows = jdbcTemplate.query(sql) { rs, _ ->
+        mapOf<String, Any?>(
+            "ID" to rs.getLong("ID"),
+            "PRODUCT_ID" to rs.getLong("PRODUCT_ID"),
+            "PRICE" to rs.getBigDecimal("PRICE"),
+            "UPDATED_BY" to rs.getString("UPDATED_BY"),
+            "BUSINESS_FROM" to rs.getString("BUSINESS_FROM_JST"),  // Displayed as JST
+            "BUSINESS_THRU" to rs.getString("BUSINESS_THRU_JST"),
+            "PROCESSING_FROM" to rs.getString("PROCESSING_FROM_JST"),
+            "PROCESSING_THRU" to rs.getString("PROCESSING_THRU_JST")
+        )
+    }
+
+    return DatabaseTableDto(
+        name = "PRODUCT_PRICES",
+        columns = listOf("ID", "PRODUCT_ID", "PRICE", "UPDATED_BY",
+                        "BUSINESS_FROM", "BUSINESS_THRU", "PROCESSING_FROM", "PROCESSING_THRU"),
+        rows = rows
+    )
+}
+// Result: Users see "2025-07-01 00:00:00" (JST) instead of "2025-06-30 15:00:00" (UTC)
+// This is ONLY for display - the actual database still stores UTC
 ```
 
 ### 8. Create and Update Operations with Timezone Handling
