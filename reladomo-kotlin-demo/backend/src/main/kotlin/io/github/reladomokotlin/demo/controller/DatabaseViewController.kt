@@ -60,8 +60,19 @@ class DatabaseViewController(
     }
 
     private fun getProductPricesTable(): DatabaseTableDto {
+        // Database stores UTC, but display in JST for user-friendliness
+        // Add 9 hours to convert UTC to JST for display
         val sql = """
-            SELECT * FROM PRODUCT_PRICES
+            SELECT
+                ID,
+                PRODUCT_ID,
+                PRICE,
+                UPDATED_BY,
+                FORMATDATETIME(DATEADD('HOUR', 9, BUSINESS_FROM), 'yyyy-MM-dd HH:mm:ss') as BUSINESS_FROM_JST,
+                FORMATDATETIME(DATEADD('HOUR', 9, BUSINESS_THRU), 'yyyy-MM-dd HH:mm:ss') as BUSINESS_THRU_JST,
+                FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_FROM), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_FROM_JST,
+                FORMATDATETIME(DATEADD('HOUR', 9, PROCESSING_THRU), 'yyyy-MM-dd HH:mm:ss') as PROCESSING_THRU_JST
+            FROM PRODUCT_PRICES
             ORDER BY PRODUCT_ID, BUSINESS_FROM, PROCESSING_FROM
         """.trimIndent()
 
@@ -71,10 +82,10 @@ class DatabaseViewController(
                 "PRODUCT_ID" to rs.getLong("PRODUCT_ID"),
                 "PRICE" to rs.getBigDecimal("PRICE"),
                 "UPDATED_BY" to rs.getString("UPDATED_BY"),
-                "BUSINESS_FROM" to rs.getTimestamp("BUSINESS_FROM"),
-                "BUSINESS_THRU" to rs.getTimestamp("BUSINESS_THRU"),
-                "PROCESSING_FROM" to rs.getTimestamp("PROCESSING_FROM"),
-                "PROCESSING_THRU" to rs.getTimestamp("PROCESSING_THRU")
+                "BUSINESS_FROM" to rs.getString("BUSINESS_FROM_JST"),
+                "BUSINESS_THRU" to rs.getString("BUSINESS_THRU_JST"),
+                "PROCESSING_FROM" to rs.getString("PROCESSING_FROM_JST"),
+                "PROCESSING_THRU" to rs.getString("PROCESSING_THRU_JST")
             )
         }
 

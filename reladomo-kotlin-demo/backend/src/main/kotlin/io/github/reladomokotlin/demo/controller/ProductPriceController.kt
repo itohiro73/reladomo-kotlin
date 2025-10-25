@@ -126,6 +126,30 @@ class ProductPriceController(
     }
 
     /**
+     * Debug endpoint: Get raw TIMESTAMP values as strings from database
+     * This shows the actual values stored in H2 without any timezone conversion
+     */
+    @GetMapping("/raw")
+    fun getRawTimestamps(): List<Map<String, Any?>> {
+        val sql = """
+            SELECT
+                ID,
+                PRODUCT_ID,
+                PRICE,
+                FORMATDATETIME(BUSINESS_FROM, 'yyyy-MM-dd HH:mm:ss') as BUSINESS_FROM_RAW,
+                FORMATDATETIME(BUSINESS_THRU, 'yyyy-MM-dd HH:mm:ss') as BUSINESS_THRU_RAW,
+                FORMATDATETIME(PROCESSING_FROM, 'yyyy-MM-dd HH:mm:ss') as PROCESSING_FROM_RAW,
+                FORMATDATETIME(PROCESSING_THRU, 'yyyy-MM-dd HH:mm:ss') as PROCESSING_THRU_RAW,
+                UPDATED_BY
+            FROM PRODUCT_PRICES
+            WHERE PRODUCT_ID = 1
+            ORDER BY ID
+        """.trimIndent()
+
+        return jdbcTemplate.queryForList(sql)
+    }
+
+    /**
      * Update product price using Reladomo's bitemporal chaining pattern
      *
      * This is the CORRECT way to update bitemporal data in Reladomo:
