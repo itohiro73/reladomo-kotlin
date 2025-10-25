@@ -6,11 +6,13 @@ import java.math.BigDecimal
 import java.sql.Timestamp
 import java.time.Instant
 import kotlin.Long
+import kotlin.String
 
 public data class ProductPriceKt(
   public val id: Long?,
   public val productId: Long,
   public val price: BigDecimal,
+  public val updatedBy: String?,
   override val businessDate: Instant,
   override val processingDate: Instant,
 ) : BiTemporalEntity {
@@ -19,6 +21,7 @@ public data class ProductPriceKt(
     this.id?.let { obj.id = it }
     obj.productId = this.productId
     obj.price = this.price
+    this.updatedBy?.let { obj.updatedBy = it }
     return obj
   }
 
@@ -27,6 +30,7 @@ public data class ProductPriceKt(
       id = obj.id,
       productId = obj.productId,
       price = obj.price,
+      updatedBy = obj.updatedBy,
       businessDate = obj.businessDate.toInstant(),
       processingDate = obj.processingDate.toInstant()
     )

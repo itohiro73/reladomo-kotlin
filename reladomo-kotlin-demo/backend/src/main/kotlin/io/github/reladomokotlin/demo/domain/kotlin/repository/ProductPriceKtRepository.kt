@@ -40,6 +40,7 @@ public class ProductPriceKtRepository : BiTemporalRepository<ProductPriceKt, Lon
     obj.id = id
     obj.productId = entity.productId
     obj.price = entity.price
+    entity.updatedBy?.let { obj.updatedBy = it }
     obj.insert()
     return ProductPriceKt.fromReladomo(obj)
   }
@@ -64,6 +65,7 @@ public class ProductPriceKtRepository : BiTemporalRepository<ProductPriceKt, Lon
     // Update fields - Reladomo handles bitemporal chaining
     existingEntity.setProductId(entity.productId)
     existingEntity.setPrice(entity.price)
+    entity.updatedBy?.let { existingEntity.setUpdatedBy(it) }
 
     return ProductPriceKt.fromReladomo(existingEntity)
   }

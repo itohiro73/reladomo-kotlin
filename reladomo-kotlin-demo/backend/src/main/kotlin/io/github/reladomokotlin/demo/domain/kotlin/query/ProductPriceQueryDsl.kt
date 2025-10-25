@@ -3,6 +3,7 @@ package io.github.reladomokotlin.demo.domain.kotlin.query
 
 import com.gs.fw.common.mithra.attribute.BigDecimalAttribute
 import com.gs.fw.common.mithra.attribute.LongAttribute
+import com.gs.fw.common.mithra.attribute.StringAttribute
 import io.github.reladomokotlin.demo.domain.ProductPriceFinder
 import io.github.reladomokotlin.query.AsOfAttributeProperty
 import io.github.reladomokotlin.query.AttributeProperty
@@ -35,6 +36,9 @@ public object ProductPriceQueryDsl {
 
   public val QueryContext.price: NumericAttributeProperty<BigDecimal, BigDecimalAttribute<*>>
     get() = bigDecimalAttribute(ProductPriceFinder.price())
+
+  public val QueryContext.updatedBy: StringAttributeProperty
+    get() = stringAttribute(ProductPriceFinder.updatedBy())
 
   public val QueryContext.businessDate: AsOfAttributeProperty
     get() = asOfAttribute(ProductPriceFinder.businessDate())

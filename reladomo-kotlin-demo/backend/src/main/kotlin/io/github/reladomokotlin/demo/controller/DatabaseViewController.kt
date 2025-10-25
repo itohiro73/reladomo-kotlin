@@ -70,6 +70,7 @@ class DatabaseViewController(
                 "ID" to rs.getLong("ID"),
                 "PRODUCT_ID" to rs.getLong("PRODUCT_ID"),
                 "PRICE" to rs.getBigDecimal("PRICE"),
+                "UPDATED_BY" to rs.getString("UPDATED_BY"),
                 "BUSINESS_FROM" to rs.getTimestamp("BUSINESS_FROM"),
                 "BUSINESS_THRU" to rs.getTimestamp("BUSINESS_THRU"),
                 "PROCESSING_FROM" to rs.getTimestamp("PROCESSING_FROM"),
@@ -79,7 +80,7 @@ class DatabaseViewController(
 
         return DatabaseTableDto(
             name = "PRODUCT_PRICES",
-            columns = listOf("ID", "PRODUCT_ID", "PRICE", "BUSINESS_FROM", "BUSINESS_THRU", "PROCESSING_FROM", "PROCESSING_THRU"),
+            columns = listOf("ID", "PRODUCT_ID", "PRICE", "UPDATED_BY", "BUSINESS_FROM", "BUSINESS_THRU", "PROCESSING_FROM", "PROCESSING_THRU"),
             rows = rows
         )
     }
