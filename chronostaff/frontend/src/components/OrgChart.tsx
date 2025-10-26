@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useOrganizationSnapshot } from '../hooks/useAPI';
 import type { DepartmentSnapshot, EmployeeSnapshot } from '../types';
 
@@ -8,14 +7,17 @@ export default function OrgChart() {
   const today = new Date();
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
+  // Use URL search params for browser history support
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedMonth = searchParams.get('month') || defaultMonth;
 
   // Convert YYYY-MM to YYYY-MM-01 for API call
   const asOfDate = `${selectedMonth}-01`;
   const { data: snapshot, error, isLoading } = useOrganizationSnapshot(asOfDate);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedMonth(e.target.value);
+    const newMonth = e.target.value;
+    setSearchParams({ month: newMonth });
   };
 
   if (isLoading) {
@@ -96,6 +98,78 @@ export default function OrgChart() {
               <li>• 過去の日付を選択すると、その時点の組織構成を確認できます</li>
               <li>• 未来の日付を選択すると、予定されている組織変更を確認できます</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Access Links */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">🚀</span>
+          <div className="flex-1">
+            <h3 className="font-semibold text-purple-900 mb-3">おすすめタイムトラベルポイント</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              <Link
+                to="/org-chart?month=2021-01"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2021-01</div>
+                <div className="text-xs text-purple-700">会社黎明期</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2023-04"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2023-04</div>
+                <div className="text-xs text-purple-700">組織基盤の形成</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2024-01"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2024-01</div>
+                <div className="text-xs text-purple-700">本格的な拡大</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2025-01"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2025-01</div>
+                <div className="text-xs text-purple-700">リーダーシップ強化</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2025-04"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2025-04 ⭐</div>
+                <div className="text-xs text-purple-700">組織再編の転換点</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2025-07"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2025-07</div>
+                <div className="text-xs text-purple-700">人材育成の成果</div>
+              </Link>
+              <Link
+                to="/org-chart?month=2025-10"
+                className="px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">2025-10 🔮</div>
+                <div className="text-xs text-purple-700">未来の計画</div>
+              </Link>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/org-chart?month=${selectedMonth}`;
+                  navigator.clipboard.writeText(url);
+                  alert('現在の表示URLをコピーしました！');
+                }}
+                className="px-3 py-2 bg-white border border-purple-300 rounded-lg hover:bg-purple-100 hover:border-purple-500 transition-colors text-sm"
+              >
+                <div className="font-semibold text-purple-900">📋 URLコピー</div>
+                <div className="text-xs text-purple-700">現在の表示を共有</div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
