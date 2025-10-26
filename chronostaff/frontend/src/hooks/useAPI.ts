@@ -39,3 +39,15 @@ export const useSalariesByEmployee = (employeeId: number | null) =>
     employeeId ? `salaries/employee/${employeeId}` : null,
     () => employeeId ? api.getSalariesByEmployee(employeeId) : Promise.reject()
   );
+
+// History
+export const useAssignmentHistory = (employeeId: number | null) =>
+  useSWR<EmployeeAssignment[]>(
+    employeeId ? `assignments/employee/${employeeId}/history` : null,
+    () => employeeId ? api.getAssignmentHistory(employeeId) : Promise.reject()
+  );
+export const useSalaryHistory = (employeeId: number | null) =>
+  useSWR<Salary[]>(
+    employeeId ? `salaries/employee/${employeeId}/history` : null,
+    () => employeeId ? api.getSalaryHistory(employeeId) : Promise.reject()
+  );

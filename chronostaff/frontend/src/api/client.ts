@@ -33,3 +33,9 @@ export const getSalaries = () => fetchJson<Salary[]>(`${API_BASE}/salaries`);
 export const getSalary = (id: number) => fetchJson<Salary>(`${API_BASE}/salaries/${id}`);
 export const getSalariesByEmployee = (employeeId: number) =>
   fetchJson<Salary[]>(`${API_BASE}/salaries/employee/${employeeId}`);
+
+// History endpoints
+export const getAssignmentHistory = (employeeId: number) =>
+  fetchJson<EmployeeAssignment[]>(`${API_BASE}/assignments/employee/${employeeId}/history`);
+export const getSalaryHistory = (employeeId: number) =>
+  fetchJson<Salary[]>(`${API_BASE}/salaries/employee/${employeeId}/history`);

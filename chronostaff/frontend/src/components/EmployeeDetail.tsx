@@ -7,6 +7,7 @@ import {
   useDepartments
 } from '../hooks/useAPI';
 import { formatDate, formatDateOnly } from '../utils/date';
+import BiTemporalTimeline from './BiTemporalTimeline';
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -149,6 +150,9 @@ export default function EmployeeDetail() {
           </div>
         </div>
       </div>
+
+      {/* Bitemporal Timeline */}
+      {employeeId && <BiTemporalTimeline employeeId={employeeId} />}
     </div>
   );
 }

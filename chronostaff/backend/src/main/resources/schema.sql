@@ -258,13 +258,10 @@ INSERT INTO EMPLOYEE_ASSIGNMENTS (ID, EMPLOYEE_ID, DEPARTMENT_ID, POSITION_ID, U
 (14, 5, 2, 6, 'hr-system', '2022-06-30 15:00:00', '9999-12-01 23:59:00', '2022-06-30 15:00:00', '9999-12-01 23:59:00');
 
 -- FRANK'S CAREER (Recent hire - Junior Developer)
--- Frank: Hired as Junior Dev in Engineering → Moved to Frontend with org change
+-- Frank: Hired as Junior Dev in Frontend Team (direct hire after org restructuring)
 
 INSERT INTO EMPLOYEE_ASSIGNMENTS (ID, EMPLOYEE_ID, DEPARTMENT_ID, POSITION_ID, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(15, 6, 1, 1, 'hr-system', '2025-03-31 15:00:00', '9999-12-01 23:59:00', '2025-03-31 15:00:00', '2025-03-31 15:00:00');
-
-INSERT INTO EMPLOYEE_ASSIGNMENTS (ID, EMPLOYEE_ID, DEPARTMENT_ID, POSITION_ID, UPDATED_BY, BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(16, 6, 4, 1, 'hr-system', '2025-03-31 15:00:00', '9999-12-01 23:59:00', '2025-03-31 15:00:00', '9999-12-01 23:59:00');
+(15, 6, 4, 1, 'hr-system', '2025-03-31 15:00:00', '9999-12-01 23:59:00', '2025-03-31 15:00:00', '9999-12-01 23:59:00');
 
 -- GRACE'S CAREER (Stable Senior Developer)
 -- Grace: Hired as Senior Dev in Engineering → Moved to Backend with org change
