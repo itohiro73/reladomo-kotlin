@@ -36,9 +36,9 @@ class SetupController {
 
                 val companyId = company.id
 
-                // Step 2: Create positions (non-temporal, per company)
+                // Step 2: Create positions (bitemporal, per company)
                 request.positions.forEach { positionDto ->
-                    val position = Position()
+                    val position = Position(infinityDate, infinityDate)
                     position.companyId = companyId  // Link to company
                     position.name = positionDto.name
                     position.level = positionDto.level
@@ -48,12 +48,12 @@ class SetupController {
                     createdPositions.add(toPositionDto(position))
                 }
 
-                // Step 3: Create departments (unitemporal, per company)
+                // Step 3: Create departments (bitemporal, per company)
                 request.departments.forEach { deptDto ->
-                    val department = Department(infinityDate)
-                    department.setCompanyId(companyId)  // Link to company
-                    department.setName(deptDto.name)
-                    department.setDescription(deptDto.description)
+                    val department = Department(infinityDate, infinityDate)
+                    department.companyId = companyId  // Link to company
+                    department.name = deptDto.name
+                    department.description = deptDto.description
                     department.insert()
 
                     createdDepartments.add(toDepartmentDto(department))
@@ -80,7 +80,11 @@ class SetupController {
             id = position.id,
             name = position.name,
             level = position.level,
-            description = position.description
+            description = position.description,
+            businessFrom = position.businessDateFrom.toInstant().toString(),
+            businessThru = position.businessDateTo.toInstant().toString(),
+            processingFrom = position.processingDateFrom.toInstant().toString(),
+            processingThru = position.processingDateTo.toInstant().toString()
         )
     }
 
@@ -90,8 +94,10 @@ class SetupController {
             name = department.name,
             description = department.description,
             parentDepartmentId = department.parentDepartmentId,
-            processingFrom = department.processingDateFrom.toString(),
-            processingThru = department.processingDateTo.toString()
+            businessFrom = department.businessDateFrom.toInstant().toString(),
+            businessThru = department.businessDateTo.toInstant().toString(),
+            processingFrom = department.processingDateFrom.toInstant().toString(),
+            processingThru = department.processingDateTo.toInstant().toString()
         )
     }
 }

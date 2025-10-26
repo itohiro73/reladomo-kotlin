@@ -17,8 +17,9 @@ class DepartmentController {
 
     @GetMapping
     fun getAllDepartments(@RequestParam companyId: Long): List<DepartmentDto> {
-        // Get current departments for specific company (processingDate at infinity)
+        // Get current departments for specific company (businessDate and processingDate at infinity)
         val operation = DepartmentFinder.companyId().eq(companyId)
+            .and(DepartmentFinder.businessDate().equalsInfinity())
             .and(DepartmentFinder.processingDate().equalsInfinity())
         return DepartmentFinder.findMany(operation)
             .map { dept ->
@@ -27,6 +28,8 @@ class DepartmentController {
                     name = dept.name,
                     description = dept.description ?: "",
                     parentDepartmentId = if (dept.isParentDepartmentIdNull || dept.parentDepartmentId == 0L) null else dept.parentDepartmentId,
+                    businessFrom = dept.businessDateFrom.toInstant().toString(),
+                    businessThru = dept.businessDateTo.toInstant().toString(),
                     processingFrom = dept.processingDateFrom.toInstant().toString(),
                     processingThru = dept.processingDateTo.toInstant().toString()
                 )
@@ -36,6 +39,7 @@ class DepartmentController {
     @GetMapping("/{id}")
     fun getDepartment(@PathVariable id: Long): DepartmentDto? {
         val operation = DepartmentFinder.id().eq(id)
+            .and(DepartmentFinder.businessDate().equalsInfinity())
             .and(DepartmentFinder.processingDate().equalsInfinity())
         val dept = DepartmentFinder.findOne(operation) ?: return null
 
@@ -44,6 +48,8 @@ class DepartmentController {
             name = dept.name,
             description = dept.description ?: "",
             parentDepartmentId = if (dept.isParentDepartmentIdNull || dept.parentDepartmentId == 0L) null else dept.parentDepartmentId,
+            businessFrom = dept.businessDateFrom.toInstant().toString(),
+            businessThru = dept.businessDateTo.toInstant().toString(),
             processingFrom = dept.processingDateFrom.toInstant().toString(),
             processingThru = dept.processingDateTo.toInstant().toString()
         )
@@ -52,7 +58,8 @@ class DepartmentController {
     @PostMapping
     fun createDepartment(@RequestBody dto: DepartmentDto, @RequestParam companyId: Long): DepartmentDto {
         return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
-            val department = Department()
+            val infinityDate = Timestamp.from(DefaultInfinityTimestamp.getDefaultInfinity().toInstant())
+            val department = Department(infinityDate, infinityDate)
             department.companyId = companyId
             department.name = dto.name
             department.description = dto.description
@@ -64,6 +71,8 @@ class DepartmentController {
                 name = department.name,
                 description = department.description ?: "",
                 parentDepartmentId = if (department.isParentDepartmentIdNull || department.parentDepartmentId == 0L) null else department.parentDepartmentId,
+                businessFrom = department.businessDateFrom.toInstant().toString(),
+                businessThru = department.businessDateTo.toInstant().toString(),
                 processingFrom = department.processingDateFrom.toInstant().toString(),
                 processingThru = department.processingDateTo.toInstant().toString()
             )
@@ -74,11 +83,12 @@ class DepartmentController {
     fun updateDepartment(@PathVariable id: Long, @RequestBody dto: DepartmentDto): DepartmentDto {
         return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
             val operation = DepartmentFinder.id().eq(id)
+                .and(DepartmentFinder.businessDate().equalsInfinity())
                 .and(DepartmentFinder.processingDate().equalsInfinity())
             val department = DepartmentFinder.findOne(operation)
                 ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found")
 
-            // Update properties - Reladomo handles unitemporal chaining
+            // Update properties - Reladomo handles bitemporal chaining
             department.name = dto.name
             department.description = dto.description
             dto.parentDepartmentId?.let { department.parentDepartmentId = it }
@@ -88,6 +98,8 @@ class DepartmentController {
                 name = department.name,
                 description = department.description ?: "",
                 parentDepartmentId = if (department.isParentDepartmentIdNull || department.parentDepartmentId == 0L) null else department.parentDepartmentId,
+                businessFrom = department.businessDateFrom.toInstant().toString(),
+                businessThru = department.businessDateTo.toInstant().toString(),
                 processingFrom = department.processingDateFrom.toInstant().toString(),
                 processingThru = department.processingDateTo.toInstant().toString()
             )
@@ -98,6 +110,7 @@ class DepartmentController {
     fun deleteDepartment(@PathVariable id: Long) {
         MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
             val operation = DepartmentFinder.id().eq(id)
+                .and(DepartmentFinder.businessDate().equalsInfinity())
                 .and(DepartmentFinder.processingDate().equalsInfinity())
             val department = DepartmentFinder.findOne(operation)
                 ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found")
@@ -105,6 +118,7 @@ class DepartmentController {
             // Check if department is in use
             val assignmentsWithDepartment = EmployeeAssignmentFinder.findMany(
                 EmployeeAssignmentFinder.departmentId().eq(id)
+                    .and(EmployeeAssignmentFinder.businessDate().equalsInfinity())
                     .and(EmployeeAssignmentFinder.processingDate().equalsInfinity())
             )
 

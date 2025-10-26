@@ -1,7 +1,7 @@
 package io.github.chronostaff.domain.kotlin
 
 import io.github.chronostaff.domain.Department
-import io.github.reladomokotlin.core.UniTemporalEntity
+import io.github.reladomokotlin.core.BiTemporalEntity
 import java.sql.Timestamp
 import java.time.Instant
 import kotlin.Long
@@ -13,10 +13,11 @@ public data class DepartmentKt(
   public val name: String,
   public val description: String?,
   public val parentDepartmentId: Long?,
+  override val businessDate: Instant,
   override val processingDate: Instant,
-) : UniTemporalEntity {
+) : BiTemporalEntity {
   public fun toReladomo(): Department {
-    val obj = Department()
+    val obj = Department(Timestamp.from(this.businessDate), Timestamp.from(this.processingDate))
     this.id?.let { obj.id = it }
     obj.companyId = this.companyId
     obj.name = this.name
@@ -32,6 +33,7 @@ public data class DepartmentKt(
       name = obj.name,
       description = obj.description,
       parentDepartmentId = obj.parentDepartmentId,
+      businessDate = obj.businessDate.toInstant(),
       processingDate = obj.processingDate.toInstant()
     )
   }

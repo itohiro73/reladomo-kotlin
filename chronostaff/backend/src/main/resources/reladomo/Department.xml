@@ -4,7 +4,14 @@
     <ClassName>Department</ClassName>
     <DefaultTable>DEPARTMENTS</DefaultTable>
 
-    <!-- Unitemporal entity - processing date only -->
+    <!-- Bitemporal entity - business date + processing date -->
+    <AsOfAttribute name="businessDate"
+                   fromColumnName="BUSINESS_FROM"
+                   toColumnName="BUSINESS_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="false"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
     <AsOfAttribute name="processingDate"
                    fromColumnName="PROCESSING_FROM"
                    toColumnName="PROCESSING_THRU"
@@ -20,13 +27,13 @@
     <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="1000"/>
     <Attribute name="parentDepartmentId" javaType="long" columnName="PARENT_DEPARTMENT_ID" nullable="true"/>
 
-    <!-- Relationship to Company -->
+    <!-- Relationship to Company (Company is unitemporal, so only processingDate) -->
     <Relationship name="company" relatedObject="Company" cardinality="many-to-one">
         this.companyId = Company.id and this.processingDate = Company.processingDate
     </Relationship>
 
     <!-- Self-referencing relationship for department hierarchy -->
     <Relationship name="parentDepartment" relatedObject="Department" relatedIsDependent="false" cardinality="many-to-one">
-        this.parentDepartmentId = Department.id and this.processingDate = Department.processingDate
+        this.parentDepartmentId = Department.id and this.businessDate = Department.businessDate and this.processingDate = Department.processingDate
     </Relationship>
 </MithraObject>

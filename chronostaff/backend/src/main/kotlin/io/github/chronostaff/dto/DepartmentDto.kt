@@ -5,6 +5,8 @@ data class DepartmentDto(
     val name: String,
     val description: String?,
     val parentDepartmentId: Long?,
+    val businessFrom: String,
+    val businessThru: String,
     val processingFrom: String,
     val processingThru: String
 )

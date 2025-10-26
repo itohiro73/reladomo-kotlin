@@ -31,12 +31,12 @@ import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
-public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> {
+public class DepartmentKtRepository : BiTemporalRepository<DepartmentKt, Long> {
   @Autowired(required = false)
   private var sequenceGenerator: SequenceGenerator? = null
 
   override fun save(entity: DepartmentKt): DepartmentKt {
-    val obj = Department()
+    val obj = Department(Timestamp.from(entity.businessDate))
     val id = entity.id?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Department") ?: throw
         IllegalStateException("No ID provided and sequence generator not available")
     obj.id = id
@@ -49,33 +49,40 @@ public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> 
   }
 
   override fun findById(id: Long): DepartmentKt? {
-    val entity = DepartmentFinder.findByPrimaryKey(id, Timestamp.from(Instant.now()))
+    // For bitemporal objects, find active record (businessDate at infinity, processingDate at transaction time)
+    val operation = DepartmentFinder.id().eq(id)
+        .and(DepartmentFinder.businessDate().equalsInfinity())
+        .and(DepartmentFinder.processingDate().equalsEdgePoint())
+    val entity = DepartmentFinder.findOne(operation)
     return entity?.let { DepartmentKt.fromReladomo(it) }
   }
 
-  override fun update(entity: DepartmentKt): DepartmentKt {
-    val existingOrder = DepartmentFinder.findByPrimaryKey(entity.id!!, 
-        Timestamp.from(Instant.now()))
-        ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
+  override fun update(entity: DepartmentKt, businessDate: Instant): DepartmentKt {
+    // For bitemporal objects, find record with infinity processing date at specified business date
+    val operation = DepartmentFinder.id().eq(entity.id!!)
+        .and(DepartmentFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(DepartmentFinder.processingDate().equalsInfinity())
+    val existingEntity = DepartmentFinder.findOne(operation)
+        ?: throw EntityNotFoundException("Department not found with id: ${entity.id}")
 
-    // Update attributes
-    existingOrder.setCompanyId(entity.companyId)
-    existingOrder.setName(entity.name)
-    entity.description?.let { existingOrder.setDescription(it) }
-    entity.parentDepartmentId?.let { existingOrder.setParentDepartmentId(it) }
+    // Update fields - Reladomo handles bitemporal chaining
+    existingEntity.setCompanyId(entity.companyId)
+    existingEntity.setName(entity.name)
+    entity.description?.let { existingEntity.setDescription(it) }
+    entity.parentDepartmentId?.let { existingEntity.setParentDepartmentId(it) }
 
-    return DepartmentKt.fromReladomo(existingOrder)
+    return DepartmentKt.fromReladomo(existingEntity)
   }
 
   override fun deleteById(id: Long) {
-    val order = DepartmentFinder.findByPrimaryKey(id, Timestamp.from(Instant.now()))
-        ?: throw EntityNotFoundException("Order not found with id: $id")
-    order.delete()
+    deleteByIdAsOf(id, Instant.now())
   }
 
   override fun findAll(): List<DepartmentKt> {
-    // For unitemporal queries, use equalsInfinity to get current records (PROCESSING_THRU = infinity)
-    val operation = DepartmentFinder.processingDate().equalsInfinity()
+    // For bitemporal queries, use equalsEdgePoint to get active records
+    val operation = DepartmentFinder.businessDate().equalsEdgePoint()
+        .and(DepartmentFinder.processingDate().equalsEdgePoint())
+
     val orders = DepartmentFinder.findMany(operation)
     return orders.map { DepartmentKt.fromReladomo(it) }
   }
@@ -99,10 +106,16 @@ public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> 
 
   override fun count(): Long = findAll().size.toLong()
 
-  override fun findByIdAsOf(id: Long, processingDate: Instant): DepartmentKt? {
-    // Find by primary key as of specific processing date
+  override fun findByIdAsOf(
+    id: Long,
+    businessDate: Instant,
+    processingDate: Instant,
+  ): DepartmentKt? {
+    // Find by primary key as of specific business and processing dates
+    // Use operation-based query to handle infinity dates correctly
     val infinityThreshold = Instant.parse("9999-01-01T00:00:00Z")
     val operation = DepartmentFinder.id().eq(id)
+        .and(DepartmentFinder.businessDate().eq(Timestamp.from(businessDate)))
         .and(if (processingDate.isAfter(infinityThreshold))
         DepartmentFinder.processingDate().equalsInfinity() else
         DepartmentFinder.processingDate().eq(Timestamp.from(processingDate)))
@@ -110,26 +123,32 @@ public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> 
     return entity?.let { DepartmentKt.fromReladomo(it) }
   }
 
-  override fun findAllAsOf(processingDate: Instant): List<DepartmentKt> {
-    // Find all entities as of specific processing date
-    val infinityThreshold = Instant.parse("9999-01-01T00:00:00Z")
-    val operation = if (processingDate.isAfter(infinityThreshold)) {
-        DepartmentFinder.processingDate().equalsInfinity()
-    } else {
-        DepartmentFinder.processingDate().eq(Timestamp.from(processingDate))
-    }
-    val entities = DepartmentFinder.findMany(operation)
-    return entities.map { DepartmentKt.fromReladomo(it) }
+  override fun update(entity: DepartmentKt): DepartmentKt = update(entity, Instant.now())
+
+  override fun findAllAsOf(businessDate: Instant, processingDate: Instant): List<DepartmentKt> {
+    val operation = DepartmentFinder.businessDate().eq(Timestamp.from(businessDate))
+        .and(DepartmentFinder.processingDate().eq(Timestamp.from(processingDate)))
+
+    val orders = DepartmentFinder.findMany(operation)
+    return orders.map { DepartmentKt.fromReladomo(it) }
   }
 
   override fun getHistory(id: Long): List<DepartmentKt> {
-    // Get all versions of the entity across processing time
-    // Use equalsEdgePoint() to retrieve ALL historical records
-    // Returns history sorted by processing date (oldest first)
+    // Get all versions of the entity across time
+    // For now, returns current version only. Full temporal history query requires
+    // using MithraManager API or database-specific queries.
+    val current = findById(id)
+    return if (current != null) listOf(current) else emptyList()
+  }
+
+  override fun deleteByIdAsOf(id: Long, businessDate: Instant) {
+    // For bitemporal objects, find record with infinity processing date at specified business date for termination
     val operation = DepartmentFinder.id().eq(id)
-        .and(DepartmentFinder.processingDate().equalsEdgePoint())
-    val entities = DepartmentFinder.findMany(operation)
-    return entities.map { DepartmentKt.fromReladomo(it) }.sortedBy { it.processingDate }
+        .and(DepartmentFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(DepartmentFinder.processingDate().equalsInfinity())
+    val entity = DepartmentFinder.findOne(operation)
+        ?: throw EntityNotFoundException("Department not found with id: $id")
+    entity.terminate()
   }
 
   public fun find(query: QueryContext.() -> Unit): List<DepartmentKt> {

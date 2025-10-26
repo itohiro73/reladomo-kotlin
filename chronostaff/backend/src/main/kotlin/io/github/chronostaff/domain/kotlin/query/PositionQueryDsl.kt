@@ -42,4 +42,10 @@ public object PositionQueryDsl {
 
   public val QueryContext.description: StringAttributeProperty
     get() = stringAttribute(PositionFinder.description())
+
+  public val QueryContext.businessDate: AsOfAttributeProperty
+    get() = asOfAttribute(PositionFinder.businessDate())
+
+  public val QueryContext.processingDate: AsOfAttributeProperty
+    get() = asOfAttribute(PositionFinder.processingDate())
 }

@@ -4,7 +4,21 @@
     <ClassName>Position</ClassName>
     <DefaultTable>POSITIONS</DefaultTable>
 
-    <!-- Non-temporal entity - simple master data -->
+    <!-- Bitemporal entity - business date + processing date -->
+    <AsOfAttribute name="businessDate"
+                   fromColumnName="BUSINESS_FROM"
+                   toColumnName="BUSINESS_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="false"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="true"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
     <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
         <SimulatedSequence sequenceName="POSITION_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
     </Attribute>
@@ -13,7 +27,8 @@
     <Attribute name="level" javaType="int" columnName="LEVEL" nullable="false"/>
     <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="500"/>
 
+    <!-- Relationship to Company (Company is unitemporal, so only processingDate) -->
     <Relationship name="company" relatedObject="Company" cardinality="many-to-one">
-        this.companyId = Company.id
+        this.companyId = Company.id and this.processingDate = Company.processingDate
     </Relationship>
 </MithraObject>

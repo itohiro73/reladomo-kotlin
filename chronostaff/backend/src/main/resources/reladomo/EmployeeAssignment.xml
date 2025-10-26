@@ -32,10 +32,10 @@
     </Relationship>
 
     <Relationship name="department" relatedObject="Department" relatedIsDependent="false" cardinality="many-to-one">
-        this.departmentId = Department.id and this.processingDate = Department.processingDate
+        this.departmentId = Department.id and this.businessDate = Department.businessDate and this.processingDate = Department.processingDate
     </Relationship>
 
     <Relationship name="position" relatedObject="Position" relatedIsDependent="false" cardinality="many-to-one">
-        this.positionId = Position.id
+        this.positionId = Position.id and this.businessDate = Position.businessDate and this.processingDate = Position.processingDate
     </Relationship>
 </MithraObject>

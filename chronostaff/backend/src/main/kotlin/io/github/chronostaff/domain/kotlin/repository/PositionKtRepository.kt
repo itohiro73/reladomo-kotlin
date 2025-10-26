@@ -31,12 +31,12 @@ import org.springframework.transaction.`annotation`.Transactional
 
 @Repository
 @Transactional
-public class PositionKtRepository : BaseRepository<PositionKt, Long> {
+public class PositionKtRepository : BiTemporalRepository<PositionKt, Long> {
   @Autowired(required = false)
   private var sequenceGenerator: SequenceGenerator? = null
 
   override fun save(entity: PositionKt): PositionKt {
-    val obj = Position()
+    val obj = Position(Timestamp.from(entity.businessDate))
     val id = entity.id?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Position") ?: throw
         IllegalStateException("No ID provided and sequence generator not available")
     obj.id = id
@@ -49,31 +49,41 @@ public class PositionKtRepository : BaseRepository<PositionKt, Long> {
   }
 
   override fun findById(id: Long): PositionKt? {
-    val entity = PositionFinder.findByPrimaryKey(id)
+    // For bitemporal objects, find active record (businessDate at infinity, processingDate at transaction time)
+    val operation = PositionFinder.id().eq(id)
+        .and(PositionFinder.businessDate().equalsInfinity())
+        .and(PositionFinder.processingDate().equalsEdgePoint())
+    val entity = PositionFinder.findOne(operation)
     return entity?.let { PositionKt.fromReladomo(it) }
   }
 
-  override fun update(entity: PositionKt): PositionKt {
-    val existingOrder = PositionFinder.findByPrimaryKey(entity.id!!)
-        ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
+  override fun update(entity: PositionKt, businessDate: Instant): PositionKt {
+    // For bitemporal objects, find record with infinity processing date at specified business date
+    val operation = PositionFinder.id().eq(entity.id!!)
+        .and(PositionFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(PositionFinder.processingDate().equalsInfinity())
+    val existingEntity = PositionFinder.findOne(operation)
+        ?: throw EntityNotFoundException("Position not found with id: ${entity.id}")
 
-    // Update attributes
-    existingOrder.setCompanyId(entity.companyId)
-    existingOrder.setName(entity.name)
-    existingOrder.setLevel(entity.level)
-    entity.description?.let { existingOrder.setDescription(it) }
+    // Update fields - Reladomo handles bitemporal chaining
+    existingEntity.setCompanyId(entity.companyId)
+    existingEntity.setName(entity.name)
+    existingEntity.setLevel(entity.level)
+    entity.description?.let { existingEntity.setDescription(it) }
 
-    return PositionKt.fromReladomo(existingOrder)
+    return PositionKt.fromReladomo(existingEntity)
   }
 
   override fun deleteById(id: Long) {
-    val order = PositionFinder.findByPrimaryKey(id)
-        ?: throw EntityNotFoundException("Order not found with id: $id")
-    order.delete()
+    deleteByIdAsOf(id, Instant.now())
   }
 
   override fun findAll(): List<PositionKt> {
-    val orders = PositionFinder.findMany(PositionFinder.all())
+    // For bitemporal queries, use equalsEdgePoint to get active records
+    val operation = PositionFinder.businessDate().equalsEdgePoint()
+        .and(PositionFinder.processingDate().equalsEdgePoint())
+
+    val orders = PositionFinder.findMany(operation)
     return orders.map { PositionKt.fromReladomo(it) }
   }
 
@@ -95,6 +105,51 @@ public class PositionKtRepository : BaseRepository<PositionKt, Long> {
   }
 
   override fun count(): Long = findAll().size.toLong()
+
+  override fun findByIdAsOf(
+    id: Long,
+    businessDate: Instant,
+    processingDate: Instant,
+  ): PositionKt? {
+    // Find by primary key as of specific business and processing dates
+    // Use operation-based query to handle infinity dates correctly
+    val infinityThreshold = Instant.parse("9999-01-01T00:00:00Z")
+    val operation = PositionFinder.id().eq(id)
+        .and(PositionFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(if (processingDate.isAfter(infinityThreshold))
+        PositionFinder.processingDate().equalsInfinity() else
+        PositionFinder.processingDate().eq(Timestamp.from(processingDate)))
+    val entity = PositionFinder.findOne(operation)
+    return entity?.let { PositionKt.fromReladomo(it) }
+  }
+
+  override fun update(entity: PositionKt): PositionKt = update(entity, Instant.now())
+
+  override fun findAllAsOf(businessDate: Instant, processingDate: Instant): List<PositionKt> {
+    val operation = PositionFinder.businessDate().eq(Timestamp.from(businessDate))
+        .and(PositionFinder.processingDate().eq(Timestamp.from(processingDate)))
+
+    val orders = PositionFinder.findMany(operation)
+    return orders.map { PositionKt.fromReladomo(it) }
+  }
+
+  override fun getHistory(id: Long): List<PositionKt> {
+    // Get all versions of the entity across time
+    // For now, returns current version only. Full temporal history query requires
+    // using MithraManager API or database-specific queries.
+    val current = findById(id)
+    return if (current != null) listOf(current) else emptyList()
+  }
+
+  override fun deleteByIdAsOf(id: Long, businessDate: Instant) {
+    // For bitemporal objects, find record with infinity processing date at specified business date for termination
+    val operation = PositionFinder.id().eq(id)
+        .and(PositionFinder.businessDate().eq(Timestamp.from(businessDate)))
+        .and(PositionFinder.processingDate().equalsInfinity())
+    val entity = PositionFinder.findOne(operation)
+        ?: throw EntityNotFoundException("Position not found with id: $id")
+    entity.terminate()
+  }
 
   public fun find(query: QueryContext.() -> Unit): List<PositionKt> {
     // Find entities using Query DSL

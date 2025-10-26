@@ -40,4 +40,10 @@ public object DepartmentQueryDsl {
 
   public val QueryContext.parentDepartmentId: NumericAttributeProperty<Long, LongAttribute<*>>
     get() = longAttribute(DepartmentFinder.parentDepartmentId())
+
+  public val QueryContext.businessDate: AsOfAttributeProperty
+    get() = asOfAttribute(DepartmentFinder.businessDate())
+
+  public val QueryContext.processingDate: AsOfAttributeProperty
+    get() = asOfAttribute(DepartmentFinder.processingDate())
 }
