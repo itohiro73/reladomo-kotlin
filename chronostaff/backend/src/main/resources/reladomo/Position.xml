@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.chronostaff.domain</PackageName>
+    <ClassName>Position</ClassName>
+    <DefaultTable>POSITIONS</DefaultTable>
+
+    <!-- Non-temporal entity - simple master data -->
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="100"/>
+    <Attribute name="level" javaType="int" columnName="LEVEL" nullable="false"/>
+    <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="500"/>
+</MithraObject>

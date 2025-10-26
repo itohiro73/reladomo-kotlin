@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.chronostaff.domain</PackageName>
+    <ClassName>Department</ClassName>
+    <DefaultTable>DEPARTMENTS</DefaultTable>
+
+    <!-- Unitemporal entity - processing date only -->
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="true"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="200"/>
+    <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="1000"/>
+    <Attribute name="parentDepartmentId" javaType="long" columnName="PARENT_DEPARTMENT_ID" nullable="true"/>
+
+    <!-- Self-referencing relationship for department hierarchy -->
+    <Relationship name="parentDepartment" relatedObject="Department" relatedIsDependent="false" cardinality="many-to-one">
+        this.parentDepartmentId = Department.id and this.processingDate = Department.processingDate
+    </Relationship>
+</MithraObject>

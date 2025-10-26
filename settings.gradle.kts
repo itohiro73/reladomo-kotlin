@@ -6,7 +6,8 @@ include(
     "reladomo-kotlin-spring-boot",
     "reladomo-kotlin-gradle-plugin",
     "reladomo-kotlin-sample",
-    "reladomo-kotlin-demo:backend"
+    "reladomo-kotlin-demo:backend",
+    "chronostaff:backend"
 )
 
 pluginManagement {

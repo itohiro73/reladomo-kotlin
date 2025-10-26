@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.chronostaff.domain</PackageName>
+    <ClassName>Employee</ClassName>
+    <DefaultTable>EMPLOYEES</DefaultTable>
+
+    <!-- Unitemporal entity - processing date only -->
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="true"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="employeeNumber" javaType="String" columnName="EMPLOYEE_NUMBER" nullable="false" maxLength="20"/>
+    <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="100"/>
+    <Attribute name="email" javaType="String" columnName="EMAIL" nullable="false" maxLength="200"/>
+    <Attribute name="hireDate" javaType="Timestamp" columnName="HIRE_DATE" nullable="false"/>
+</MithraObject>

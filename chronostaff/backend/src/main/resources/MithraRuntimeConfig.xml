@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.reladomokotlin.spring.connection.H2ConnectionManager">
+        <Property name="dataSourceName" value="dataSource"/>
+
+        <MithraObjectConfiguration className="io.github.chronostaff.domain.Position" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.chronostaff.domain.Department" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.chronostaff.domain.Employee" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.chronostaff.domain.EmployeeAssignment" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.chronostaff.domain.Salary" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>
