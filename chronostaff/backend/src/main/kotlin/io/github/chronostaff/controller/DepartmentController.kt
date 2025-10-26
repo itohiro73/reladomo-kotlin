@@ -16,7 +16,7 @@ class DepartmentController {
     @GetMapping
     fun getAllDepartments(): List<DepartmentDto> {
         // Get current departments (processingDate at infinity)
-        val operation = DepartmentFinder.processingDate().equalsEdgePoint()
+        val operation = DepartmentFinder.processingDate().equalsInfinity()
         return DepartmentFinder.findMany(operation)
             .map { dept ->
                 DepartmentDto(
@@ -33,7 +33,7 @@ class DepartmentController {
     @GetMapping("/{id}")
     fun getDepartment(@PathVariable id: Long): DepartmentDto? {
         val operation = DepartmentFinder.id().eq(id)
-            .and(DepartmentFinder.processingDate().equalsEdgePoint())
+            .and(DepartmentFinder.processingDate().equalsInfinity())
         val dept = DepartmentFinder.findOne(operation) ?: return null
 
         return DepartmentDto(

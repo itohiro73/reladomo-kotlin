@@ -14,8 +14,8 @@ class SalaryController {
     @GetMapping
     fun getAllSalaries(): List<SalaryDto> {
         // Get current salaries (both businessDate and processingDate at infinity)
-        val operation = SalaryFinder.businessDate().equalsEdgePoint()
-            .and(SalaryFinder.processingDate().equalsEdgePoint())
+        val operation = SalaryFinder.businessDate().equalsInfinity()
+            .and(SalaryFinder.processingDate().equalsInfinity())
         return SalaryFinder.findMany(operation)
             .map { salary ->
                 SalaryDto(
@@ -35,8 +35,8 @@ class SalaryController {
     @GetMapping("/{id}")
     fun getSalary(@PathVariable id: Long): SalaryDto? {
         val operation = SalaryFinder.id().eq(id)
-            .and(SalaryFinder.businessDate().equalsEdgePoint())
-            .and(SalaryFinder.processingDate().equalsEdgePoint())
+            .and(SalaryFinder.businessDate().equalsInfinity())
+            .and(SalaryFinder.processingDate().equalsInfinity())
         val salary = SalaryFinder.findOne(operation) ?: return null
 
         return SalaryDto(
@@ -59,8 +59,8 @@ class SalaryController {
     @GetMapping("/employee/{employeeId}")
     fun getSalariesByEmployee(@PathVariable employeeId: Long): List<SalaryDto> {
         val operation = SalaryFinder.employeeId().eq(employeeId)
-            .and(SalaryFinder.businessDate().equalsEdgePoint())
-            .and(SalaryFinder.processingDate().equalsEdgePoint())
+            .and(SalaryFinder.businessDate().equalsInfinity())
+            .and(SalaryFinder.processingDate().equalsInfinity())
         return SalaryFinder.findMany(operation)
             .map { salary ->
                 SalaryDto(

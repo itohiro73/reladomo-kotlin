@@ -14,7 +14,7 @@ class EmployeeController {
     @GetMapping
     fun getAllEmployees(): List<EmployeeDto> {
         // Get current employees (processingDate at infinity)
-        val operation = EmployeeFinder.processingDate().equalsEdgePoint()
+        val operation = EmployeeFinder.processingDate().equalsInfinity()
         return EmployeeFinder.findMany(operation)
             .map { emp ->
                 EmployeeDto(
@@ -32,7 +32,7 @@ class EmployeeController {
     @GetMapping("/{id}")
     fun getEmployee(@PathVariable id: Long): EmployeeDto? {
         val operation = EmployeeFinder.id().eq(id)
-            .and(EmployeeFinder.processingDate().equalsEdgePoint())
+            .and(EmployeeFinder.processingDate().equalsInfinity())
         val emp = EmployeeFinder.findOne(operation) ?: return null
 
         return EmployeeDto(
