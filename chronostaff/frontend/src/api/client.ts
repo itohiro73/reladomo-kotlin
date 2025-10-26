@@ -1,4 +1,4 @@
-import type { Position, Department, Employee, EmployeeAssignment, Salary } from '../types';
+import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot } from '../types';
 
 const API_BASE = '/api';
 
@@ -45,3 +45,7 @@ export const getAllAssignmentHistory = (employeeId: number) =>
   fetchJson<EmployeeAssignment[]>(`${API_BASE}/assignments/employee/${employeeId}/history/all`);
 export const getAllSalaryHistory = (employeeId: number) =>
   fetchJson<Salary[]>(`${API_BASE}/salaries/employee/${employeeId}/history/all`);
+
+// Organization snapshot endpoint (time-travel query)
+export const getOrganizationSnapshot = (asOfDate: string) =>
+  fetchJson<OrganizationSnapshot>(`${API_BASE}/organization/snapshot?asOfDate=${asOfDate}`);

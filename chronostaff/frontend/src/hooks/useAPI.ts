@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import * as api from '../api/client';
-import type { Position, Department, Employee, EmployeeAssignment, Salary } from '../types';
+import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot } from '../types';
 
 // Custom fetcher that handles errors
 const fetcher = <T,>(fn: () => Promise<T>) => fn();
@@ -62,4 +62,11 @@ export const useAllSalaryHistory = (employeeId: number | null) =>
   useSWR<Salary[]>(
     employeeId ? `salaries/employee/${employeeId}/history/all` : null,
     () => employeeId ? api.getAllSalaryHistory(employeeId) : Promise.reject()
+  );
+
+// Organization snapshot (time-travel query)
+export const useOrganizationSnapshot = (asOfDate: string | null) =>
+  useSWR<OrganizationSnapshot>(
+    asOfDate ? `organization/snapshot?asOfDate=${asOfDate}` : null,
+    () => asOfDate ? api.getOrganizationSnapshot(asOfDate) : Promise.reject()
   );

@@ -50,6 +50,26 @@ export interface Salary {
   processingThru: string;
 }
 
+// Organization Snapshot types
+export interface OrganizationSnapshot {
+  asOfDate: string;  // YYYY-MM-DD format
+  departments: DepartmentSnapshot[];
+}
+
+export interface DepartmentSnapshot {
+  id: number;
+  name: string;
+  employees: EmployeeSnapshot[];
+}
+
+export interface EmployeeSnapshot {
+  id: number;
+  name: string;
+  positionId: number;
+  positionName: string;
+  positionLevel: number;
+}
+
 // Enriched types for display
 export interface EmployeeWithDetails extends Employee {
   currentAssignment?: EmployeeAssignment;
