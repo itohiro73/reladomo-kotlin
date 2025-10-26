@@ -77,3 +77,28 @@ export interface EmployeeWithDetails extends Employee {
   position?: Position;
   department?: Department;
 }
+
+// AsOf query types
+export interface EmployeeDetailAsOf {
+  employee: Employee;
+  assignment: AssignmentAsOf | null;
+  salary: SalaryAsOf | null;
+  asOfMonth: string;  // YYYY-MM format
+}
+
+export interface AssignmentAsOf {
+  departmentId: number;
+  departmentName: string;
+  positionId: number;
+  positionName: string;
+  positionLevel: number;
+  businessFrom: string;
+  updatedBy: string;
+}
+
+export interface SalaryAsOf {
+  amount: number;
+  currency: string;
+  businessFrom: string;
+  updatedBy: string;
+}

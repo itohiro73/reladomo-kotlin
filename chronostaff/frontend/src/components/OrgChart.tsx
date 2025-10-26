@@ -81,7 +81,7 @@ export default function OrgChart() {
       {/* Organization Chart */}
       <div className="space-y-4">
         {snapshot.departments.map(dept => (
-          <DeptNode key={dept.id} dept={dept} />
+          <DeptNode key={dept.id} dept={dept} selectedMonth={selectedMonth} />
         ))}
       </div>
 
@@ -177,7 +177,7 @@ export default function OrgChart() {
   );
 }
 
-function DeptNode({ dept }: { dept: DepartmentSnapshot }) {
+function DeptNode({ dept, selectedMonth }: { dept: DepartmentSnapshot; selectedMonth: string }) {
   // Sort employees by position level (descending) and name
   const sortedEmployees = [...dept.employees].sort((a, b) => {
     if (a.positionLevel !== b.positionLevel) {
@@ -206,7 +206,7 @@ function DeptNode({ dept }: { dept: DepartmentSnapshot }) {
             {sortedEmployees.map(emp => (
               <Link
                 key={emp.id}
-                to={`/employees/${emp.id}`}
+                to={`/employees/${emp.id}?asOfMonth=${selectedMonth}`}
                 className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-primary-400 hover:shadow-md transition-all duration-200 group"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">

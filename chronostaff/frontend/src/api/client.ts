@@ -1,4 +1,4 @@
-import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot } from '../types';
+import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot, EmployeeDetailAsOf } from '../types';
 
 const API_BASE = '/api';
 
@@ -21,6 +21,8 @@ export const getDepartment = (id: number) => fetchJson<Department>(`${API_BASE}/
 // Employees
 export const getEmployees = () => fetchJson<Employee[]>(`${API_BASE}/employees`);
 export const getEmployee = (id: number) => fetchJson<Employee>(`${API_BASE}/employees/${id}`);
+export const getEmployeeAsOf = (id: number, month: string) =>
+  fetchJson<EmployeeDetailAsOf>(`${API_BASE}/employees/${id}/asof?month=${month}`);
 
 // Employee Assignments
 export const getAssignments = () => fetchJson<EmployeeAssignment[]>(`${API_BASE}/assignments`);

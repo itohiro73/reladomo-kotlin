@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import * as api from '../api/client';
-import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot } from '../types';
+import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot, EmployeeDetailAsOf } from '../types';
 
 // Custom fetcher that handles errors
 const fetcher = <T,>(fn: () => Promise<T>) => fn();
@@ -19,6 +19,11 @@ export const useDepartment = (id: number | null) =>
 export const useEmployees = () => useSWR<Employee[]>('employees', () => api.getEmployees());
 export const useEmployee = (id: number | null) =>
   useSWR<Employee>(id ? `employees/${id}` : null, () => id ? api.getEmployee(id) : Promise.reject());
+export const useEmployeeAsOf = (id: number | null, month: string | null) =>
+  useSWR<EmployeeDetailAsOf>(
+    id && month ? `employees/${id}/asof?month=${month}` : null,
+    () => id && month ? api.getEmployeeAsOf(id, month) : Promise.reject()
+  );
 
 // Employee Assignments
 export const useAssignments = () => useSWR<EmployeeAssignment[]>('assignments', () => api.getAssignments());
