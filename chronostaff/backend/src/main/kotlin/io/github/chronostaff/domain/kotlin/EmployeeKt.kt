@@ -9,6 +9,7 @@ import kotlin.String
 
 public data class EmployeeKt(
   public val id: Long?,
+  public val companyId: Long,
   public val employeeNumber: String,
   public val name: String,
   public val email: String,
@@ -18,6 +19,7 @@ public data class EmployeeKt(
   public fun toReladomo(): Employee {
     val obj = Employee()
     this.id?.let { obj.id = it }
+    obj.companyId = this.companyId
     obj.employeeNumber = this.employeeNumber
     obj.name = this.name
     obj.email = this.email
@@ -28,6 +30,7 @@ public data class EmployeeKt(
   public companion object {
     public fun fromReladomo(obj: Employee): EmployeeKt = EmployeeKt(
       id = obj.id,
+      companyId = obj.companyId,
       employeeNumber = obj.employeeNumber,
       name = obj.name,
       email = obj.email,

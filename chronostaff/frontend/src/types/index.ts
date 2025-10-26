@@ -102,3 +102,68 @@ export interface SalaryAsOf {
   businessFrom: string;
   updatedBy: string;
 }
+
+// Phase 1 MVP: Setup Wizard DTOs
+export interface PositionCreateDto {
+  name: string;
+  level: number;
+  description: string | null;
+}
+
+export interface DepartmentCreateDto {
+  name: string;
+  description: string;
+}
+
+export interface SetupRequestDto {
+  companyName: string;
+  positions: PositionCreateDto[];
+  departments: DepartmentCreateDto[];
+}
+
+export interface SetupResponseDto {
+  companyName: string;
+  positions: Position[];
+  departments: Department[];
+}
+
+// Phase 1 MVP: Employee Creation DTOs
+export interface InitialAssignmentDto {
+  departmentId: number;
+  positionId: number;
+  effectiveDate: string;  // YYYY-MM-DD format (JST)
+  updatedBy: string;
+}
+
+export interface InitialSalaryDto {
+  amount: number;
+  currency: string;
+  effectiveDate: string;  // YYYY-MM-DD format (JST)
+  updatedBy: string;
+}
+
+export interface EmployeeCreateDto {
+  employeeNumber: string;
+  name: string;
+  email: string;
+  hireDate: string;  // YYYY-MM-DD format (JST)
+  assignment: InitialAssignmentDto;
+  salary: InitialSalaryDto;
+}
+
+// Phase 2: Transfer and Salary Adjustment DTOs
+export interface TransferRequestDto {
+  newDepartmentId: number;
+  newPositionId: number;
+  effectiveDate: string;  // YYYY-MM-DD format (Business Date - when transfer takes effect)
+  reason?: string;  // Optional reason for the transfer
+  updatedBy: string;
+}
+
+export interface SalaryAdjustmentRequestDto {
+  newAmount: number;
+  currency: string;  // Default: "JPY"
+  effectiveDate: string;  // YYYY-MM-DD format (Business Date - when salary change takes effect)
+  reason?: string;  // Optional reason for the salary adjustment
+  updatedBy: string;
+}

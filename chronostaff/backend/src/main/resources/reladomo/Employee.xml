@@ -12,9 +12,17 @@
                    isProcessingDate="true"
                    infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
 
-    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="EMPLOYEE_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="companyId" javaType="long" columnName="COMPANY_ID" nullable="false"/>
     <Attribute name="employeeNumber" javaType="String" columnName="EMPLOYEE_NUMBER" nullable="false" maxLength="20"/>
     <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="100"/>
     <Attribute name="email" javaType="String" columnName="EMAIL" nullable="false" maxLength="200"/>
     <Attribute name="hireDate" javaType="Timestamp" columnName="HIRE_DATE" nullable="false"/>
+
+    <!-- Relationship to Company -->
+    <Relationship name="company" relatedObject="Company" cardinality="many-to-one">
+        this.companyId = Company.id and this.processingDate = Company.processingDate
+    </Relationship>
 </MithraObject>

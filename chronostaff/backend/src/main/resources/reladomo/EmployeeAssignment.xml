@@ -16,7 +16,9 @@
                    toIsInclusive="false"
                    infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
 
-    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="EMPLOYEE_ASSIGNMENT_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
     <Attribute name="employeeId" javaType="long" columnName="EMPLOYEE_ID" nullable="false"/>
     <Attribute name="departmentId" javaType="long" columnName="DEPARTMENT_ID" nullable="false"/>
     <Attribute name="positionId" javaType="long" columnName="POSITION_ID" nullable="false"/>

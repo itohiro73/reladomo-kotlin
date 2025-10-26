@@ -29,6 +29,14 @@ spring:
 server:
   port: 8082  # Different port from demo app
 
+# Reladomo Sequence Configuration
+reladomo:
+  sequence:
+    enabled: true
+    type: IN_MEMORY
+    default-start-value: 1
+    increment-by: 1
+
 # Logging
 logging:
   level:

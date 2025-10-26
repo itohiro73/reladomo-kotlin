@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import EmployeeList from './components/EmployeeList';
 import EmployeeDetail from './components/EmployeeDetail';
 import DepartmentList from './components/DepartmentList';
+import PositionList from './components/PositionList';
 import OrgChart from './components/OrgChart';
 import InitialSetupWizard from './components/InitialSetupWizard';
 import EmployeeAddForm from './components/EmployeeAddForm';
@@ -20,6 +21,7 @@ function App() {
               <Route path="/setup" element={<InitialSetupWizard />} />
               <Route path="/employees/new" element={<EmployeeAddForm />} />
               <Route path="/employees/:id" element={<EmployeeDetail />} />
+              <Route path="/positions" element={<PositionList />} />
               <Route path="/departments" element={<DepartmentList />} />
               <Route path="/org-chart" element={<OrgChart />} />
             </Routes>
@@ -41,6 +43,7 @@ function Navigation() {
     { path: '/', label: '従業員一覧', icon: '👥' },
     { path: '/setup', label: '初期セットアップ', icon: '🎯' },
     { path: '/employees/new', label: '従業員追加', icon: '➕' },
+    { path: '/positions', label: '役職一覧', icon: '👔' },
     { path: '/departments', label: '部署一覧', icon: '🏢' },
     { path: '/org-chart', label: '組織図', icon: '📊' },
   ];

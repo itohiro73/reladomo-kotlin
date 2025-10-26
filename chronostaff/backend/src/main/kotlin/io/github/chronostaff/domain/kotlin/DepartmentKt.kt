@@ -9,6 +9,7 @@ import kotlin.String
 
 public data class DepartmentKt(
   public val id: Long?,
+  public val companyId: Long,
   public val name: String,
   public val description: String?,
   public val parentDepartmentId: Long?,
@@ -17,6 +18,7 @@ public data class DepartmentKt(
   public fun toReladomo(): Department {
     val obj = Department()
     this.id?.let { obj.id = it }
+    obj.companyId = this.companyId
     obj.name = this.name
     this.description?.let { obj.description = it }
     this.parentDepartmentId?.let { obj.parentDepartmentId = it }
@@ -26,6 +28,7 @@ public data class DepartmentKt(
   public companion object {
     public fun fromReladomo(obj: Department): DepartmentKt = DepartmentKt(
       id = obj.id,
+      companyId = obj.companyId,
       name = obj.name,
       description = obj.description,
       parentDepartmentId = obj.parentDepartmentId,

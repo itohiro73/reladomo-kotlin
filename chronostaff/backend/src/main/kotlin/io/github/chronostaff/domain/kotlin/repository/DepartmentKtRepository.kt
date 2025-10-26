@@ -40,6 +40,7 @@ public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> 
     val id = entity.id?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Department") ?: throw
         IllegalStateException("No ID provided and sequence generator not available")
     obj.id = id
+    obj.companyId = entity.companyId
     obj.name = entity.name
     entity.description?.let { obj.description = it }
     entity.parentDepartmentId?.let { obj.parentDepartmentId = it }
@@ -58,6 +59,7 @@ public class DepartmentKtRepository : UniTemporalRepository<DepartmentKt, Long> 
         ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
 
     // Update attributes
+    existingOrder.setCompanyId(entity.companyId)
     existingOrder.setName(entity.name)
     entity.description?.let { existingOrder.setDescription(it) }
     entity.parentDepartmentId?.let { existingOrder.setParentDepartmentId(it) }

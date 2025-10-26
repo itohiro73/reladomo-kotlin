@@ -59,3 +59,21 @@ data class InitialSalaryDto(
     val effectiveDate: String,  // YYYY-MM-DD format (Business Date in user's timezone)
     val updatedBy: String
 )
+
+// Transfer (assignment change) request
+data class TransferRequestDto(
+    val newDepartmentId: Long,
+    val newPositionId: Long,
+    val effectiveDate: String,  // YYYY-MM-DD format (Business Date - when transfer takes effect)
+    val reason: String?,  // Optional reason for the transfer
+    val updatedBy: String
+)
+
+// Salary adjustment request
+data class SalaryAdjustmentRequestDto(
+    val newAmount: Double,
+    val currency: String = "JPY",
+    val effectiveDate: String,  // YYYY-MM-DD format (Business Date - when salary change takes effect)
+    val reason: String?,  // Optional reason for the salary adjustment
+    val updatedBy: String
+)

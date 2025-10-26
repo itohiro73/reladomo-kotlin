@@ -40,6 +40,7 @@ public class PositionKtRepository : BaseRepository<PositionKt, Long> {
     val id = entity.id?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Position") ?: throw
         IllegalStateException("No ID provided and sequence generator not available")
     obj.id = id
+    obj.companyId = entity.companyId
     obj.name = entity.name
     obj.level = entity.level
     entity.description?.let { obj.description = it }
@@ -57,6 +58,7 @@ public class PositionKtRepository : BaseRepository<PositionKt, Long> {
         ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
 
     // Update attributes
+    existingOrder.setCompanyId(entity.companyId)
     existingOrder.setName(entity.name)
     existingOrder.setLevel(entity.level)
     entity.description?.let { existingOrder.setDescription(it) }

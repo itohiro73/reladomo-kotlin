@@ -8,7 +8,9 @@ import type {
   EmployeeDetailAsOf,
   SetupRequestDto,
   SetupResponseDto,
-  EmployeeCreateDto
+  EmployeeCreateDto,
+  TransferRequestDto,
+  SalaryAdjustmentRequestDto
 } from '../types';
 
 const API_BASE = '/api';
@@ -30,18 +32,54 @@ async function postJson<T, R>(url: string, data: T): Promise<R> {
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
   }
   return response.json();
+}
+
+async function putJson<T, R>(url: string, data: T): Promise<R> {
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+  }
+  return response.json();
+}
+
+async function deleteRequest(url: string): Promise<void> {
+  const response = await fetch(url, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+  }
 }
 
 // Positions
 export const getPositions = () => fetchJson<Position[]>(`${API_BASE}/positions`);
 export const getPosition = (id: number) => fetchJson<Position>(`${API_BASE}/positions/${id}`);
+export const createPosition = (data: Omit<Position, 'id'>) =>
+  postJson<Omit<Position, 'id'>, Position>(`${API_BASE}/positions`, data);
+export const updatePosition = (id: number, data: Omit<Position, 'id'>) =>
+  putJson<Omit<Position, 'id'>, Position>(`${API_BASE}/positions/${id}`, data);
+export const deletePosition = (id: number) => deleteRequest(`${API_BASE}/positions/${id}`);
 
 // Departments
 export const getDepartments = (companyId: number) => fetchJson<Department[]>(`${API_BASE}/departments?companyId=${companyId}`);
 export const getDepartment = (id: number) => fetchJson<Department>(`${API_BASE}/departments/${id}`);
+export const createDepartment = (data: Omit<Department, 'id' | 'processingFrom' | 'processingThru'>, companyId: number) =>
+  postJson<Omit<Department, 'id' | 'processingFrom' | 'processingThru'>, Department>(`${API_BASE}/departments?companyId=${companyId}`, data);
+export const updateDepartment = (id: number, data: Omit<Department, 'id' | 'processingFrom' | 'processingThru'>) =>
+  putJson<Omit<Department, 'id' | 'processingFrom' | 'processingThru'>, Department>(`${API_BASE}/departments/${id}`, data);
+export const deleteDepartment = (id: number) => deleteRequest(`${API_BASE}/departments/${id}`);
 
 // Employees
 export const getEmployees = (companyId: number) => fetchJson<Employee[]>(`${API_BASE}/employees?companyId=${companyId}`);
@@ -83,3 +121,10 @@ export const setupOrganization = (data: SetupRequestDto) =>
 
 export const createEmployee = (data: EmployeeCreateDto) =>
   postJson<EmployeeCreateDto, Employee>(`${API_BASE}/employees`, data);
+
+// Employee transfers and salary adjustments
+export const transferEmployee = (employeeId: number, data: TransferRequestDto) =>
+  postJson<TransferRequestDto, EmployeeAssignment>(`${API_BASE}/employees/${employeeId}/transfer`, data);
+
+export const adjustSalary = (employeeId: number, data: SalaryAdjustmentRequestDto) =>
+  postJson<SalaryAdjustmentRequestDto, Salary>(`${API_BASE}/employees/${employeeId}/salary-adjustment`, data);

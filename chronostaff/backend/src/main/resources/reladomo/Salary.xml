@@ -16,7 +16,9 @@
                    toIsInclusive="false"
                    infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
 
-    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="SALARY_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
     <Attribute name="employeeId" javaType="long" columnName="EMPLOYEE_ID" nullable="false"/>
     <Attribute name="amount" javaType="BigDecimal" columnName="AMOUNT" nullable="false" precision="19" scale="2"/>
     <Attribute name="currency" javaType="String" columnName="CURRENCY" nullable="false" maxLength="3"/>

@@ -31,6 +31,9 @@ public object EmployeeQueryDsl {
   public val QueryContext.id: NumericAttributeProperty<Long, LongAttribute<*>>
     get() = longAttribute(EmployeeFinder.id())
 
+  public val QueryContext.companyId: NumericAttributeProperty<Long, LongAttribute<*>>
+    get() = longAttribute(EmployeeFinder.companyId())
+
   public val QueryContext.employeeNumber: StringAttributeProperty
     get() = stringAttribute(EmployeeFinder.employeeNumber())
 

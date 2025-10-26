@@ -40,6 +40,7 @@ public class EmployeeKtRepository : UniTemporalRepository<EmployeeKt, Long> {
     val id = entity.id?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId("Employee") ?: throw
         IllegalStateException("No ID provided and sequence generator not available")
     obj.id = id
+    obj.companyId = entity.companyId
     obj.employeeNumber = entity.employeeNumber
     obj.name = entity.name
     obj.email = entity.email
@@ -58,6 +59,7 @@ public class EmployeeKtRepository : UniTemporalRepository<EmployeeKt, Long> {
         ?: throw EntityNotFoundException("Order not found with id: ${entity.id}")
 
     // Update attributes
+    existingOrder.setCompanyId(entity.companyId)
     existingOrder.setEmployeeNumber(entity.employeeNumber)
     existingOrder.setName(entity.name)
     existingOrder.setEmail(entity.email)

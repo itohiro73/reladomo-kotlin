@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   useEmployee,
@@ -9,6 +10,8 @@ import {
 } from '../hooks/useAPI';
 import { formatDate, formatDateOnly } from '../utils/date';
 import BiTemporalTimeline from './BiTemporalTimeline';
+import TransferForm from './TransferForm';
+import SalaryAdjustmentForm from './SalaryAdjustmentForm';
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,11 +21,28 @@ export default function EmployeeDetail() {
 
   // Use AsOf query if asOfMonth parameter is present
   const { data: asOfData, error: asOfError, isLoading: asOfLoading } = useEmployeeAsOf(employeeId, asOfMonth);
-  const { data: employee, error, isLoading } = useEmployee(asOfMonth ? null : employeeId);
-  const { data: assignments } = useAssignmentsByEmployee(asOfMonth ? null : employeeId);
-  const { data: salaries } = useSalariesByEmployee(asOfMonth ? null : employeeId);
+  const { data: employee, error, isLoading, mutate: mutateEmployee } = useEmployee(asOfMonth ? null : employeeId);
+  const { data: assignments, mutate: mutateAssignments } = useAssignmentsByEmployee(asOfMonth ? null : employeeId);
+  const { data: salaries, mutate: mutateSalaries } = useSalariesByEmployee(asOfMonth ? null : employeeId);
   const { data: positions } = usePositions();
   const { data: departments } = useDepartments();
+
+  // Form visibility state
+  const [showTransferForm, setShowTransferForm] = useState(false);
+  const [showSalaryForm, setShowSalaryForm] = useState(false);
+
+  // Success handlers
+  const handleTransferSuccess = () => {
+    setShowTransferForm(false);
+    mutateEmployee();
+    mutateAssignments();
+  };
+
+  const handleSalarySuccess = () => {
+    setShowSalaryForm(false);
+    mutateEmployee();
+    mutateSalaries();
+  };
 
   if (isLoading || asOfLoading) {
     return (
@@ -222,9 +242,20 @@ export default function EmployeeDetail() {
 
       {/* Current Assignment */}
       <div className="card">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
-          💼 現在の配属・役職
-        </h3>
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">
+            💼 現在の配属・役職
+          </h3>
+          {currentAssignment && !showTransferForm && (
+            <button
+              onClick={() => setShowTransferForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <span>🔄</span>
+              異動・配置転換
+            </button>
+          )}
+        </div>
         {currentAssignment ? (
           <div className="space-y-3">
             <InfoRow icon="🏢" label="部署" value={department?.name || '-'} />
@@ -241,11 +272,34 @@ export default function EmployeeDetail() {
         )}
       </div>
 
+      {/* Transfer Form */}
+      {showTransferForm && currentAssignment && employeeId && (
+        <TransferForm
+          employeeId={employeeId}
+          employeeName={employee.name}
+          currentDepartmentId={currentAssignment.departmentId}
+          currentPositionId={currentAssignment.positionId}
+          onSuccess={handleTransferSuccess}
+          onCancel={() => setShowTransferForm(false)}
+        />
+      )}
+
       {/* Current Salary */}
       <div className="card">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
-          💰 現在の給与情報
-        </h3>
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">
+            💰 現在の給与情報
+          </h3>
+          {currentSalary && !showSalaryForm && (
+            <button
+              onClick={() => setShowSalaryForm(true)}
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <span>💵</span>
+              給与調整
+            </button>
+          )}
+        </div>
         {currentSalary ? (
           <div className="space-y-3">
             <InfoRow
@@ -261,6 +315,18 @@ export default function EmployeeDetail() {
           <p className="text-gray-500 italic">給与情報なし</p>
         )}
       </div>
+
+      {/* Salary Adjustment Form */}
+      {showSalaryForm && currentSalary && employeeId && (
+        <SalaryAdjustmentForm
+          employeeId={employeeId}
+          employeeName={employee.name}
+          currentAmount={currentSalary.amount}
+          currentCurrency={currentSalary.currency}
+          onSuccess={handleSalarySuccess}
+          onCancel={() => setShowSalaryForm(false)}
+        />
+      )}
 
       {/* Temporal Information */}
       <div className="card bg-gray-50">

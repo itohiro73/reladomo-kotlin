@@ -29,6 +29,9 @@ public object DepartmentQueryDsl {
   public val QueryContext.id: NumericAttributeProperty<Long, LongAttribute<*>>
     get() = longAttribute(DepartmentFinder.id())
 
+  public val QueryContext.companyId: NumericAttributeProperty<Long, LongAttribute<*>>
+    get() = longAttribute(DepartmentFinder.companyId())
+
   public val QueryContext.name: StringAttributeProperty
     get() = stringAttribute(DepartmentFinder.name())
 

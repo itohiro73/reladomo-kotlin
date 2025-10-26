@@ -31,6 +31,9 @@ public object PositionQueryDsl {
   public val QueryContext.id: NumericAttributeProperty<Long, LongAttribute<*>>
     get() = longAttribute(PositionFinder.id())
 
+  public val QueryContext.companyId: NumericAttributeProperty<Long, LongAttribute<*>>
+    get() = longAttribute(PositionFinder.companyId())
+
   public val QueryContext.name: StringAttributeProperty
     get() = stringAttribute(PositionFinder.name())
 

@@ -18,17 +18,31 @@ CREATE TABLE IF NOT EXISTS MITHRA_SEQUENCE (
 -- Table Definitions
 -- ========================================
 
--- Positions table (Non-temporal - simple master data)
+-- Companies table (Unitemporal - tracks company information changes)
+CREATE TABLE COMPANIES (
+    ID BIGINT NOT NULL,
+    NAME VARCHAR(200) NOT NULL,
+
+    -- Unitemporal columns (processing time only)
+    PROCESSING_FROM TIMESTAMP NOT NULL,
+    PROCESSING_THRU TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (ID, PROCESSING_FROM)
+);
+
+-- Positions table (Non-temporal - simple master data, per company)
 CREATE TABLE POSITIONS (
     ID BIGINT NOT NULL PRIMARY KEY,
+    COMPANY_ID BIGINT NOT NULL,
     NAME VARCHAR(100) NOT NULL,
     LEVEL INT NOT NULL,
     DESCRIPTION VARCHAR(500)
 );
 
--- Departments table (Unitemporal - tracks organizational structure changes)
+-- Departments table (Unitemporal - tracks organizational structure changes, per company)
 CREATE TABLE DEPARTMENTS (
     ID BIGINT NOT NULL,
+    COMPANY_ID BIGINT NOT NULL,
     NAME VARCHAR(200) NOT NULL,
     DESCRIPTION VARCHAR(1000),
     PARENT_DEPARTMENT_ID BIGINT,
@@ -40,9 +54,10 @@ CREATE TABLE DEPARTMENTS (
     PRIMARY KEY (ID, PROCESSING_FROM)
 );
 
--- Employees table (Unitemporal - tracks employee master data changes)
+-- Employees table (Unitemporal - tracks employee master data changes, per company)
 CREATE TABLE EMPLOYEES (
     ID BIGINT NOT NULL,
+    COMPANY_ID BIGINT NOT NULL,
     EMPLOYEE_NUMBER VARCHAR(20) NOT NULL,
     NAME VARCHAR(100) NOT NULL,
     EMAIL VARCHAR(200) NOT NULL,
@@ -96,19 +111,27 @@ CREATE TABLE SALARIES (
 );
 
 -- ========================================
--- Master Data: Positions (Non-temporal)
+-- Master Data: Default Company
 -- ========================================
-INSERT INTO POSITIONS (ID, NAME, LEVEL, DESCRIPTION) VALUES
-(1, 'Junior Developer', 1, 'Entry-level software developer'),
-(2, 'Senior Developer', 2, 'Experienced software developer'),
-(3, 'Team Lead', 3, 'Technical team leader'),
-(4, 'Engineering Manager', 4, 'Engineering department manager'),
-(5, 'Sales Representative', 1, 'Sales team member'),
-(6, 'Sales Manager', 3, 'Sales team leader'),
-(7, 'Director', 5, 'Department director'),
-(8, 'VP of Engineering', 6, 'Vice President of Engineering'),
-(9, 'Marketing Specialist', 2, 'Marketing team member'),
-(10, 'HR Specialist', 2, 'Human resources team member');
+-- TIMEZONE POLICY: All timestamps are stored in UTC
+-- Create default company for seed data (2025/01/01 00:00 JST = 2024/12/31 15:00 UTC)
+INSERT INTO COMPANIES (ID, NAME, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 'サンプル株式会社', '2024-12-31 15:00:00', '9999-12-01 23:59:00');
+
+-- ========================================
+-- Master Data: Positions (Non-temporal, per company)
+-- ========================================
+INSERT INTO POSITIONS (ID, COMPANY_ID, NAME, LEVEL, DESCRIPTION) VALUES
+(1, 1, 'Junior Developer', 1, 'Entry-level software developer'),
+(2, 1, 'Senior Developer', 2, 'Experienced software developer'),
+(3, 1, 'Team Lead', 3, 'Technical team leader'),
+(4, 1, 'Engineering Manager', 4, 'Engineering department manager'),
+(5, 1, 'Sales Representative', 1, 'Sales team member'),
+(6, 1, 'Sales Manager', 3, 'Sales team leader'),
+(7, 1, 'Director', 5, 'Department director'),
+(8, 1, 'VP of Engineering', 6, 'Vice President of Engineering'),
+(9, 1, 'Marketing Specialist', 2, 'Marketing team member'),
+(10, 1, 'HR Specialist', 2, 'Human resources team member');
 
 -- ========================================
 -- Organizational Structure: Departments (Unitemporal)
@@ -117,25 +140,25 @@ INSERT INTO POSITIONS (ID, NAME, LEVEL, DESCRIPTION) VALUES
 -- Scenario: Company reorganization - splitting Engineering into Backend and Frontend teams
 
 -- Step 1 (2024/12/31 15:00 UTC = 2025/01/01 00:00 JST): Initial org structure
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(1, 'Engineering', 'Product development and engineering', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 1, 'Engineering', 'Product development and engineering', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
 
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(2, 'Sales', 'Sales and business development', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(2, 1, 'Sales', 'Sales and business development', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Step 2 (2025/03/31 15:00 UTC = 2025/04/01 00:00 JST): Split Engineering into teams
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(3, 'Backend Team', 'Backend development and APIs', 1, '2025-03-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(3, 1, 'Backend Team', 'Backend development and APIs', 1, '2025-03-31 15:00:00', '9999-12-01 23:59:00');
 
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(4, 'Frontend Team', 'Frontend and user experience', 1, '2025-03-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(4, 1, 'Frontend Team', 'Frontend and user experience', 1, '2025-03-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Step 3: Add Marketing and HR departments
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(5, 'Marketing', 'Marketing and brand management', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(5, 1, 'Marketing', 'Marketing and brand management', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
 
-INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(6, 'Human Resources', 'HR and people operations', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO DEPARTMENTS (ID, COMPANY_ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(6, 1, 'Human Resources', 'HR and people operations', NULL, '2024-12-31 15:00:00', '9999-12-01 23:59:00');
 
 -- ========================================
 -- Employee Master Data: Employees (Unitemporal)
@@ -143,47 +166,47 @@ INSERT INTO DEPARTMENTS (ID, NAME, DESCRIPTION, PARENT_DEPARTMENT_ID, PROCESSING
 -- Scenario: Track employee information changes (email updates, etc.)
 
 -- Alice - hired Jan 1, 2024 (email change in March)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(1, 'EMP001', 'Alice Johnson', 'alice.johnson@company.com', '2023-12-31 15:00:00', '2023-12-31 15:00:00', '2025-02-28 15:00:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 1, 'EMP001', 'Alice Johnson', 'alice.johnson@company.com', '2023-12-31 15:00:00', '2023-12-31 15:00:00', '2025-02-28 15:00:00');
 
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(1, 'EMP001', 'Alice Johnson', 'alice.j@newdomain.com', '2023-12-31 15:00:00', '2025-02-28 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(1, 1, 'EMP001', 'Alice Johnson', 'alice.j@newdomain.com', '2023-12-31 15:00:00', '2025-02-28 15:00:00', '9999-12-01 23:59:00');
 
 -- Bob - hired Mar 1, 2024 (no changes)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(2, 'EMP002', 'Bob Smith', 'bob.smith@company.com', '2025-02-28 15:00:00', '2025-02-28 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(2, 1, 'EMP002', 'Bob Smith', 'bob.smith@company.com', '2025-02-28 15:00:00', '2025-02-28 15:00:00', '9999-12-01 23:59:00');
 
 -- Charlie - hired Jun 1, 2024 (no changes)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(3, 'EMP003', 'Charlie Davis', 'charlie.davis@company.com', '2025-05-31 15:00:00', '2025-05-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(3, 1, 'EMP003', 'Charlie Davis', 'charlie.davis@company.com', '2025-05-31 15:00:00', '2025-05-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Diana - hired Apr 1, 2023 (stable Backend Team Lead)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(4, 'EMP004', 'Diana Prince', 'diana.prince@company.com', '2023-03-31 15:00:00', '2023-03-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(4, 1, 'EMP004', 'Diana Prince', 'diana.prince@company.com', '2023-03-31 15:00:00', '2023-03-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Eve - hired Jul 1, 2022 (Sales Manager)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(5, 'EMP005', 'Eve Wilson', 'eve.wilson@company.com', '2022-06-30 15:00:00', '2022-06-30 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(5, 1, 'EMP005', 'Eve Wilson', 'eve.wilson@company.com', '2022-06-30 15:00:00', '2022-06-30 15:00:00', '9999-12-01 23:59:00');
 
 -- Frank - hired Apr 1, 2025 (recent junior developer)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(6, 'EMP006', 'Frank Miller', 'frank.miller@company.com', '2025-03-31 15:00:00', '2025-03-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(6, 1, 'EMP006', 'Frank Miller', 'frank.miller@company.com', '2025-03-31 15:00:00', '2025-03-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Grace - hired Oct 1, 2023 (stable senior developer)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(7, 'EMP007', 'Grace Hopper', 'grace.hopper@company.com', '2023-09-30 15:00:00', '2023-09-30 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(7, 1, 'EMP007', 'Grace Hopper', 'grace.hopper@company.com', '2023-09-30 15:00:00', '2023-09-30 15:00:00', '9999-12-01 23:59:00');
 
 -- Henry - hired Jan 1, 2021 (long-tenure Engineering Manager)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(8, 'EMP008', 'Henry Ford', 'henry.ford@company.com', '2020-12-31 15:00:00', '2020-12-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(8, 1, 'EMP008', 'Henry Ford', 'henry.ford@company.com', '2020-12-31 15:00:00', '2020-12-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Iris - hired Aug 1, 2024 (Sales Representative)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(9, 'EMP009', 'Iris Chang', 'iris.chang@company.com', '2024-07-31 15:00:00', '2024-07-31 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(9, 1, 'EMP009', 'Iris Chang', 'iris.chang@company.com', '2024-07-31 15:00:00', '2024-07-31 15:00:00', '9999-12-01 23:59:00');
 
 -- Jack - hired Jul 1, 2025 (new grad junior developer)
-INSERT INTO EMPLOYEES (ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
-(10, 'EMP010', 'Jack Ryan', 'jack.ryan@company.com', '2025-06-30 15:00:00', '2025-06-30 15:00:00', '9999-12-01 23:59:00');
+INSERT INTO EMPLOYEES (ID, COMPANY_ID, EMPLOYEE_NUMBER, NAME, EMAIL, HIRE_DATE, PROCESSING_FROM, PROCESSING_THRU) VALUES
+(10, 1, 'EMP010', 'Jack Ryan', 'jack.ryan@company.com', '2025-06-30 15:00:00', '2025-06-30 15:00:00', '9999-12-01 23:59:00');
 
 -- ========================================
 -- Employee Assignments (Bitemporal)

@@ -233,7 +233,136 @@ class EmployeeController {
         }
     }
 
+    @PostMapping("/{id}/transfer")
+    fun transferEmployee(
+        @PathVariable id: Long,
+        @RequestBody request: TransferRequestDto
+    ): EmployeeAssignmentDto {
+        return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+            try {
+                val effectiveDate = LocalDate.parse(request.effectiveDate)
+                val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                val businessTimestamp = Timestamp.from(businessFrom)
+                val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+
+                // Find the assignment that will be valid at the effective date
+                // Use AsOf query to get the record at the target business date
+                val operation = io.github.chronostaff.domain.EmployeeAssignmentFinder.employeeId().eq(id)
+                    .and(io.github.chronostaff.domain.EmployeeAssignmentFinder.businessDate().eq(businessTimestamp))
+                    .and(io.github.chronostaff.domain.EmployeeAssignmentFinder.processingDate().equalsInfinity())
+
+                val assignmentAtEffectiveDate = io.github.chronostaff.domain.EmployeeAssignmentFinder.findOne(operation)
+                    ?: throw ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No assignment found at effective date for employee $id"
+                    )
+
+                // Change the properties - Reladomo should automatically split the business period
+                assignmentAtEffectiveDate.departmentId = request.newDepartmentId
+                assignmentAtEffectiveDate.positionId = request.newPositionId
+                assignmentAtEffectiveDate.updatedBy = request.updatedBy
+
+                // Return updated assignment DTO
+                EmployeeAssignmentDto(
+                    id = assignmentAtEffectiveDate.id,
+                    employeeId = assignmentAtEffectiveDate.employeeId,
+                    departmentId = assignmentAtEffectiveDate.departmentId,
+                    positionId = assignmentAtEffectiveDate.positionId,
+                    updatedBy = assignmentAtEffectiveDate.updatedBy,
+                    businessFrom = assignmentAtEffectiveDate.businessDateFrom.toInstant().toString(),
+                    businessThru = assignmentAtEffectiveDate.businessDateTo.toInstant().toString(),
+                    processingFrom = assignmentAtEffectiveDate.processingDateFrom.toInstant().toString(),
+                    processingThru = assignmentAtEffectiveDate.processingDateTo.toInstant().toString()
+                )
+            } catch (e: Exception) {
+                throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to transfer employee: ${e.message}",
+                    e
+                )
+            }
+        }
+    }
+
+    @PostMapping("/{id}/salary-adjustment")
+    fun adjustSalary(
+        @PathVariable id: Long,
+        @RequestBody request: SalaryAdjustmentRequestDto
+    ): SalaryDto {
+        return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+            try {
+                val effectiveDate = LocalDate.parse(request.effectiveDate)
+                val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                val businessTimestamp = Timestamp.from(businessFrom)
+                val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+
+                // Find the salary that will be valid at the effective date
+                // Use AsOf query to get the record at the target business date
+                val operation = io.github.chronostaff.domain.SalaryFinder.employeeId().eq(id)
+                    .and(io.github.chronostaff.domain.SalaryFinder.businessDate().eq(businessTimestamp))
+                    .and(io.github.chronostaff.domain.SalaryFinder.processingDate().equalsInfinity())
+
+                val salaryAtEffectiveDate = io.github.chronostaff.domain.SalaryFinder.findOne(operation)
+                    ?: throw ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No salary found at effective date for employee $id"
+                    )
+
+                // Change the properties - Reladomo should automatically split the business period
+                salaryAtEffectiveDate.amount = BigDecimal.valueOf(request.newAmount)
+                salaryAtEffectiveDate.currency = request.currency
+                salaryAtEffectiveDate.updatedBy = request.updatedBy
+
+                // Return updated salary DTO
+                SalaryDto(
+                    id = salaryAtEffectiveDate.id,
+                    employeeId = salaryAtEffectiveDate.employeeId,
+                    amount = salaryAtEffectiveDate.amount,
+                    currency = salaryAtEffectiveDate.currency,
+                    updatedBy = salaryAtEffectiveDate.updatedBy,
+                    businessFrom = salaryAtEffectiveDate.businessDateFrom.toInstant().toString(),
+                    businessThru = salaryAtEffectiveDate.businessDateTo.toInstant().toString(),
+                    processingFrom = salaryAtEffectiveDate.processingDateFrom.toInstant().toString(),
+                    processingThru = salaryAtEffectiveDate.processingDateTo.toInstant().toString()
+                )
+            } catch (e: Exception) {
+                throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to adjust salary: ${e.message}",
+                    e
+                )
+            }
+        }
+    }
+
     // TODO: Implement history endpoint - requires proper Reladomo temporal query API
     // @GetMapping("/{id}/history")
     // fun getEmployeeHistory(@PathVariable id: Long): List<EmployeeDto>
+
+    // DEBUG: Get all assignment records for analysis
+    @GetMapping("/{id}/assignments/debug")
+    fun getAssignmentsDebug(@PathVariable id: Long): List<Map<String, Any?>> {
+        val sql = """
+            SELECT
+                ID, EMPLOYEE_ID, DEPARTMENT_ID, POSITION_ID, UPDATED_BY,
+                BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU
+            FROM EMPLOYEE_ASSIGNMENTS
+            WHERE EMPLOYEE_ID = ?
+            ORDER BY BUSINESS_FROM, PROCESSING_FROM
+        """.trimIndent()
+
+        return jdbcTemplate.query(sql, { rs, _ ->
+            mapOf(
+                "id" to rs.getLong("ID"),
+                "employeeId" to rs.getLong("EMPLOYEE_ID"),
+                "departmentId" to rs.getLong("DEPARTMENT_ID"),
+                "positionId" to rs.getLong("POSITION_ID"),
+                "updatedBy" to rs.getString("UPDATED_BY"),
+                "businessFrom" to rs.getTimestamp("BUSINESS_FROM").toInstant().toString(),
+                "businessThru" to rs.getTimestamp("BUSINESS_THRU").toInstant().toString(),
+                "processingFrom" to rs.getTimestamp("PROCESSING_FROM").toInstant().toString(),
+                "processingThru" to rs.getTimestamp("PROCESSING_THRU").toInstant().toString()
+            )
+        }, id)
+    }
 }

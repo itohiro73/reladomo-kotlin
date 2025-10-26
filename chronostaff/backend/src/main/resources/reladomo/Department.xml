@@ -12,10 +12,18 @@
                    isProcessingDate="true"
                    infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
 
-    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="DEPARTMENT_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="companyId" javaType="long" columnName="COMPANY_ID" nullable="false"/>
     <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="200"/>
     <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="1000"/>
     <Attribute name="parentDepartmentId" javaType="long" columnName="PARENT_DEPARTMENT_ID" nullable="true"/>
+
+    <!-- Relationship to Company -->
+    <Relationship name="company" relatedObject="Company" cardinality="many-to-one">
+        this.companyId = Company.id and this.processingDate = Company.processingDate
+    </Relationship>
 
     <!-- Self-referencing relationship for department hierarchy -->
     <Relationship name="parentDepartment" relatedObject="Department" relatedIsDependent="false" cardinality="many-to-one">

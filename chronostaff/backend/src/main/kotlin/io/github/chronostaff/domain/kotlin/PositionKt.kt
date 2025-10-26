@@ -9,6 +9,7 @@ import kotlin.String
 
 public data class PositionKt(
   public val id: Long?,
+  public val companyId: Long,
   public val name: String,
   public val level: Int,
   public val description: String?,
@@ -16,6 +17,7 @@ public data class PositionKt(
   public fun toReladomo(): Position {
     val obj = Position()
     this.id?.let { obj.id = it }
+    obj.companyId = this.companyId
     obj.name = this.name
     obj.level = this.level
     this.description?.let { obj.description = it }
@@ -25,6 +27,7 @@ public data class PositionKt(
   public companion object {
     public fun fromReladomo(obj: Position): PositionKt = PositionKt(
       id = obj.id,
+      companyId = obj.companyId,
       name = obj.name,
       level = obj.level,
       description = obj.description

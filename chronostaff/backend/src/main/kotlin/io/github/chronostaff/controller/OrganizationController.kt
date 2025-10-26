@@ -24,14 +24,15 @@ class OrganizationController {
 
     @GetMapping("/snapshot")
     fun getOrganizationSnapshot(
-        @RequestParam asOfDate: String  // Format: YYYY-MM-DD
+        @RequestParam asOfDate: String,  // Format: YYYY-MM-DD
+        @RequestParam companyId: Long
     ): OrganizationSnapshotDto {
         // Parse asOfDate and set to start of day (midnight) in JST, then convert to UTC
         val date = LocalDate.parse(asOfDate)
         val asOfInstant = date.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
         val asOfTimestamp = Timestamp.from(asOfInstant)
 
-        // Query all assignments valid at the specified business date
+        // Query all assignments valid at the specified business date for specific company
         // Using current processing time (PROCESSING_THRU = infinity) to get current beliefs
         val sql = """
             SELECT
@@ -51,6 +52,9 @@ class OrganizationController {
               AND ea.PROCESSING_THRU = '9999-12-01 23:59:00'
               AND e.PROCESSING_THRU = '9999-12-01 23:59:00'
               AND d.PROCESSING_THRU = '9999-12-01 23:59:00'
+              AND e.COMPANY_ID = ?
+              AND d.COMPANY_ID = ?
+              AND p.COMPANY_ID = ?
             ORDER BY d.ID, p.LEVEL DESC, e.NAME
         """.trimIndent()
 
@@ -64,7 +68,7 @@ class OrganizationController {
                 "positionName" to rs.getString("POSITION_NAME"),
                 "positionLevel" to rs.getInt("POSITION_LEVEL")
             )
-        }, asOfTimestamp, asOfTimestamp)
+        }, asOfTimestamp, asOfTimestamp, companyId, companyId, companyId)
 
         // Group by department
         val departmentMap = assignments.groupBy { it["departmentId"] as Long }

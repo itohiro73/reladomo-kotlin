@@ -5,8 +5,15 @@
     <DefaultTable>POSITIONS</DefaultTable>
 
     <!-- Non-temporal entity - simple master data -->
-    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="POSITION_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="companyId" javaType="long" columnName="COMPANY_ID" nullable="false"/>
     <Attribute name="name" javaType="String" columnName="NAME" nullable="false" maxLength="100"/>
     <Attribute name="level" javaType="int" columnName="LEVEL" nullable="false"/>
     <Attribute name="description" javaType="String" columnName="DESCRIPTION" nullable="true" maxLength="500"/>
+
+    <Relationship name="company" relatedObject="Company" cardinality="many-to-one">
+        this.companyId = Company.id
+    </Relationship>
 </MithraObject>
