@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraRuntime>
+    <ConnectionManager className="io.github.reladomokotlin.spring.connection.H2ConnectionManager">
+        <Property name="dataSourceName" value="dataSource"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.Category" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.Product" cacheType="partial"/>
+        <MithraObjectConfiguration className="io.github.reladomokotlin.demo.domain.ProductPrice" cacheType="partial"/>
+    </ConnectionManager>
+</MithraRuntime>

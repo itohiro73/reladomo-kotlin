@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.reladomokotlin.demo.domain</PackageName>
+    <ClassName>ProductPrice</ClassName>
+    <DefaultTable>PRODUCT_PRICES</DefaultTable>
+
+    <!-- Bitemporal entity - business date and processing date -->
+    <AsOfAttribute name="businessDate"
+                   fromColumnName="BUSINESS_FROM"
+                   toColumnName="BUSINESS_THRU"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true"/>
+    <Attribute name="productId" javaType="long" columnName="PRODUCT_ID" nullable="false"/>
+    <Attribute name="price" javaType="BigDecimal" columnName="PRICE" nullable="false" precision="19" scale="2"/>
+
+    <!-- Audit trail: who made the change -->
+    <Attribute name="updatedBy" javaType="String" columnName="UPDATED_BY" nullable="true" maxLength="100"/>
+
+    <Relationship name="product" relatedObject="Product" relatedIsDependent="false" cardinality="many-to-one">
+        this.productId = Product.id
+    </Relationship>
+</MithraObject>

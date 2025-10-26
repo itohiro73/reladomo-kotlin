@@ -43,6 +43,8 @@ class KotlinWrapperGenerator {
                 }
                 if (definition.isBitemporal) {
                     addImport("io.github.reladomokotlin.core", "BiTemporalEntity")
+                } else if (definition.isUnitemporal) {
+                    addImport("io.github.reladomokotlin.core", "UniTemporalEntity")
                 }
             }
             .build()
@@ -66,9 +68,11 @@ class KotlinWrapperGenerator {
         val builder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
         
-        // Add BiTemporalEntity interface if applicable
+        // Add temporal entity interface if applicable
         if (definition.isBitemporal) {
-            builder.addSuperinterface(BiTemporalEntity::class)
+            builder.addSuperinterface(ClassName("io.github.reladomokotlin.core", "BiTemporalEntity"))
+        } else if (definition.isUnitemporal) {
+            builder.addSuperinterface(ClassName("io.github.reladomokotlin.core", "UniTemporalEntity"))
         }
         
         // Create constructor
@@ -86,22 +90,30 @@ class KotlinWrapperGenerator {
             constructorBuilder.addParameter(fieldName, propertyType)
         }
         
-        // Add bitemporal properties if needed
+        // Add temporal properties if needed
         if (definition.isBitemporal) {
             val businessDateProp = PropertySpec.builder("businessDate", Instant::class)
                 .initializer("businessDate")
                 .addModifiers(KModifier.OVERRIDE)
                 .build()
-            
+
             val processingDateProp = PropertySpec.builder("processingDate", Instant::class)
                 .initializer("processingDate")
                 .addModifiers(KModifier.OVERRIDE)
                 .build()
-            
+
             builder.addProperty(businessDateProp)
             builder.addProperty(processingDateProp)
-            
+
             constructorBuilder.addParameter("businessDate", Instant::class)
+            constructorBuilder.addParameter("processingDate", Instant::class)
+        } else if (definition.isUnitemporal) {
+            val processingDateProp = PropertySpec.builder("processingDate", Instant::class)
+                .initializer("processingDate")
+                .addModifiers(KModifier.OVERRIDE)
+                .build()
+
+            builder.addProperty(processingDateProp)
             constructorBuilder.addParameter("processingDate", Instant::class)
         }
         
@@ -131,10 +143,12 @@ class KotlinWrapperGenerator {
         return FunSpec.builder("toReladomo")
             .returns(reladomoClassName)
             .apply {
-                // For bitemporal objects, use constructor with dates
+                // For temporal objects, use constructor with dates
+                // Note: Reladomo only generates temporal constructors for bitemporal entities
                 if (definition.isBitemporal) {
                     addStatement("val obj = %T(Timestamp.from(this.businessDate), Timestamp.from(this.processingDate))", reladomoClassName)
                 } else {
+                    // Unitemporal and non-temporal use default constructor
                     addStatement("val obj = %T()", reladomoClassName)
                 }
                 
@@ -218,17 +232,19 @@ class KotlinWrapperGenerator {
                     
                     val fieldName = toCamelCase(attr.name)
                     add("${fieldName} = $conversion")
-                    
-                    // Add comma if not last attribute or if bitemporal
-                    if (index < definition.attributes.size - 1 || definition.isBitemporal) {
+
+                    // Add comma if not last attribute or if temporal
+                    if (index < definition.attributes.size - 1 || definition.isBitemporal || definition.isUnitemporal) {
                         add(",")
                     }
                     add("\n")
                 }
                 
-                // Map bitemporal attributes
+                // Map temporal attributes
                 if (definition.isBitemporal) {
                     add("businessDate = obj.businessDate.toInstant(),\n")
+                    add("processingDate = obj.processingDate.toInstant()\n")
+                } else if (definition.isUnitemporal) {
                     add("processingDate = obj.processingDate.toInstant()\n")
                 }
                 

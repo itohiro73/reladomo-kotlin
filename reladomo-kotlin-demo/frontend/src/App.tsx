@@ -1,0 +1,41 @@
+import './App.css';
+import { CategoryList } from './components/CategoryList';
+import { ProductList } from './components/ProductList';
+import { ProductPriceTimeline } from './components/ProductPriceTimeline';
+import { BitemporalTimeline2D } from './components/BitemporalTimeline2D';
+import { TimeTravelQuery } from './components/TimeTravelQuery';
+import { PriceUpdateForm } from './components/PriceUpdateForm';
+import { DatabaseViewer } from './components/DatabaseViewer';
+
+function App() {
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1>Reladomo Kotlin Demo</h1>
+        <p>バイテンポラルデータモデルのデモンストレーション</p>
+      </header>
+
+      <main>
+        <CategoryList />
+        <ProductList />
+        <ProductPriceTimeline />
+        <BitemporalTimeline2D />
+        <TimeTravelQuery />
+        <PriceUpdateForm />
+        <DatabaseViewer />
+      </main>
+
+      <footer style={{
+        textAlign: 'center',
+        marginTop: '3rem',
+        paddingTop: '2rem',
+        borderTop: '1px solid #333',
+        color: '#666'
+      }}>
+        <p>Reladomo Kotlin Wrapper - Conference Demo</p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;

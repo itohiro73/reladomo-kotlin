@@ -35,8 +35,10 @@ class KotlinRepositoryGenerator {
             .addImport("com.gs.fw.common.mithra", "MithraManagerProvider")
             .addImport("org.springframework.transaction.annotation", "Transactional")
             .addImport("io.github.reladomokotlin.core", "BiTemporalRepository")
+            .addImport("io.github.reladomokotlin.core", "UniTemporalRepository")
             .addImport("io.github.reladomokotlin.core", "BaseRepository")
             .addImport("io.github.reladomokotlin.core", "BiTemporalEntity")
+            .addImport("io.github.reladomokotlin.core", "UniTemporalEntity")
             .addImport("io.github.reladomokotlin.core", "ReladomoObject")
             .addImport("io.github.reladomokotlin.core", "ReladomoFinder")
             .addImport("io.github.reladomokotlin.core.exceptions", "EntityNotFoundException")
@@ -81,11 +83,12 @@ class KotlinRepositoryGenerator {
         val entityType = ClassName("${definition.packageName}.kotlin", entityName)
         val finderType = ClassName(definition.packageName, "${definition.className}Finder")
         
-        val repositoryInterface = if (definition.isBitemporal) {
-            ClassName("io.github.reladomokotlin.core", "BiTemporalRepository")
+        val repositoryInterface = when {
+            definition.isBitemporal -> ClassName("io.github.reladomokotlin.core", "BiTemporalRepository")
                 .parameterizedBy(entityType, primaryKeyType)
-        } else {
-            ClassName("io.github.reladomokotlin.core", "BaseRepository")
+            definition.isUnitemporal -> ClassName("io.github.reladomokotlin.core", "UniTemporalRepository")
+                .parameterizedBy(entityType, primaryKeyType)
+            else -> ClassName("io.github.reladomokotlin.core", "BaseRepository")
                 .parameterizedBy(entityType, primaryKeyType)
         }
         
@@ -127,6 +130,12 @@ class KotlinRepositoryGenerator {
                     addFunction(generateFindAllAsOfMethod(definition, entityType, finderType))
                     addFunction(generateGetHistoryMethod(definition, entityType, finderType, primaryKeyType))
                     addFunction(generateDeleteByIdAsOfMethod(definition, finderType, primaryKeyType))
+                }
+                // Add unitemporal-specific methods for unitemporal entities
+                if (definition.isUnitemporal) {
+                    addFunction(generateUniTemporalFindByIdAsOfMethod(definition, entityType, finderType, primaryKeyType))
+                    addFunction(generateUniTemporalFindAllAsOfMethod(definition, entityType, finderType))
+                    addFunction(generateUniTemporalGetHistoryMethod(definition, entityType, finderType, primaryKeyType))
                 }
             }
             // Keep DSL methods
@@ -201,8 +210,47 @@ class KotlinRepositoryGenerator {
                     }
                     addStatement("obj.insert()")
                     addStatement("return %T.fromReladomo(obj)", entityType)
+                } else if (definition.isUnitemporal) {
+                    // For uni-temporal entities, use default constructor (Reladomo doesn't generate temporal constructors for unitemporal)
+                    addStatement("val obj = %T()", reladomoType)
+                    // Handle primary key
+                    val primaryKeys = definition.primaryKeyAttributes
+                    if (primaryKeys.size == 1 && primaryKeys.first().javaType == "long") {
+                        // Only use sequence generator for single long primary key
+                        val primaryKey = primaryKeys.first()
+                        addStatement("val ${primaryKey.name} = entity.${primaryKey.name}?.takeIf { it != 0L } ?: sequenceGenerator?.getNextId(%S) ?: throw IllegalStateException(%S)",
+                            definition.className,
+                            "No ID provided and sequence generator not available")
+                        addStatement("obj.${primaryKey.name} = ${primaryKey.name}")
+                    } else {
+                        // For composite keys or non-long keys, just set the values
+                        primaryKeys.forEach { pk ->
+                            addStatement("obj.${pk.name} = entity.${pk.name}")
+                        }
+                    }
+                    // Set other attributes
+                    definition.attributes.filter { !it.isPrimaryKey }.forEach { attr ->
+                        when (attr.javaType) {
+                            "Timestamp" -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = Timestamp.from(it) }")
+                                } else {
+                                    addStatement("obj.${attr.name} = Timestamp.from(entity.${attr.name})")
+                                }
+                            }
+                            else -> {
+                                if (attr.nullable) {
+                                    addStatement("entity.${attr.name}?.let { obj.${attr.name} = it }")
+                                } else {
+                                    addStatement("obj.${attr.name} = entity.${attr.name}")
+                                }
+                            }
+                        }
+                    }
+                    addStatement("obj.insert()")
+                    addStatement("return %T.fromReladomo(obj)", entityType)
                 } else {
-                    // For non-bitemporal entities
+                    // For non-temporal entities
                     addStatement("val obj = %T()", reladomoType)
                     // Handle primary key
                     val primaryKeys = definition.primaryKeyAttributes
@@ -267,6 +315,15 @@ class KotlinRepositoryGenerator {
                 .addStatement("val entity = %T.findOne(operation)", finderType)
                 .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
                 .build()
+        } else if (definition.isUnitemporal) {
+            // For uni-temporal objects, find version valid at current time
+            FunSpec.builder("findById")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("id", primaryKeyType)
+                .returns(entityType.copy(nullable = true))
+                .addStatement("val entity = %T.findByPrimaryKey(id, Timestamp.from(Instant.now()))", finderType)
+                .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
+                .build()
         } else {
             // For non-temporal objects, use simple find
             FunSpec.builder("findById")
@@ -327,7 +384,7 @@ class KotlinRepositoryGenerator {
     ): FunSpec {
         val primaryKey = definition.primaryKeyAttributes.firstOrNull()
             ?: throw IllegalArgumentException("No primary key found")
-            
+
         return if (definition.isBitemporal) {
             // For bitemporal objects, find record with infinity processing date for updates
             FunSpec.builder("update")
@@ -373,6 +430,46 @@ class KotlinRepositoryGenerator {
                 }
                 .addStatement("")
                 .addStatement("return %T.fromReladomo(existingEntity)", entityType)
+                .build()
+        } else if (definition.isUnitemporal) {
+            // For uni-temporal objects, find current version and update
+            FunSpec.builder("update")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("entity", entityType)
+                .returns(entityType)
+                .addStatement("val existingOrder = %T.findByPrimaryKey(entity.${primaryKey.name}!!,  Timestamp.from(Instant.now()))", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \${entity.${primaryKey.name}}\")")
+                .addStatement("")
+                .addComment("Update attributes")
+                .apply {
+                    definition.attributes.filter { !it.isPrimaryKey && it.name != "processingDate" }.forEach { attr ->
+                        val setterName = "set${attr.name.capitalize()}"
+                        when {
+                            attr.nullable -> {
+                                when (attr.javaType) {
+                                    "Timestamp" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(Timestamp.from(it)) }")
+                                    "Date" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.util.Date.from(it.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())) }")
+                                    "Time" -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(java.sql.Time.valueOf(it)) }")
+                                    else -> addStatement("entity.${attr.name}?.let { existingOrder.$setterName(it) }")
+                                }
+                            }
+                            attr.javaType == "Timestamp" -> {
+                                addStatement("existingOrder.$setterName(Timestamp.from(entity.${attr.name}))")
+                            }
+                            attr.javaType == "Date" -> {
+                                addStatement("existingOrder.$setterName(java.util.Date.from(entity.${attr.name}.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()))")
+                            }
+                            attr.javaType == "Time" -> {
+                                addStatement("existingOrder.$setterName(java.sql.Time.valueOf(entity.${attr.name}))")
+                            }
+                            else -> {
+                                addStatement("existingOrder.$setterName(entity.${attr.name})")
+                            }
+                        }
+                    }
+                }
+                .addStatement("")
+                .addStatement("return %T.fromReladomo(existingOrder)", entityType)
                 .build()
         } else {
             // For non-temporal objects, simple update
@@ -429,6 +526,15 @@ class KotlinRepositoryGenerator {
                 .addParameter("id", primaryKeyType)
                 .addStatement("deleteByIdAsOf(id, Instant.now())")
                 .build()
+        } else if (definition.isUnitemporal) {
+            // For uni-temporal objects, find and delete current version
+            FunSpec.builder("deleteById")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("id", primaryKeyType)
+                .addStatement("val order = %T.findByPrimaryKey(id, Timestamp.from(Instant.now()))", finderType)
+                .addStatement("    ?: throw EntityNotFoundException(\"Order not found with id: \$id\")")
+                .addStatement("order.delete()")
+                .build()
         } else {
             // For non-temporal objects, simple delete
             FunSpec.builder("deleteById")
@@ -454,6 +560,15 @@ class KotlinRepositoryGenerator {
                 .addStatement("val operation = %T.businessDate().equalsEdgePoint()", finderType)
                 .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
                 .addStatement("")
+                .addStatement("val orders = %T.findMany(operation)", finderType)
+                .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
+                .build()
+        } else if (definition.isUnitemporal) {
+            FunSpec.builder("findAll")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(LIST.parameterizedBy(entityType))
+                .addComment("For unitemporal queries, use equalsInfinity to get current records (PROCESSING_THRU = infinity)")
+                .addStatement("val operation = %T.processingDate().equalsInfinity()", finderType)
                 .addStatement("val orders = %T.findMany(operation)", finderType)
                 .addStatement("return orders.map { %T.fromReladomo(it) }", entityType)
                 .build()
@@ -749,6 +864,75 @@ class KotlinRepositoryGenerator {
             .addStatement("val entity = %T.findOne(operation)", finderType)
             .addStatement("    ?: throw EntityNotFoundException(\"${definition.className} not found with id: \$id\")")
             .addStatement("entity.terminate()")
+            .build()
+    }
+
+    // ========== Unitemporal-specific methods ==========
+
+    private fun generateUniTemporalFindByIdAsOfMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName,
+        primaryKeyType: TypeName
+    ): FunSpec {
+        val primaryKey = definition.primaryKeyAttributes.firstOrNull()
+            ?: throw IllegalArgumentException("No primary key found")
+
+        return FunSpec.builder("findByIdAsOf")
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("id", primaryKeyType)
+            .addParameter("processingDate", Instant::class)
+            .returns(entityType.copy(nullable = true))
+            .addComment("Find by primary key as of specific processing date")
+            .addStatement("val infinityThreshold = Instant.parse(\"9999-01-01T00:00:00Z\")")
+            .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
+            .addStatement("    .and(if (processingDate.isAfter(infinityThreshold)) %T.processingDate().equalsInfinity() else %T.processingDate().eq(Timestamp.from(processingDate)))", finderType, finderType)
+            .addStatement("val entity = %T.findOne(operation)", finderType)
+            .addStatement("return entity?.let { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+
+    private fun generateUniTemporalFindAllAsOfMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName
+    ): FunSpec {
+        return FunSpec.builder("findAllAsOf")
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("processingDate", Instant::class)
+            .returns(LIST.parameterizedBy(entityType))
+            .addComment("Find all entities as of specific processing date")
+            .addStatement("val infinityThreshold = Instant.parse(\"9999-01-01T00:00:00Z\")")
+            .addStatement("val operation = if (processingDate.isAfter(infinityThreshold)) {")
+            .addStatement("    %T.processingDate().equalsInfinity()", finderType)
+            .addStatement("} else {")
+            .addStatement("    %T.processingDate().eq(Timestamp.from(processingDate))", finderType)
+            .addStatement("}")
+            .addStatement("val entities = %T.findMany(operation)", finderType)
+            .addStatement("return entities.map { %T.fromReladomo(it) }", entityType)
+            .build()
+    }
+
+    private fun generateUniTemporalGetHistoryMethod(
+        definition: MithraObjectDefinition,
+        entityType: ClassName,
+        finderType: ClassName,
+        primaryKeyType: TypeName
+    ): FunSpec {
+        val primaryKey = definition.primaryKeyAttributes.firstOrNull()
+            ?: throw IllegalArgumentException("No primary key found")
+
+        return FunSpec.builder("getHistory")
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("id", primaryKeyType)
+            .returns(LIST.parameterizedBy(entityType))
+            .addComment("Get all versions of the entity across processing time")
+            .addComment("Use equalsEdgePoint() to retrieve ALL historical records")
+            .addComment("Returns history sorted by processing date (oldest first)")
+            .addStatement("val operation = %T.${primaryKey.name}().eq(id)", finderType)
+            .addStatement("    .and(%T.processingDate().equalsEdgePoint())", finderType)
+            .addStatement("val entities = %T.findMany(operation)", finderType)
+            .addStatement("return entities.map { %T.fromReladomo(it) }.sortedBy { it.processingDate }", entityType)
             .build()
     }
 }
