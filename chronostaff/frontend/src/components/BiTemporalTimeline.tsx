@@ -1,5 +1,6 @@
 import { useAssignmentHistory, useSalaryHistory, usePositions, useDepartments } from '../hooks/useAPI';
 import { formatDate, formatDateOnly } from '../utils/date';
+import BiTemporal2DTimeline from './BiTemporal2DTimeline';
 import type { EmployeeAssignment, Salary } from '../types';
 
 interface BiTemporalTimelineProps {
@@ -175,6 +176,9 @@ export default function BiTemporalTimeline({ employeeId }: BiTemporalTimelinePro
           </p>
         </div>
       </div>
+
+      {/* 2D Visualization */}
+      <BiTemporal2DTimeline employeeId={employeeId} />
     </div>
   );
 }

@@ -105,4 +105,31 @@ class SalaryController {
             )
         }, employeeId)
     }
+
+    @GetMapping("/employee/{employeeId}/history/all")
+    fun getAllSalaryHistory(@PathVariable employeeId: Long): List<SalaryDto> {
+        // Fetch ALL salary records including past versions
+        // This is used for 2D bitemporal visualization
+        val sql = """
+            SELECT ID, EMPLOYEE_ID, AMOUNT, CURRENCY, UPDATED_BY,
+                   BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU
+            FROM SALARIES
+            WHERE EMPLOYEE_ID = ?
+            ORDER BY PROCESSING_FROM ASC, BUSINESS_FROM ASC
+        """.trimIndent()
+
+        return jdbcTemplate.query(sql, { rs, _ ->
+            SalaryDto(
+                id = rs.getLong("ID"),
+                employeeId = rs.getLong("EMPLOYEE_ID"),
+                amount = rs.getBigDecimal("AMOUNT"),
+                currency = rs.getString("CURRENCY"),
+                updatedBy = rs.getString("UPDATED_BY"),
+                businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant().toString(),
+                businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant().toString(),
+                processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant().toString(),
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant().toString()
+            )
+        }, employeeId)
+    }
 }

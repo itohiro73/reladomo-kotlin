@@ -51,3 +51,15 @@ export const useSalaryHistory = (employeeId: number | null) =>
     employeeId ? `salaries/employee/${employeeId}/history` : null,
     () => employeeId ? api.getSalaryHistory(employeeId) : Promise.reject()
   );
+
+// Full history (for 2D visualization)
+export const useAllAssignmentHistory = (employeeId: number | null) =>
+  useSWR<EmployeeAssignment[]>(
+    employeeId ? `assignments/employee/${employeeId}/history/all` : null,
+    () => employeeId ? api.getAllAssignmentHistory(employeeId) : Promise.reject()
+  );
+export const useAllSalaryHistory = (employeeId: number | null) =>
+  useSWR<Salary[]>(
+    employeeId ? `salaries/employee/${employeeId}/history/all` : null,
+    () => employeeId ? api.getAllSalaryHistory(employeeId) : Promise.reject()
+  );

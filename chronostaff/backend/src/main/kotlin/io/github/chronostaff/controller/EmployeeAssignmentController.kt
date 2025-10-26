@@ -105,4 +105,31 @@ class EmployeeAssignmentController {
             )
         }, employeeId)
     }
+
+    @GetMapping("/employee/{employeeId}/history/all")
+    fun getAllAssignmentHistory(@PathVariable employeeId: Long): List<EmployeeAssignmentDto> {
+        // Fetch ALL assignment records including past versions
+        // This is used for 2D bitemporal visualization
+        val sql = """
+            SELECT ID, EMPLOYEE_ID, DEPARTMENT_ID, POSITION_ID, UPDATED_BY,
+                   BUSINESS_FROM, BUSINESS_THRU, PROCESSING_FROM, PROCESSING_THRU
+            FROM EMPLOYEE_ASSIGNMENTS
+            WHERE EMPLOYEE_ID = ?
+            ORDER BY PROCESSING_FROM ASC, BUSINESS_FROM ASC
+        """.trimIndent()
+
+        return jdbcTemplate.query(sql, { rs, _ ->
+            EmployeeAssignmentDto(
+                id = rs.getLong("ID"),
+                employeeId = rs.getLong("EMPLOYEE_ID"),
+                departmentId = rs.getLong("DEPARTMENT_ID"),
+                positionId = rs.getLong("POSITION_ID"),
+                updatedBy = rs.getString("UPDATED_BY"),
+                businessFrom = rs.getTimestamp("BUSINESS_FROM").toInstant().toString(),
+                businessThru = rs.getTimestamp("BUSINESS_THRU").toInstant().toString(),
+                processingFrom = rs.getTimestamp("PROCESSING_FROM").toInstant().toString(),
+                processingThru = rs.getTimestamp("PROCESSING_THRU").toInstant().toString()
+            )
+        }, employeeId)
+    }
 }
