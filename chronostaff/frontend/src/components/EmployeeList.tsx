@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { useEmployees, useAssignments, useSalaries, usePositions, useDepartments } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import { formatDateOnly } from '../utils/date';
 import type { EmployeeWithDetails } from '../types';
 
 export default function EmployeeList() {
-  const { data: employees, error: empError, isLoading: empLoading } = useEmployees();
+  const { selectedCompanyId } = useCompany();
+  const { data: employees, error: empError, isLoading: empLoading } = useEmployees(selectedCompanyId);
   const { data: assignments } = useAssignments();
   const { data: salaries } = useSalaries();
   const { data: positions } = usePositions();
-  const { data: departments } = useDepartments();
+  const { data: departments } = useDepartments(selectedCompanyId);
 
   if (empLoading) {
     return (

@@ -34,3 +34,28 @@ data class SalaryAsOfDto(
     val businessFrom: String,
     val updatedBy: String
 )
+
+// Employee creation with initial assignment and salary
+data class EmployeeCreateDto(
+    val companyId: Long,  // Company ID for multi-tenancy
+    val employeeNumber: String,
+    val name: String,
+    val email: String,
+    val hireDate: String,  // YYYY-MM-DD format (will be converted to UTC)
+    val assignment: InitialAssignmentDto,
+    val salary: InitialSalaryDto
+)
+
+data class InitialAssignmentDto(
+    val departmentId: Long,
+    val positionId: Long,
+    val effectiveDate: String,  // YYYY-MM-DD format (Business Date in user's timezone)
+    val updatedBy: String
+)
+
+data class InitialSalaryDto(
+    val amount: Double,
+    val currency: String = "JPY",
+    val effectiveDate: String,  // YYYY-MM-DD format (Business Date in user's timezone)
+    val updatedBy: String
+)

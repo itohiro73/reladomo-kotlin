@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MithraObject objectType="transactional"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/goldmansachs/reladomo/master/reladomo/src/main/xsd/mithraobject.xsd">
+
+    <PackageName>io.github.chronostaff.domain</PackageName>
+    <ClassName>Company</ClassName>
+    <DefaultTable>COMPANIES</DefaultTable>
+
+    <!-- Single AsOfAttribute for processing time (unitemporal) -->
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   isProcessingDate="true"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="COMPANY_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="name" javaType="String" columnName="NAME" maxLength="200" nullable="false"/>
+
+</MithraObject>

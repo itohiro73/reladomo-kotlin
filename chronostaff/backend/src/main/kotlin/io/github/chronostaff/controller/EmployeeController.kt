@@ -1,20 +1,19 @@
 package io.github.chronostaff.controller
 
+import com.gs.fw.common.mithra.MithraManagerProvider
+import io.github.chronostaff.domain.Employee
+import io.github.chronostaff.domain.EmployeeAssignment
 import io.github.chronostaff.domain.EmployeeFinder
-import io.github.chronostaff.dto.EmployeeDto
-import io.github.chronostaff.dto.EmployeeDetailAsOfDto
-import io.github.chronostaff.dto.AssignmentAsOfDto
-import io.github.chronostaff.dto.SalaryAsOfDto
+import io.github.chronostaff.domain.Salary
+import io.github.chronostaff.dto.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import java.math.BigDecimal
 import java.sql.Timestamp
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
@@ -26,9 +25,10 @@ class EmployeeController {
     private lateinit var jdbcTemplate: JdbcTemplate
 
     @GetMapping
-    fun getAllEmployees(): List<EmployeeDto> {
-        // Get current employees (processingDate at infinity)
-        val operation = EmployeeFinder.processingDate().equalsInfinity()
+    fun getAllEmployees(@RequestParam companyId: Long): List<EmployeeDto> {
+        // Get current employees for specific company (processingDate at infinity)
+        val operation = EmployeeFinder.companyId().eq(companyId)
+            .and(EmployeeFinder.processingDate().equalsInfinity())
         return EmployeeFinder.findMany(operation)
             .map { emp ->
                 EmployeeDto(
@@ -152,6 +152,85 @@ class EmployeeController {
             salary = salary,
             asOfMonth = month
         )
+    }
+
+    /**
+     * Create new employee with initial assignment and salary
+     * Demonstrates "Effective Date" concept - user only specifies when changes take effect
+     */
+    @PostMapping
+    fun createEmployee(@RequestBody request: EmployeeCreateDto): EmployeeDto {
+        return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
+            try {
+                // 1. Create Employee (unitemporal - processingDate only)
+                // For unitemporal entities with audit tracking, must pass infinity for insert
+                // SimulatedSequence automatically generates IDs
+                val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+                val now = Timestamp.from(Instant.now())
+                val employee = Employee(infinityDate)
+                employee.setCompanyId(request.companyId)  // Link to company
+                employee.setEmployeeNumber(request.employeeNumber)
+                employee.setName(request.name)
+                employee.setEmail(request.email)
+
+                // Convert hire date from YYYY-MM-DD (user's timezone) to UTC
+                val hireDate = LocalDate.parse(request.hireDate)
+                employee.setHireDate(Timestamp.from(
+                    hireDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                ))
+
+                employee.insert()
+
+                // 2. Create Assignment (bitemporal - businessDate + processingDate)
+                // User-specified "Effective Date" → Business Time
+                // SimulatedSequence automatically generates IDs
+                val assignmentEffectiveDate = LocalDate.parse(request.assignment.effectiveDate)
+                val assignmentBusinessFrom = Timestamp.from(
+                    assignmentEffectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                )
+
+                val assignment = EmployeeAssignment(assignmentBusinessFrom, infinityDate)
+                assignment.setEmployeeId(employee.id)
+                assignment.setDepartmentId(request.assignment.departmentId)
+                assignment.setPositionId(request.assignment.positionId)
+                assignment.setUpdatedBy(request.assignment.updatedBy)
+
+                assignment.insert()
+
+                // 3. Create Salary (bitemporal - businessDate + processingDate)
+                // User-specified "Effective Date" → Business Time
+                // SimulatedSequence automatically generates IDs
+                val salaryEffectiveDate = LocalDate.parse(request.salary.effectiveDate)
+                val salaryBusinessFrom = Timestamp.from(
+                    salaryEffectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                )
+
+                val salary = Salary(salaryBusinessFrom, infinityDate)
+                salary.setEmployeeId(employee.id)
+                salary.setAmount(BigDecimal.valueOf(request.salary.amount))
+                salary.setCurrency(request.salary.currency)
+                salary.setUpdatedBy(request.salary.updatedBy)
+
+                salary.insert()
+
+                // Return created employee DTO
+                EmployeeDto(
+                    id = employee.id,
+                    employeeNumber = employee.employeeNumber,
+                    name = employee.name,
+                    email = employee.email,
+                    hireDate = employee.hireDate.toInstant().toString(),
+                    processingFrom = employee.processingDateFrom.toInstant().toString(),
+                    processingThru = employee.processingDateTo.toInstant().toString()
+                )
+            } catch (e: Exception) {
+                throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to create employee: ${e.message}",
+                    e
+                )
+            }
+        }
     }
 
     // TODO: Implement history endpoint - requires proper Reladomo temporal query API

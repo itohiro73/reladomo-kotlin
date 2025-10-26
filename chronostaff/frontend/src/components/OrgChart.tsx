@@ -1,8 +1,11 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useOrganizationSnapshot } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import type { DepartmentSnapshot, EmployeeSnapshot } from '../types';
 
 export default function OrgChart() {
+  const { selectedCompanyId } = useCompany();
+
   // Default to current month (YYYY-MM format)
   const today = new Date();
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -13,7 +16,7 @@ export default function OrgChart() {
 
   // Convert YYYY-MM to YYYY-MM-01 for API call
   const asOfDate = `${selectedMonth}-01`;
-  const { data: snapshot, error, isLoading } = useOrganizationSnapshot(asOfDate);
+  const { data: snapshot, error, isLoading } = useOrganizationSnapshot(asOfDate, selectedCompanyId);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMonth = e.target.value;

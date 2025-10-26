@@ -1411,3 +1411,151 @@ const versionThru = version.processingThru &&
     ? new Date(version.processingThru).getTime()
     : INFINITY_THRESHOLD;
 ```
+
+---
+
+# ChronoStaff-Specific Guidelines
+
+**NOTE**: This section contains guidance specific to the **ChronoStaff** demo application (located in `/chronostaff/`). These guidelines apply ONLY to ChronoStaff and should not be used as patterns for the general reladomo-kotlin library.
+
+## Overview
+
+ChronoStaff is a bitemporal HR management demo application showcasing how to build organization charts from scratch using Reladomo's bitemporal data model. The key design principle is to **hide bitemporal complexity from end users** while leveraging Reladomo's powerful temporal capabilities.
+
+## Design Philosophy
+
+### Core Principle: One Time Dimension for Users
+
+Users should only think about **"When is this effective?"** (Business Date). The system automatically manages Processing Time (audit trail).
+
+**What Users See**:
+- Single time concept: "Effective Date" (実効日)
+- Simple forms asking "When should this change take effect?"
+- Intuitive workflows for employee management
+
+**What System Handles Automatically**:
+- Processing Time (PROCESSING_FROM/THRU)
+- Bitemporal chaining when updating records
+- Audit trail preservation
+- Version management
+
+## CRUD UI/UX Design
+
+For comprehensive CRUD UI/UX design patterns, see: **[`chronostaff/CRUD_DESIGN.md`](/chronostaff/CRUD_DESIGN.md)**
+
+### Key Design Patterns
+
+1. **Initial Setup**: Wizard-based onboarding for positions, departments, and initial employees
+2. **Employee Addition**: Simple form with "Effective Date" for assignments and salaries
+3. **Transfers/Changes**: Timeline-based UI showing current and new assignments with future-dating support
+4. **Historical Corrections**: Advanced feature for fixing past mistakes while preserving audit trail
+
+### Implementation Priorities
+
+**Must Have (MVP)**:
+- ✅ Initial setup wizard
+- ✅ Employee addition form
+- ✅ Basic AsOf queries (already implemented)
+
+**Should Have (Core Value)**:
+- Transfer/assignment change form
+- Salary adjustment form
+- Scheduled changes view
+
+**Nice to Have (Advanced)**:
+- Historical data correction
+- Full audit trail viewer
+
+## Technical Patterns
+
+### Effective Date → Business Date Conversion
+
+**Frontend** (User input in JST → UTC for API):
+```typescript
+const effectiveDate = "2025-04-01";  // User input
+const utcTimestamp = new Date(effectiveDate + "T00:00:00+09:00").toISOString();
+// Result: "2025-03-31T15:00:00Z"
+
+const request = {
+  effectiveDate: utcTimestamp,
+  // ... other fields
+};
+```
+
+**Backend** (UTC API → BUSINESS_FROM):
+```kotlin
+val effectiveDate = LocalDate.parse(dto.effectiveDate)
+val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))
+assignment.businessFromAttribute = Timestamp.from(businessFrom)
+assignment.businessThruAttribute = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+// PROCESSING_FROM/THRU automatically managed by Reladomo
+```
+
+### Transfer/Change Pattern
+
+**Critical**: Use AsOf query to find existing record, then update properties. Reladomo handles chaining automatically.
+
+```kotlin
+// 1. Find record valid at effective date
+val operation = EmployeeAssignmentFinder.employeeId().eq(id)
+    .and(EmployeeAssignmentFinder.businessDate().eq(businessTimestamp))
+    .and(EmployeeAssignmentFinder.processingDate().equalsInfinity())
+
+val existing = EmployeeAssignmentFinder.findOne(operation)
+
+// 2. Terminate existing assignment
+existing.businessThruAttribute = newBusinessFrom
+
+// 3. Create new assignment
+val newAssignment = EmployeeAssignment()
+newAssignment.employeeId = id
+newAssignment.departmentId = newDepartmentId
+newAssignment.positionId = newPositionId
+newAssignment.businessFromAttribute = newBusinessFrom
+newAssignment.businessThruAttribute = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+// PROCESSING_FROM/THRU automatically set by Reladomo
+newAssignment.insert()
+```
+
+### Correction Pattern
+
+**Critical Distinction**: Corrections preserve BUSINESS_FROM/THRU, only PROCESSING_FROM/THRU changes.
+
+```kotlin
+// Find record at target business date
+val operation = EmployeeAssignmentFinder.employeeId().eq(id)
+    .and(EmployeeAssignmentFinder.businessDate().eq(targetBusinessDate))
+    .and(EmployeeAssignmentFinder.processingDate().equalsInfinity())
+
+val existing = EmployeeAssignmentFinder.findOne(operation)
+
+// Update business data - Reladomo creates new processing version
+existing.departmentId = correctedDepartmentId
+existing.positionId = correctedPositionId
+existing.updatedBy = correctorEmail
+
+// Reladomo automatically:
+// 1. Terminates old version (PROCESSING_THRU = now)
+// 2. Creates new version (PROCESSING_FROM = now, PROCESSING_THRU = infinity)
+// 3. BUSINESS_FROM/THRU stay the same (same business validity period)
+```
+
+## UI/UX Principles
+
+1. **Progressive Disclosure**: Show simple forms first, advanced features behind extra clicks
+2. **Clear Mental Model**: One concept - "When is this effective?"
+3. **Safety Rails**: Confirmation dialogs for corrections, preview before commit
+4. **Helpful Defaults**: Effective Date defaults to "today" or "hire date"
+5. **Visual Feedback**: Timeline visualizations, color coding (past/current/future)
+
+## Success Metrics
+
+- **User Understanding**: Users should NOT need to know about "Processing Time"
+- **System Correctness**: No gaps in temporal data, complete audit trail
+- **Demo Effectiveness**: Viewers understand how org chart is built, complexity hidden but power demonstrated
+
+## Reference Documentation
+
+- **CRUD Design**: See `/chronostaff/CRUD_DESIGN.md` for comprehensive UI/UX design
+- **Reladomo Tour**: https://goldmansachs.github.io/reladomo-kata/reladomo-tour-docs/tour-guide.html
+- **Project Guidelines**: See general sections above for timezone handling, bitemporal chaining, etc.

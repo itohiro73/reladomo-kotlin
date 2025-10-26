@@ -1,8 +1,10 @@
 import { useDepartments } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import { formatDate } from '../utils/date';
 
 export default function DepartmentList() {
-  const { data: departments, error, isLoading } = useDepartments();
+  const { selectedCompanyId } = useCompany();
+  const { data: departments, error, isLoading } = useDepartments(selectedCompanyId);
 
   if (isLoading) {
     return (

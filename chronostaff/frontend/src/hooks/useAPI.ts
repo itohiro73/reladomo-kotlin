@@ -11,12 +11,14 @@ export const usePosition = (id: number | null) =>
   useSWR<Position>(id ? `positions/${id}` : null, () => id ? api.getPosition(id) : Promise.reject());
 
 // Departments
-export const useDepartments = () => useSWR<Department[]>('departments', () => api.getDepartments());
+export const useDepartments = (companyId: number | null) =>
+  useSWR<Department[]>(companyId ? `departments?companyId=${companyId}` : null, () => companyId ? api.getDepartments(companyId) : Promise.reject());
 export const useDepartment = (id: number | null) =>
   useSWR<Department>(id ? `departments/${id}` : null, () => id ? api.getDepartment(id) : Promise.reject());
 
 // Employees
-export const useEmployees = () => useSWR<Employee[]>('employees', () => api.getEmployees());
+export const useEmployees = (companyId: number | null) =>
+  useSWR<Employee[]>(companyId ? `employees?companyId=${companyId}` : null, () => companyId ? api.getEmployees(companyId) : Promise.reject());
 export const useEmployee = (id: number | null) =>
   useSWR<Employee>(id ? `employees/${id}` : null, () => id ? api.getEmployee(id) : Promise.reject());
 export const useEmployeeAsOf = (id: number | null, month: string | null) =>
@@ -70,8 +72,8 @@ export const useAllSalaryHistory = (employeeId: number | null) =>
   );
 
 // Organization snapshot (time-travel query)
-export const useOrganizationSnapshot = (asOfDate: string | null) =>
+export const useOrganizationSnapshot = (asOfDate: string | null, companyId: number | null) =>
   useSWR<OrganizationSnapshot>(
-    asOfDate ? `organization/snapshot?asOfDate=${asOfDate}` : null,
-    () => asOfDate ? api.getOrganizationSnapshot(asOfDate) : Promise.reject()
+    asOfDate && companyId ? `organization/snapshot?asOfDate=${asOfDate}&companyId=${companyId}` : null,
+    () => asOfDate && companyId ? api.getOrganizationSnapshot(asOfDate, companyId) : Promise.reject()
   );
