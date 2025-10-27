@@ -59,9 +59,11 @@ class SalaryController {
 
     @GetMapping("/employee/{employeeId}")
     fun getSalariesByEmployee(@PathVariable employeeId: Long): List<SalaryDto> {
+        // Query for salaries valid TODAY (not future-dated salaries)
+        val today = java.sql.Timestamp.from(java.time.Instant.now())
         val operation = SalaryFinder.employeeId().eq(employeeId)
-            .and(SalaryFinder.businessDate().equalsInfinity())
-            .and(SalaryFinder.processingDate().equalsInfinity())
+            .and(SalaryFinder.businessDate().eq(today))  // Valid as of today
+            .and(SalaryFinder.processingDate().equalsInfinity())  // Currently believed
         return SalaryFinder.findMany(operation)
             .map { salary ->
                 SalaryDto(

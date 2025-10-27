@@ -8,6 +8,7 @@
     <AsOfAttribute name="businessDate"
                    fromColumnName="BUSINESS_FROM"
                    toColumnName="BUSINESS_THRU"
+                   toIsInclusive="false"
                    infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
 
     <AsOfAttribute name="processingDate"

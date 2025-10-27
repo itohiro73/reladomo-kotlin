@@ -6,6 +6,7 @@ import io.github.chronostaff.domain.EmployeeAssignment
 import io.github.chronostaff.domain.EmployeeFinder
 import io.github.chronostaff.domain.Salary
 import io.github.chronostaff.dto.*
+import io.github.reladomokotlin.sequence.SequenceGenerator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.JdbcTemplate
@@ -23,6 +24,9 @@ class EmployeeController {
 
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
+
+    @Autowired
+    private lateinit var sequenceGenerator: SequenceGenerator
 
     @GetMapping
     fun getAllEmployees(@RequestParam companyId: Long): List<EmployeeDto> {
@@ -240,39 +244,51 @@ class EmployeeController {
     ): EmployeeAssignmentDto {
         return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
             try {
+                println("DEBUG: Received effectiveDate from frontend: ${request.effectiveDate}")
                 val effectiveDate = LocalDate.parse(request.effectiveDate)
-                val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                println("DEBUG: Parsed LocalDate: $effectiveDate")
+                val businessFrom = effectiveDate.atStartOfDay(java.time.ZoneId.of("Asia/Tokyo")).toInstant()
+                println("DEBUG: Converted to UTC Instant: $businessFrom")
                 val businessTimestamp = Timestamp.from(businessFrom)
-                val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
+                println("DEBUG: Timestamp for Reladomo query: $businessTimestamp (${businessTimestamp.time} ms)")
 
-                // Find the assignment that will be valid at the effective date
-                // Use AsOf query to get the record at the target business date
+                // Find the assignment valid at the effective date using AsOf query
                 val operation = io.github.chronostaff.domain.EmployeeAssignmentFinder.employeeId().eq(id)
                     .and(io.github.chronostaff.domain.EmployeeAssignmentFinder.businessDate().eq(businessTimestamp))
                     .and(io.github.chronostaff.domain.EmployeeAssignmentFinder.processingDate().equalsInfinity())
 
-                val assignmentAtEffectiveDate = io.github.chronostaff.domain.EmployeeAssignmentFinder.findOne(operation)
+                val assignment = io.github.chronostaff.domain.EmployeeAssignmentFinder.findOne(operation)
                     ?: throw ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "No assignment found at effective date for employee $id"
                     )
 
-                // Change the properties - Reladomo should automatically split the business period
-                assignmentAtEffectiveDate.departmentId = request.newDepartmentId
-                assignmentAtEffectiveDate.positionId = request.newPositionId
-                assignmentAtEffectiveDate.updatedBy = request.updatedBy
+                println("DEBUG: Found assignment with businessFrom: ${assignment.businessDateFrom}")
+                println("DEBUG: Updating assignment to dept=${request.newDepartmentId}, pos=${request.newPositionId}")
+
+                // Update attributes - Reladomo automatically handles bitemporal chaining
+                assignment.departmentId = request.newDepartmentId
+                assignment.positionId = request.newPositionId
+                assignment.updatedBy = request.updatedBy
+
+                println("DEBUG: After update, assignment businessFrom: ${assignment.businessDateFrom}")
+
+                // Reladomo automatically:
+                // 1. Terminates old version (sets PROCESSING_THRU to now)
+                // 2. Creates new version (PROCESSING_FROM = now, PROCESSING_THRU = infinity)
+                // 3. Splits business period at effective date if needed
 
                 // Return updated assignment DTO
                 EmployeeAssignmentDto(
-                    id = assignmentAtEffectiveDate.id,
-                    employeeId = assignmentAtEffectiveDate.employeeId,
-                    departmentId = assignmentAtEffectiveDate.departmentId,
-                    positionId = assignmentAtEffectiveDate.positionId,
-                    updatedBy = assignmentAtEffectiveDate.updatedBy,
-                    businessFrom = assignmentAtEffectiveDate.businessDateFrom.toInstant().toString(),
-                    businessThru = assignmentAtEffectiveDate.businessDateTo.toInstant().toString(),
-                    processingFrom = assignmentAtEffectiveDate.processingDateFrom.toInstant().toString(),
-                    processingThru = assignmentAtEffectiveDate.processingDateTo.toInstant().toString()
+                    id = assignment.id,
+                    employeeId = assignment.employeeId,
+                    departmentId = assignment.departmentId,
+                    positionId = assignment.positionId,
+                    updatedBy = assignment.updatedBy,
+                    businessFrom = assignment.businessDateFrom.toInstant().toString(),
+                    businessThru = assignment.businessDateTo.toInstant().toString(),
+                    processingFrom = assignment.processingDateFrom.toInstant().toString(),
+                    processingThru = assignment.processingDateTo.toInstant().toString()
                 )
             } catch (e: Exception) {
                 throw ResponseStatusException(
@@ -291,8 +307,11 @@ class EmployeeController {
     ): SalaryDto {
         return MithraManagerProvider.getMithraManager().executeTransactionalCommand { _ ->
             try {
+                println("DEBUG: Received effectiveDate from frontend: ${request.effectiveDate}")
                 val effectiveDate = LocalDate.parse(request.effectiveDate)
-                val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))  // JST to UTC
+                println("DEBUG: Parsed LocalDate: $effectiveDate")
+                val businessFrom = effectiveDate.atStartOfDay(java.time.ZoneId.of("Asia/Tokyo")).toInstant()
+                println("DEBUG: Converted to UTC Instant: $businessFrom")
                 val businessTimestamp = Timestamp.from(businessFrom)
                 val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
 

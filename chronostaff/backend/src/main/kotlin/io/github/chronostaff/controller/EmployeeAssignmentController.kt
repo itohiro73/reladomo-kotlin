@@ -59,9 +59,11 @@ class EmployeeAssignmentController {
 
     @GetMapping("/employee/{employeeId}")
     fun getAssignmentsByEmployee(@PathVariable employeeId: Long): List<EmployeeAssignmentDto> {
+        // Query for assignments valid TODAY (not future-dated assignments)
+        val today = java.sql.Timestamp.from(java.time.Instant.now())
         val operation = EmployeeAssignmentFinder.employeeId().eq(employeeId)
-            .and(EmployeeAssignmentFinder.businessDate().equalsInfinity())
-            .and(EmployeeAssignmentFinder.processingDate().equalsInfinity())
+            .and(EmployeeAssignmentFinder.businessDate().eq(today))  // Valid as of today
+            .and(EmployeeAssignmentFinder.processingDate().equalsInfinity())  // Currently believed
         return EmployeeAssignmentFinder.findMany(operation)
             .map { assignment ->
                 EmployeeAssignmentDto(
