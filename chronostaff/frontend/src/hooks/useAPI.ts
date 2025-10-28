@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import * as api from '../api/client';
-import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot, EmployeeDetailAsOf } from '../types';
+import type { Position, Department, Employee, EmployeeAssignment, Salary, OrganizationSnapshot, EmployeeDetailAsOf, ScheduledChange } from '../types';
 
 // Custom fetcher that handles errors
 const fetcher = <T,>(fn: () => Promise<T>) => fn();
@@ -76,4 +76,11 @@ export const useOrganizationSnapshot = (asOfDate: string | null, companyId: numb
   useSWR<OrganizationSnapshot>(
     asOfDate && companyId ? `organization/snapshot?asOfDate=${asOfDate}&companyId=${companyId}` : null,
     () => asOfDate && companyId ? api.getOrganizationSnapshot(asOfDate, companyId) : Promise.reject()
+  );
+
+// Scheduled changes
+export const useScheduledChanges = (companyId: number | null) =>
+  useSWR<ScheduledChange[]>(
+    companyId ? `changes/scheduled?companyId=${companyId}` : null,
+    () => companyId ? api.getScheduledChanges(companyId) : Promise.reject()
   );

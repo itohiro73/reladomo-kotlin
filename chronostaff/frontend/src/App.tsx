@@ -6,6 +6,7 @@ import PositionList from './components/PositionList';
 import OrgChart from './components/OrgChart';
 import InitialSetupWizard from './components/InitialSetupWizard';
 import EmployeeAddForm from './components/EmployeeAddForm';
+import ScheduledChangesView from './components/ScheduledChangesView';
 import CompanySelector from './components/CompanySelector';
 import { CompanyProvider } from './contexts/CompanyContext';
 
@@ -24,6 +25,7 @@ function App() {
               <Route path="/positions" element={<PositionList />} />
               <Route path="/departments" element={<DepartmentList />} />
               <Route path="/org-chart" element={<OrgChart />} />
+              <Route path="/scheduled-changes" element={<ScheduledChangesView />} />
             </Routes>
           </main>
         </div>
@@ -46,6 +48,7 @@ function Navigation() {
     { path: '/positions', label: '役職一覧', icon: '👔' },
     { path: '/departments', label: '部署一覧', icon: '🏢' },
     { path: '/org-chart', label: '組織図', icon: '📊' },
+    { path: '/scheduled-changes', label: '予定されている変更', icon: '🔮' },
   ];
 
   return (

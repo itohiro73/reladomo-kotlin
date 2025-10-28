@@ -22,20 +22,35 @@ export function formatDate(isoString: string): string {
 
 /**
  * Format date for display without time
+ * CRITICAL: Use toLocaleString() to ensure timezone is properly applied,
+ * then extract only the date part
  */
 export function formatDateOnly(isoString: string): string {
+  console.log('DEBUG formatDateOnly - Input:', isoString);
   const date = new Date(isoString);
+  console.log('DEBUG formatDateOnly - Date object:', date.toISOString());
 
   if (date.getFullYear() >= 9999) {
     return '∞';
   }
 
-  return date.toLocaleDateString('ja-JP', {
+  // Use toLocaleString() with timeZone to get proper JST conversion,
+  // then extract only the date part
+  const fullString = date.toLocaleString('ja-JP', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
     timeZone: 'Asia/Tokyo'
   });
+
+  console.log('DEBUG formatDateOnly - Full locale string:', fullString);
+
+  // Extract date part (YYYY/MM/DD) from "YYYY/MM/DD HH:MM"
+  const result = fullString.split(' ')[0];
+  console.log('DEBUG formatDateOnly - Result:', result);
+  return result;
 }
 
 /**

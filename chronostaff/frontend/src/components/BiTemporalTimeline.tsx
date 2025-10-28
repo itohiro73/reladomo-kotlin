@@ -80,7 +80,14 @@ export default function BiTemporalTimeline({ employeeId }: BiTemporalTimelinePro
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         <div className="space-y-1">
-                          <div>{formatDateOnly(assignment.businessFrom)}</div>
+                          <div>
+                            {(() => {
+                              console.log('DEBUG BiTemporalTimeline - businessFrom RAW:', assignment.businessFrom);
+                              const formatted = formatDateOnly(assignment.businessFrom);
+                              console.log('DEBUG BiTemporalTimeline - businessFrom FORMATTED:', formatted);
+                              return formatted;
+                            })()}
+                          </div>
                           <div className="text-xs">〜 {formatDateOnly(assignment.businessThru)}</div>
                         </div>
                       </td>

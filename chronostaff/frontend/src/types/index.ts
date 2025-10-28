@@ -167,3 +167,48 @@ export interface SalaryAdjustmentRequestDto {
   reason?: string;  // Optional reason for the salary adjustment
   updatedBy: string;
 }
+
+// Phase 2: Scheduled Changes Types
+export type ChangeType = 'TRANSFER' | 'SALARY' | 'DEPARTMENT' | 'POSITION';
+export type EntityType = 'EMPLOYEE' | 'DEPARTMENT' | 'POSITION';
+
+export interface TransferDetails {
+  fromDepartmentId: number | null;
+  fromDepartmentName: string | null;
+  toDepartmentId: number;
+  toDepartmentName: string;
+  fromPositionId: number | null;
+  fromPositionName: string | null;
+  toPositionId: number;
+  toPositionName: string;
+}
+
+export interface SalaryAdjustmentDetails {
+  fromAmount: string | null;
+  toAmount: string;
+}
+
+export interface DepartmentCreationDetails {
+  departmentName: string;
+  description: string | null;
+  parentDepartmentId: number | null;
+  parentDepartmentName: string | null;
+}
+
+export interface PositionCreationDetails {
+  positionName: string;
+  level: number;
+  description: string | null;
+}
+
+export type ChangeDetails = TransferDetails | SalaryAdjustmentDetails | DepartmentCreationDetails | PositionCreationDetails;
+
+export interface ScheduledChange {
+  effectiveDate: string;  // ISO-8601 UTC
+  changeType: ChangeType;
+  entityType: EntityType;
+  entityId: number;
+  entityName: string;
+  details: ChangeDetails;
+  recordId: number;
+}

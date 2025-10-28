@@ -28,9 +28,12 @@ export default function TransferForm({
   const [newDepartmentId, setNewDepartmentId] = useState<number | ''>(currentDepartmentId);
   const [newPositionId, setNewPositionId] = useState<number | ''>(currentPositionId);
   const [effectiveDate, setEffectiveDate] = useState(() => {
-    // Default to today
+    // Default to today in local timezone (JST)
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
   const [reason, setReason] = useState('');
   const [updatedBy, setUpdatedBy] = useState('');
@@ -60,6 +63,9 @@ export default function TransferForm({
         reason: reason || undefined,
         updatedBy,
       };
+
+      console.log('DEBUG: Sending effectiveDate to backend:', effectiveDate);
+      console.log('DEBUG: Full request data:', JSON.stringify(data, null, 2));
 
       await transferEmployee(employeeId, data);
 

@@ -128,3 +128,7 @@ export const transferEmployee = (employeeId: number, data: TransferRequestDto) =
 
 export const adjustSalary = (employeeId: number, data: SalaryAdjustmentRequestDto) =>
   postJson<SalaryAdjustmentRequestDto, Salary>(`${API_BASE}/employees/${employeeId}/salary-adjustment`, data);
+
+// Scheduled changes
+export const getScheduledChanges = (companyId: number) =>
+  fetchJson<import('../types').ScheduledChange[]>(`${API_BASE}/changes/scheduled?companyId=${companyId}`);
