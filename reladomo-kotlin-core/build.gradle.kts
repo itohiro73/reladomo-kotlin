@@ -13,7 +13,7 @@ dependencies {
     api("com.goldmansachs.reladomo:reladomo:${property("reladomoVersion")}")
     
     // Java time backport for better compatibility
-    implementation("org.threeten:threetenbp:1.6.8")
+    implementation("org.threeten:threetenbp:1.7.2")
     
     // Logging
     implementation("org.slf4j:slf4j-api:2.0.17")
