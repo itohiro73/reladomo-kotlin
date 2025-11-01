@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Mithra>
+    <!-- Company must be first (other entities depend on it) -->
+    <MithraObjectResource name="Company"/>
+    <MithraObjectResource name="Position"/>
+    <MithraObjectResource name="Department"/>
+    <MithraObjectResource name="Employee"/>
+    <MithraObjectResource name="EmployeeAssignment"/>
+    <MithraObjectResource name="Salary"/>
+</Mithra>

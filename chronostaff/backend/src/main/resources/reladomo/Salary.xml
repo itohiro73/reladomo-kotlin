@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MithraObject objectType="transactional">
+    <PackageName>io.github.chronostaff.domain</PackageName>
+    <ClassName>Salary</ClassName>
+    <DefaultTable>SALARIES</DefaultTable>
+
+    <!-- Bitemporal entity - business date and processing date -->
+    <AsOfAttribute name="businessDate"
+                   fromColumnName="BUSINESS_FROM"
+                   toColumnName="BUSINESS_THRU"
+                   toIsInclusive="false"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <AsOfAttribute name="processingDate"
+                   fromColumnName="PROCESSING_FROM"
+                   toColumnName="PROCESSING_THRU"
+                   toIsInclusive="false"
+                   infinityDate="[com.gs.fw.common.mithra.util.DefaultInfinityTimestamp.getDefaultInfinity()]"/>
+
+    <Attribute name="id" javaType="long" columnName="ID" primaryKey="true" primaryKeyGeneratorStrategy="SimulatedSequence">
+        <SimulatedSequence sequenceName="SALARY_SEQ" hasSourceAttribute="false" sequenceObjectFactoryName="io.github.reladomokotlin.springboot.sequence.GenericSequenceObjectFactory"/>
+    </Attribute>
+    <Attribute name="employeeId" javaType="long" columnName="EMPLOYEE_ID" nullable="false"/>
+    <Attribute name="amount" javaType="BigDecimal" columnName="AMOUNT" nullable="false" precision="19" scale="2"/>
+    <Attribute name="currency" javaType="String" columnName="CURRENCY" nullable="false" maxLength="3"/>
+
+    <!-- Audit trail: who made the change -->
+    <Attribute name="updatedBy" javaType="String" columnName="UPDATED_BY" nullable="true" maxLength="100"/>
+
+    <!-- Relationship -->
+    <Relationship name="employee" relatedObject="Employee" relatedIsDependent="false" cardinality="many-to-one">
+        this.employeeId = Employee.id and this.processingDate = Employee.processingDate
+    </Relationship>
+</MithraObject>

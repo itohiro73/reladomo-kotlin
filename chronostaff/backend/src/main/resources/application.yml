@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: chronostaff
+
+  datasource:
+    url: jdbc:h2:mem:chronostaff;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # Jackson configuration for consistent JSON serialization
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+
+server:
+  port: 8082  # Different port from demo app
+
+# Reladomo Sequence Configuration
+reladomo:
+  sequence:
+    enabled: true
+    type: IN_MEMORY
+    default-start-value: 1
+    increment-by: 1
+
+# Logging
+logging:
+  level:
+    io.github.chronostaff: DEBUG
+    com.gs.fw.common.mithra: INFO
