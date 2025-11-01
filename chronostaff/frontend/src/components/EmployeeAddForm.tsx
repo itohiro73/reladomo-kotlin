@@ -50,12 +50,14 @@ export default function EmployeeAddForm({ onSuccess }: EmployeeAddFormProps = {}
     setName('山田太郎');
     setEmail('yamada@example.com');
 
-    // Hire date (today)
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    setHireDate(todayStr);
-    setAssignmentEffectiveDate(todayStr);
-    setSalaryEffectiveDate(todayStr);
+    // Hire date (3 months ago for demo historical data)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    threeMonthsAgo.setDate(1);
+    const threeMonthsAgoStr = threeMonthsAgo.toISOString().split('T')[0];
+    setHireDate(threeMonthsAgoStr);
+    setAssignmentEffectiveDate(threeMonthsAgoStr);
+    setSalaryEffectiveDate(threeMonthsAgoStr);
 
     // Assignment - find 開発部 department
     const devDept = departments?.find(d => d.name.includes('開発'));

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useEmployees, usePositions, useDepartments } from '../hooks/useAPI';
+import { useState, useMemo } from 'react';
+import { useEmployees, usePositions, useDepartments, useOrganizationSnapshot } from '../hooks/useAPI';
 import { useCompany } from '../contexts/CompanyContext';
 import { transferEmployee, adjustSalary } from '../api/client';
 import type { TransferRequestDto, SalaryAdjustmentRequestDto } from '../types';
@@ -9,6 +9,16 @@ export default function DemoHistoryGenerator() {
   const { data: employees, mutate: mutateEmployees } = useEmployees(selectedCompanyId);
   const { data: positions } = usePositions(selectedCompanyId);
   const { data: departments } = useDepartments(selectedCompanyId);
+
+  // Get organization snapshot from 3 months ago to find current assignments
+  const threeMonthsAgoDate = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 3);
+    date.setDate(1);
+    return date.toISOString().split('T')[0];
+  }, []);
+  const { data: orgSnapshot } = useOrganizationSnapshot(threeMonthsAgoDate, selectedCompanyId);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [historyGenerated, setHistoryGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +30,7 @@ export default function DemoHistoryGenerator() {
     try {
       console.log('=== Starting history generation ===');
       console.log('Available employees:', employees);
+      console.log('Organization snapshot (3 months ago):', orgSnapshot);
 
       // Find employees by name
       const tanaka = employees?.find(e => e.name === '田中花子');
@@ -30,6 +41,38 @@ export default function DemoHistoryGenerator() {
 
       if (!tanaka || !sato) {
         throw new Error('田中花子または佐藤一郎が見つかりません。先にStep 2で従業員を登録してください。');
+      }
+
+      if (!orgSnapshot) {
+        throw new Error('組織スナップショットの取得に失敗しました。');
+      }
+
+      // Find current assignments from organization snapshot
+      let tanakaDepartmentId: number | null = null;
+      let tanakaPositionId: number | null = null;
+      let satoDepartmentId: number | null = null;
+      let satoPositionId: number | null = null;
+
+      for (const dept of orgSnapshot.departments) {
+        const tanakaEmp = dept.employees.find(e => e.id === tanaka.id);
+        if (tanakaEmp) {
+          tanakaDepartmentId = dept.id;
+          tanakaPositionId = tanakaEmp.positionId;
+        }
+        const satoEmp = dept.employees.find(e => e.id === sato.id);
+        if (satoEmp) {
+          satoDepartmentId = dept.id;
+          satoPositionId = satoEmp.positionId;
+        }
+      }
+
+      console.log('Tanaka current department ID:', tanakaDepartmentId);
+      console.log('Tanaka current position ID:', tanakaPositionId);
+      console.log('Sato current department ID:', satoDepartmentId);
+      console.log('Sato current position ID:', satoPositionId);
+
+      if (tanakaDepartmentId === null || tanakaPositionId === null || satoDepartmentId === null || satoPositionId === null) {
+        throw new Error('従業員の現在の配属情報が見つかりません。');
       }
 
       // Find positions and departments
@@ -62,7 +105,7 @@ export default function DemoHistoryGenerator() {
       console.log('=== Step 1: Transferring Sato to Sales ===');
       const satoTransfer: TransferRequestDto = {
         newDepartmentId: salesDept.id,
-        newPositionId: sato.positionId, // Keep same position
+        newPositionId: satoPositionId, // Keep same position from snapshot
         effectiveDate: twoMonthsAgoStr,
         reason: 'デモ用履歴: 営業部への配置転換',
         updatedBy: 'demo-system',
@@ -79,7 +122,7 @@ export default function DemoHistoryGenerator() {
       // 2. 田中花子をマネージャーに昇進（1ヶ月前）
       console.log('=== Step 2: Promoting Tanaka to Manager ===');
       const tanakaPromotion: TransferRequestDto = {
-        newDepartmentId: tanaka.departmentId, // Keep same department
+        newDepartmentId: tanakaDepartmentId, // Keep same department from snapshot
         newPositionId: managerPos.id,
         effectiveDate: oneMonthAgoStr,
         reason: 'デモ用履歴: マネージャーへの昇進',

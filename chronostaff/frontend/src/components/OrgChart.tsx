@@ -181,11 +181,8 @@ export default function OrgChart() {
 }
 
 function DeptNode({ dept, selectedMonth }: { dept: DepartmentSnapshot; selectedMonth: string }) {
-  // Sort employees by position level (descending) and name
+  // Sort employees by name only (backend already provides correct order)
   const sortedEmployees = [...dept.employees].sort((a, b) => {
-    if (a.positionLevel !== b.positionLevel) {
-      return b.positionLevel - a.positionLevel;
-    }
     return a.name.localeCompare(b.name);
   });
 

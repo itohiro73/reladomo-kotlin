@@ -26,7 +26,11 @@ export default function DemoStep2() {
     setIsRegistering(true);
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Set hire date to 3 months ago so we can generate historical data
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      threeMonthsAgo.setDate(1);
+      const threeMonthsAgoStr = threeMonthsAgo.toISOString().split('T')[0];
 
       // Find departments and positions
       const salesDept = departments?.find(d => d.name.includes('営業'));
@@ -37,44 +41,44 @@ export default function DemoStep2() {
         throw new Error('部署または役職が見つかりません');
       }
 
-      // Register 田中花子 (営業部・メンバー)
+      // Register 田中花子 (営業部・メンバー) - hired 3 months ago
       const tanaka: EmployeeCreateDto = {
         companyId: selectedCompanyId,
         employeeNumber: 'EMP002',
         name: '田中花子',
         email: 'tanaka@example.com',
-        hireDate: today,
+        hireDate: threeMonthsAgoStr,
         assignment: {
           departmentId: salesDept.id,
           positionId: memberPos.id,
-          effectiveDate: today,
+          effectiveDate: threeMonthsAgoStr,
           updatedBy: 'hr@example.com',
         },
         salary: {
           amount: 5000000,
           currency: 'JPY',
-          effectiveDate: today,
+          effectiveDate: threeMonthsAgoStr,
           updatedBy: 'hr@example.com',
         },
       };
 
-      // Register 佐藤一郎 (開発部・メンバー)
+      // Register 佐藤一郎 (開発部・メンバー) - hired 3 months ago
       const sato: EmployeeCreateDto = {
         companyId: selectedCompanyId,
         employeeNumber: 'EMP003',
         name: '佐藤一郎',
         email: 'sato@example.com',
-        hireDate: today,
+        hireDate: threeMonthsAgoStr,
         assignment: {
           departmentId: devDept.id,
           positionId: memberPos.id,
-          effectiveDate: today,
+          effectiveDate: threeMonthsAgoStr,
           updatedBy: 'hr@example.com',
         },
         salary: {
           amount: 4800000,
           currency: 'JPY',
-          effectiveDate: today,
+          effectiveDate: threeMonthsAgoStr,
           updatedBy: 'hr@example.com',
         },
       };
@@ -95,12 +99,12 @@ export default function DemoStep2() {
       step={2}
       totalSteps={5}
       title="Step 2: 創業メンバーの採用"
-      description="創業時の初期メンバーを雇用します。最初の従業員（山田太郎）を登録した後、さらに2名の創業メンバーを追加します。各メンバーの入社日から、バイテンポラルレコードが自動生成されます。"
+      description="創業時の初期メンバーを雇用します（デモのため入社日は3ヶ月前に設定）。最初の従業員（山田太郎）を登録した後、さらに2名の創業メンバーを追加します。各メンバーの入社日から、バイテンポラルレコードが自動生成されます。"
       objectives={[
         "【パート1】「サンプルデータで自動入力」→「登録」で山田太郎を雇用",
         "【パート2】「創業メンバー2名を追加登録」ボタンをクリック",
         "田中花子（営業部・メンバー）、佐藤一郎（開発部・メンバー）が登録されます",
-        "→ 創業チーム3名のバイテンポラルレコードが作成されました"
+        "→ 創業チーム3名のバイテンポラルレコードが作成されました（3ヶ月前から）"
       ]}
       nextStep="/demo/step3"
       prevStep="/demo/step1"

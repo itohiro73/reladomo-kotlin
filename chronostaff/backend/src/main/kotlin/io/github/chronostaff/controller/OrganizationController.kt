@@ -55,7 +55,7 @@ class OrganizationController {
               AND e.COMPANY_ID = ?
               AND d.COMPANY_ID = ?
               AND p.COMPANY_ID = ?
-            ORDER BY d.ID, p.LEVEL DESC, e.NAME
+            ORDER BY d.ID, e.NAME
         """.trimIndent()
 
         val assignments = jdbcTemplate.query(sql, { rs, _ ->
