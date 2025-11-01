@@ -4,7 +4,11 @@ import { setupOrganization } from '../api/client';
 import { useCompany } from '../contexts/CompanyContext';
 import type { PositionCreateDto, DepartmentCreateDto, SetupRequestDto } from '../types';
 
-export default function InitialSetupWizard() {
+interface InitialSetupWizardProps {
+  redirectPath?: string;
+}
+
+export default function InitialSetupWizard({ redirectPath = '/' }: InitialSetupWizardProps) {
   const navigate = useNavigate();
   const { setSelectedCompanyId, addCompany } = useCompany();
   const [companyName, setCompanyName] = useState('');
@@ -53,8 +57,8 @@ export default function InitialSetupWizard() {
       // Save the newly created company ID to context
       setSelectedCompanyId(response.companyId);
 
-      // Success - navigate to employee list
-      navigate('/');
+      // Success - navigate to specified path
+      navigate(redirectPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : '組織のセットアップに失敗しました');
     } finally {

@@ -16,7 +16,7 @@ export default function DemoStep1() {
       ]}
       nextStep="/demo/step2"
     >
-      <InitialSetupWizard />
+      <InitialSetupWizard redirectPath="/demo/step2" />
     </DemoGuideCard>
   );
 }
