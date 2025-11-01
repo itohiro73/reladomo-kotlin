@@ -23,7 +23,7 @@ dependencies {
     
     // Database
     runtimeOnly("com.h2database:h2:2.2.224")
-    runtimeOnly("org.postgresql:postgresql:42.7.1")
+    runtimeOnly("org.postgresql:postgresql:42.7.8")
     
     // Reladomo
     implementation("com.goldmansachs.reladomo:reladomo:${property("reladomoVersion")}")
