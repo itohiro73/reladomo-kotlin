@@ -16,7 +16,7 @@ dependencies {
     implementation("org.threeten:threetenbp:1.6.8")
     
     // Logging
-    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.slf4j:slf4j-api:2.0.17")
     
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
@@ -24,7 +24,7 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.24.2")
     // Removed MockK - not used in this module
     testImplementation(kotlin("test"))
-    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
 
 tasks.test {

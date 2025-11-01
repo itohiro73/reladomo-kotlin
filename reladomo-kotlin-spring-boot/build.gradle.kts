@@ -20,7 +20,7 @@ dependencies {
     api(project(":reladomo-kotlin-core"))
     
     // Logging
-    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.slf4j:slf4j-api:2.0.17")
     
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test:${property("springBootVersion")}")
