@@ -1,12 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createEmployee } from '../api/client';
 import { usePositions, useDepartments } from '../hooks/useAPI';
 import { useCompany } from '../contexts/CompanyContext';
 import type { EmployeeCreateDto, InitialAssignmentDto, InitialSalaryDto } from '../types';
 
-export default function EmployeeAddForm() {
+interface EmployeeAddFormProps {
+  onSuccess?: () => void;
+}
+
+export default function EmployeeAddForm({ onSuccess }: EmployeeAddFormProps = {}) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedCompanyId } = useCompany();
   const { data: positions } = usePositions(selectedCompanyId);
   const { data: departments } = useDepartments(selectedCompanyId);
@@ -37,6 +42,35 @@ export default function EmployeeAddForm() {
     setHireDate(date);
     if (!assignmentEffectiveDate) setAssignmentEffectiveDate(date);
     if (!salaryEffectiveDate) setSalaryEffectiveDate(date);
+  };
+
+  const fillDemoData = () => {
+    // Basic info
+    setEmployeeNumber('EMP001');
+    setName('山田太郎');
+    setEmail('yamada@example.com');
+
+    // Hire date (today)
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    setHireDate(todayStr);
+    setAssignmentEffectiveDate(todayStr);
+    setSalaryEffectiveDate(todayStr);
+
+    // Assignment - find 開発部 department
+    const devDept = departments?.find(d => d.name.includes('開発'));
+    if (devDept) setDepartmentId(devDept.id);
+
+    // Assignment - find マネージャー position
+    const managerPos = positions?.find(p => p.name.includes('マネージャー'));
+    if (managerPos) setPositionId(managerPos.id);
+
+    setAssignmentUpdatedBy('hr@example.com');
+
+    // Salary
+    setAmount(6000000);
+    setCurrency('JPY');
+    setSalaryUpdatedBy('hr@example.com');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,8 +109,13 @@ export default function EmployeeAddForm() {
 
       await createEmployee(data);
 
-      // Success - navigate to employee list
-      navigate('/');
+      // Success - call callback or navigate
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Default navigation behavior
+        navigate('/employees');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '従業員の追加に失敗しました');
     } finally {
@@ -100,6 +139,16 @@ export default function EmployeeAddForm() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Demo Data Button */}
+          <button
+            type="button"
+            onClick={fillDemoData}
+            className="w-full bg-indigo-100 text-indigo-700 border-2 border-indigo-300 py-3 px-6 rounded-lg hover:bg-indigo-200 transition-colors font-semibold flex items-center justify-center gap-2"
+          >
+            <span>✨</span>
+            <span>サンプルデータで自動入力</span>
+          </button>
+
           {/* Employee Basic Info */}
           <section>
             <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">

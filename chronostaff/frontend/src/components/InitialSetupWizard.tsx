@@ -84,6 +84,11 @@ export default function InitialSetupWizard() {
     setDepartments(departments.filter((_, i) => i !== index));
   };
 
+  const fillDemoData = () => {
+    setCompanyName('株式会社サンプル');
+    // Positions and departments already have default values
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -100,6 +105,16 @@ export default function InitialSetupWizard() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Demo Data Button */}
+          <button
+            type="button"
+            onClick={fillDemoData}
+            className="w-full bg-indigo-100 text-indigo-700 border-2 border-indigo-300 py-3 px-6 rounded-lg hover:bg-indigo-200 transition-colors font-semibold flex items-center justify-center gap-2"
+          >
+            <span>✨</span>
+            <span>デモデータで自動入力</span>
+          </button>
+
           {/* Company Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

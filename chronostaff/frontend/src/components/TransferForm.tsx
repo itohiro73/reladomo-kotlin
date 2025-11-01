@@ -41,6 +41,30 @@ export default function TransferForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fillDemoData = () => {
+    // Find 営業部 department (different from current)
+    const salesDept = departments?.find(d =>
+      d.name.includes('営業') && d.id !== currentDepartmentId
+    );
+    if (salesDept) setNewDepartmentId(salesDept.id);
+
+    // Find 部長 position
+    const directorPos = positions?.find(p => p.name.includes('部長'));
+    if (directorPos) setNewPositionId(directorPos.id);
+
+    // Set effective date to 1st of next month
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    nextMonth.setDate(1);
+    const year = nextMonth.getFullYear();
+    const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+    const day = '01';
+    setEffectiveDate(`${year}-${month}-${day}`);
+
+    setUpdatedBy('hr@example.com');
+    setReason('昇進に伴う営業部への異動');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -111,6 +135,16 @@ export default function TransferForm({
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Demo Data Button */}
+        <button
+          type="button"
+          onClick={fillDemoData}
+          className="w-full bg-indigo-100 text-indigo-700 border-2 border-indigo-300 py-3 px-6 rounded-lg hover:bg-indigo-200 transition-colors font-semibold flex items-center justify-center gap-2"
+        >
+          <span>✨</span>
+          <span>デモデータで自動入力（未来の異動）</span>
+        </button>
+
         {/* New Assignment */}
         <section>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">

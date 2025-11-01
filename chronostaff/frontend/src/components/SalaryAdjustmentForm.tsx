@@ -35,6 +35,24 @@ export default function SalaryAdjustmentForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fillDemoData = () => {
+    // 20% salary increase
+    const newSalary = Math.round(currentAmount * 1.2);
+    setNewAmount(newSalary);
+
+    // Set effective date to 1st of next month (same as transfer)
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    nextMonth.setDate(1);
+    const year = nextMonth.getFullYear();
+    const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+    const day = '01';
+    setEffectiveDate(`${year}-${month}-${day}`);
+
+    setUpdatedBy('hr@example.com');
+    setReason('昇進に伴う昇給');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -103,6 +121,16 @@ export default function SalaryAdjustmentForm({
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Demo Data Button */}
+        <button
+          type="button"
+          onClick={fillDemoData}
+          className="w-full bg-indigo-100 text-indigo-700 border-2 border-indigo-300 py-3 px-6 rounded-lg hover:bg-indigo-200 transition-colors font-semibold flex items-center justify-center gap-2"
+        >
+          <span>✨</span>
+          <span>デモデータで自動入力（20%昇給）</span>
+        </button>
+
         {/* New Salary */}
         <section>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
