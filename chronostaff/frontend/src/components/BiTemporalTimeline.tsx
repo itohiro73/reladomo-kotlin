@@ -1,4 +1,5 @@
 import { useAssignmentHistory, useSalaryHistory, usePositions, useDepartments } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import { formatDate, formatDateOnly } from '../utils/date';
 import BiTemporal2DTimeline from './BiTemporal2DTimeline';
 import type { EmployeeAssignment, Salary } from '../types';
@@ -8,10 +9,11 @@ interface BiTemporalTimelineProps {
 }
 
 export default function BiTemporalTimeline({ employeeId }: BiTemporalTimelineProps) {
+  const { selectedCompanyId } = useCompany();
   const { data: assignmentHistory, error: assignmentError, isLoading: assignmentLoading } = useAssignmentHistory(employeeId);
   const { data: salaryHistory, error: salaryError, isLoading: salaryLoading } = useSalaryHistory(employeeId);
-  const { data: positions } = usePositions();
-  const { data: departments } = useDepartments();
+  const { data: positions } = usePositions(selectedCompanyId);
+  const { data: departments } = useDepartments(selectedCompanyId);
 
   if (assignmentLoading || salaryLoading) {
     return (

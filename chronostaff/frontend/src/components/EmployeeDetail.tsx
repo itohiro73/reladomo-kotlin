@@ -8,6 +8,7 @@ import {
   usePositions,
   useDepartments
 } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import { formatDate, formatDateOnly } from '../utils/date';
 import BiTemporalTimeline from './BiTemporalTimeline';
 import TransferForm from './TransferForm';
@@ -18,14 +19,15 @@ export default function EmployeeDetail() {
   const employeeId = id ? parseInt(id) : null;
   const [searchParams] = useSearchParams();
   const asOfMonth = searchParams.get('asOfMonth');
+  const { selectedCompanyId } = useCompany();
 
   // Use AsOf query if asOfMonth parameter is present
   const { data: asOfData, error: asOfError, isLoading: asOfLoading } = useEmployeeAsOf(employeeId, asOfMonth);
   const { data: employee, error, isLoading, mutate: mutateEmployee } = useEmployee(asOfMonth ? null : employeeId);
   const { data: assignments, mutate: mutateAssignments } = useAssignmentsByEmployee(asOfMonth ? null : employeeId);
   const { data: salaries, mutate: mutateSalaries } = useSalariesByEmployee(asOfMonth ? null : employeeId);
-  const { data: positions } = usePositions();
-  const { data: departments } = useDepartments();
+  const { data: positions } = usePositions(selectedCompanyId);
+  const { data: departments } = useDepartments(selectedCompanyId);
 
   // Form visibility state
   const [showTransferForm, setShowTransferForm] = useState(false);

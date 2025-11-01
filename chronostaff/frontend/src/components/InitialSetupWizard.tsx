@@ -8,6 +8,7 @@ export default function InitialSetupWizard() {
   const navigate = useNavigate();
   const { setSelectedCompanyId, addCompany } = useCompany();
   const [companyName, setCompanyName] = useState('');
+  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]); // Default: today
   const [positions, setPositions] = useState<PositionCreateDto[]>([
     { name: '社長', level: 10, description: '最高経営責任者' },
     { name: '部長', level: 7, description: '部門責任者' },
@@ -30,6 +31,7 @@ export default function InitialSetupWizard() {
     try {
       const data: SetupRequestDto = {
         companyName,
+        effectiveDate,
         positions,
         departments,
       };
@@ -111,6 +113,23 @@ export default function InitialSetupWizard() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="株式会社サンプル"
             />
+          </div>
+
+          {/* Effective Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              開始日 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              required
+              value={effectiveDate}
+              onChange={(e) => setEffectiveDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              役職と部署が有効になる開始日を指定してください
+            </p>
           </div>
 
           {/* Positions Section */}

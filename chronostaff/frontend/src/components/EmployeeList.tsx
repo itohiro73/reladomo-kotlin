@@ -9,7 +9,7 @@ export default function EmployeeList() {
   const { data: employees, error: empError, isLoading: empLoading } = useEmployees(selectedCompanyId);
   const { data: assignments } = useAssignments();
   const { data: salaries } = useSalaries();
-  const { data: positions } = usePositions();
+  const { data: positions } = usePositions(selectedCompanyId);
   const { data: departments } = useDepartments(selectedCompanyId);
 
   if (empLoading) {

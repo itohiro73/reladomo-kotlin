@@ -22,7 +22,7 @@ export default function TransferForm({
   onCancel
 }: TransferFormProps) {
   const { selectedCompanyId } = useCompany();
-  const { data: positions } = usePositions();
+  const { data: positions } = usePositions(selectedCompanyId);
   const { data: departments } = useDepartments(selectedCompanyId);
 
   const [newDepartmentId, setNewDepartmentId] = useState<number | ''>(currentDepartmentId);

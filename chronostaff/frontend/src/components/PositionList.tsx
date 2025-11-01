@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { usePositions } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import * as api from '../api/client';
 import { mutate } from 'swr';
 
 export default function PositionList() {
-  const { data: positions, error, isLoading } = usePositions();
+  const { selectedCompanyId } = useCompany();
+  const { data: positions, error, isLoading } = usePositions(selectedCompanyId);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPosition, setEditingPosition] = useState<number | null>(null);
@@ -13,7 +15,9 @@ export default function PositionList() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const refreshPositions = () => {
-    mutate('positions');
+    if (selectedCompanyId) {
+      mutate(`positions?companyId=${selectedCompanyId}`);
+    }
   };
 
   const handleAdd = () => {
@@ -53,6 +57,12 @@ export default function PositionList() {
     setFormError(null);
     setIsSubmitting(true);
 
+    if (!selectedCompanyId) {
+      setFormError('会社が選択されていません');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const data = {
         name: formData.name,
@@ -63,7 +73,7 @@ export default function PositionList() {
       if (editingPosition) {
         await api.updatePosition(editingPosition, data);
       } else {
-        await api.createPosition(data);
+        await api.createPosition(data, selectedCompanyId);
       }
       refreshPositions();
       setIsAddModalOpen(false);

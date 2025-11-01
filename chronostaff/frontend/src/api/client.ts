@@ -64,10 +64,10 @@ async function deleteRequest(url: string): Promise<void> {
 }
 
 // Positions
-export const getPositions = () => fetchJson<Position[]>(`${API_BASE}/positions`);
+export const getPositions = (companyId: number) => fetchJson<Position[]>(`${API_BASE}/positions?companyId=${companyId}`);
 export const getPosition = (id: number) => fetchJson<Position>(`${API_BASE}/positions/${id}`);
-export const createPosition = (data: Omit<Position, 'id'>) =>
-  postJson<Omit<Position, 'id'>, Position>(`${API_BASE}/positions`, data);
+export const createPosition = (data: Omit<Position, 'id'>, companyId: number) =>
+  postJson<Omit<Position, 'id'>, Position>(`${API_BASE}/positions?companyId=${companyId}`, data);
 export const updatePosition = (id: number, data: Omit<Position, 'id'>) =>
   putJson<Omit<Position, 'id'>, Position>(`${API_BASE}/positions/${id}`, data);
 export const deletePosition = (id: number) => deleteRequest(`${API_BASE}/positions/${id}`);

@@ -16,8 +16,9 @@ import java.sql.Timestamp
 class PositionController {
 
     @GetMapping
-    fun getAllPositions(): List<PositionDto> {
-        val operation = PositionFinder.businessDate().equalsInfinity()
+    fun getAllPositions(@RequestParam companyId: Long): List<PositionDto> {
+        val operation = PositionFinder.companyId().eq(companyId)
+            .and(PositionFinder.businessDate().equalsInfinity())
             .and(PositionFinder.processingDate().equalsInfinity())
         return PositionFinder.findMany(operation)
             .map { position ->

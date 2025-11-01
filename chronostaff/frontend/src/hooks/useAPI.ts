@@ -6,7 +6,8 @@ import type { Position, Department, Employee, EmployeeAssignment, Salary, Organi
 const fetcher = <T,>(fn: () => Promise<T>) => fn();
 
 // Positions
-export const usePositions = () => useSWR<Position[]>('positions', () => api.getPositions());
+export const usePositions = (companyId: number | null) =>
+  useSWR<Position[]>(companyId ? `positions?companyId=${companyId}` : null, () => companyId ? api.getPositions(companyId) : Promise.reject());
 export const usePosition = (id: number | null) =>
   useSWR<Position>(id ? `positions/${id}` : null, () => id ? api.getPosition(id) : Promise.reject());
 

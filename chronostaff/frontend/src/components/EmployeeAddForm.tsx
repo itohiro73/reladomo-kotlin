@@ -8,7 +8,7 @@ import type { EmployeeCreateDto, InitialAssignmentDto, InitialSalaryDto } from '
 export default function EmployeeAddForm() {
   const navigate = useNavigate();
   const { selectedCompanyId } = useCompany();
-  const { data: positions } = usePositions();
+  const { data: positions } = usePositions(selectedCompanyId);
   const { data: departments } = useDepartments(selectedCompanyId);
 
   // Employee basic info

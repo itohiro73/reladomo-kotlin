@@ -117,6 +117,7 @@ export interface DepartmentCreateDto {
 
 export interface SetupRequestDto {
   companyName: string;
+  effectiveDate: string;  // YYYY-MM-DD format
   positions: PositionCreateDto[];
   departments: DepartmentCreateDto[];
 }

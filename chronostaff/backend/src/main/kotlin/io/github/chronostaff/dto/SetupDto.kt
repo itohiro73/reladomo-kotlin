@@ -5,6 +5,7 @@ package io.github.chronostaff.dto
  */
 data class SetupRequestDto(
     val companyName: String,
+    val effectiveDate: String,  // ISO 8601 date string (YYYY-MM-DD)
     val positions: List<PositionCreateDto>,
     val departments: List<DepartmentCreateDto>
 )

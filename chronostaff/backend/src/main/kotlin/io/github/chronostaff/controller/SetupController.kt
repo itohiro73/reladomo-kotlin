@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import java.sql.Timestamp
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 @RestController
 @RequestMapping("/api/setup")
@@ -29,6 +31,11 @@ class SetupController {
             try {
                 val infinityDate = Timestamp.from(Instant.parse("9999-12-01T23:59:00Z"))
 
+                // Convert effectiveDate (YYYY-MM-DD) to business date timestamp
+                val effectiveDate = LocalDate.parse(request.effectiveDate)
+                val businessFrom = effectiveDate.atStartOfDay().toInstant(ZoneOffset.ofHours(9))
+                val businessTimestamp = Timestamp.from(businessFrom)
+
                 // Step 1: Create Company (unitemporal)
                 val company = Company(infinityDate)
                 company.setName(request.companyName)
@@ -38,7 +45,7 @@ class SetupController {
 
                 // Step 2: Create positions (bitemporal, per company)
                 request.positions.forEach { positionDto ->
-                    val position = Position(infinityDate, infinityDate)
+                    val position = Position(businessTimestamp, infinityDate)
                     position.companyId = companyId  // Link to company
                     position.name = positionDto.name
                     position.level = positionDto.level
@@ -50,7 +57,7 @@ class SetupController {
 
                 // Step 3: Create departments (bitemporal, per company)
                 request.departments.forEach { deptDto ->
-                    val department = Department(infinityDate, infinityDate)
+                    val department = Department(businessTimestamp, infinityDate)
                     department.companyId = companyId  // Link to company
                     department.name = deptDto.name
                     department.description = deptDto.description

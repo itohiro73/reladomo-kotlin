@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAllAssignmentHistory, useAllSalaryHistory, usePositions, useDepartments } from '../hooks/useAPI';
+import { useCompany } from '../contexts/CompanyContext';
 import type { EmployeeAssignment, Salary } from '../types';
 
 interface BiTemporal2DTimelineProps {
@@ -12,10 +13,11 @@ interface TimeRange {
 }
 
 export default function BiTemporal2DTimeline({ employeeId }: BiTemporal2DTimelineProps) {
+  const { selectedCompanyId } = useCompany();
   const { data: assignmentHistory, error: assignmentError, isLoading: assignmentLoading } = useAllAssignmentHistory(employeeId);
   const { data: salaryHistory, error: salaryError, isLoading: salaryLoading } = useAllSalaryHistory(employeeId);
-  const { data: positions } = usePositions();
-  const { data: departments } = useDepartments();
+  const { data: positions } = usePositions(selectedCompanyId);
+  const { data: departments } = useDepartments(selectedCompanyId);
   const [hoveredRecord, setHoveredRecord] = useState<{ type: 'assignment' | 'salary'; data: EmployeeAssignment | Salary } | null>(null);
   const [viewMode, setViewMode] = useState<'assignment' | 'salary'>('assignment');
 
