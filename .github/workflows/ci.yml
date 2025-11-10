@@ -57,7 +57,7 @@ jobs:
     
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: test-results-java-${{ matrix.java }}
         path: '**/build/test-results/test/'
@@ -106,7 +106,7 @@ jobs:
         format: 'HTML'
 
     - name: Upload dependency check results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: dependency-check-report
