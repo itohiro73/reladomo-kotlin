@@ -20,7 +20,7 @@ dependencies {
     // Reladomo generator
     implementation("com.goldmansachs.reladomo:reladomogen:${property("reladomoVersion")}")
     implementation("com.goldmansachs.reladomo:reladomo:${property("reladomoVersion")}")
-    implementation("org.apache.ant:ant:1.10.14")
+    implementation("org.apache.ant:ant:1.10.15")
     
     // Project dependencies
     implementation(project(":reladomo-kotlin-core"))
