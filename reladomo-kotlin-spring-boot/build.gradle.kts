@@ -27,7 +27,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit5"))
-    testImplementation("org.assertj:assertj-core:3.24.2")
+    testImplementation("org.assertj:assertj-core:3.27.6")
     // Replaced MockK with Mockito for better Java 17/21 compatibility
     testImplementation("org.mockito:mockito-core:5.11.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")

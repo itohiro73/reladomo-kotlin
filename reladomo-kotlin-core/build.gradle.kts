@@ -21,7 +21,7 @@ dependencies {
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${property("junitVersion")}")
-    testImplementation("org.assertj:assertj-core:3.24.2")
+    testImplementation("org.assertj:assertj-core:3.27.6")
     // Removed MockK - not used in this module
     testImplementation(kotlin("test"))
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")

@@ -16,7 +16,7 @@ dependencies {
     
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
-    testImplementation("org.assertj:assertj-core:3.24.2")
+    testImplementation("org.assertj:assertj-core:3.27.6")
     testImplementation(gradleTestKit())
 }
 
