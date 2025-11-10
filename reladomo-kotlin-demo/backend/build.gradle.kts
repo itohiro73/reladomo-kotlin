@@ -21,7 +21,7 @@ dependencies {
     implementation(project(":reladomo-kotlin-generator"))
 
     // Database
-    runtimeOnly("com.h2database:h2:2.2.224")
+    runtimeOnly("com.h2database:h2:2.4.240")
 
     // Reladomo
     implementation("com.goldmansachs.reladomo:reladomo:${property("reladomoVersion")}")
