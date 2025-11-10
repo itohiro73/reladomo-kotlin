@@ -31,7 +31,7 @@ dependencies {
     // Replaced MockK with Mockito for better Java 17/21 compatibility
     testImplementation("org.mockito:mockito-core:5.11.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("com.h2database:h2:2.2.224")
+    testImplementation("com.h2database:h2:2.4.240")
 }
 
 tasks.test {

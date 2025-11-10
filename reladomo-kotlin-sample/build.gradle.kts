@@ -22,7 +22,7 @@ dependencies {
     implementation("io.github.itohiro73:reladomo-kotlin-generator:0.0.2")
     
     // Database
-    runtimeOnly("com.h2database:h2:2.2.224")
+    runtimeOnly("com.h2database:h2:2.4.240")
     runtimeOnly("org.postgresql:postgresql:42.7.8")
     
     // Reladomo
