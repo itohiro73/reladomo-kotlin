@@ -13,7 +13,7 @@ dependencies {
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter:${property("springBootVersion")}")
     implementation("org.springframework.boot:spring-boot-starter-jdbc:${property("springBootVersion")}")
-    implementation("org.springframework.data:spring-data-commons:3.2.0")
+    implementation("org.springframework.data:spring-data-commons:3.5.5")
     compileOnly("org.springframework.boot:spring-boot-configuration-processor:${property("springBootVersion")}")
     
     // Project dependencies
