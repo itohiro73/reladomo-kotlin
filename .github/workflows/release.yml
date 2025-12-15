@@ -115,7 +115,7 @@ jobs:
           See [CHANGELOG.md](https://github.com/itohiro73/reladomo-kotlin/blob/main/CHANGELOG.md) for details.
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: release-artifacts
         path: |
